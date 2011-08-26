@@ -5,7 +5,7 @@
 ## This file can be copied and customized for a different radar.
 ##
 
-desc               = "Furuno FR1954/FR1964 C-BB attached through resistors"
+desc               = "Furuno FR1954/FR1964 C-BB attached through version 2.0 of LFRX-based interface"
 
 ## signal parameters; names must be members of usrp.param.names defined in usrp.plugin.R
 

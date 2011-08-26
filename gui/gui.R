@@ -1,4 +1,4 @@
-##  svn $Id: gui.R 800 2011-06-18 15:03:25Z john $
+##  svn $Id: gui.R 837 2011-08-26 17:13:55Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
@@ -2904,7 +2904,7 @@ gui.get.event.list <- function() {
             },
 
             SEEK_SCAN_FWD_REV = function(x) {
-              x <- as.integer(x) / GUI$mousewheel.step
+              x <- - as.integer(x) / GUI$mousewheel.step
               .Tcl(".play.slider set [expr [.play.slider get] +" %:% x %:%"]")
             },
             

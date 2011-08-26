@@ -20,10 +20,21 @@ PLUGIN_EXTRA_DIRS=antenna_db
 $(eval $(AT_MAKEFILE_END))
 
 else
-$(info Skipping the usrp plugin; it is currently available only for Linux and not $(TARGET_PLATFORM).)
 
-all:
+#USRP_RADR_PLUGIN_DIR:=/c/cygwin/usr/src/gnuradio_bbprx/usrp/host/apps
+#USRP_INCLUDE_PATH:=/c/cygwin/usr/src/gnuradio_bbprx/usrp/host/include
+USRP_RADR_PLUGIN_DIR:=.
+USRP_INCLUDE_PATH:=.
 
-plugin_clean:
+$(eval $(AT_MAKEFILE_START))
 
+PLUGIN_LIB_EXTRA_DEPS=$(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.dll  $(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.h $(shell $(FIND) . -type f -regex "^.*\\.antenna\\.R$$" -printf '%p\n')
+PLUGIN_LIB_EXTRA_OPTIONS= -I$(USRP_RADR_PLUGIN_DIR) -I$(USRP_INCLUDE_PATH) $(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.dll
+PLUGIN_EXTRA_DIRS=antenna_db rev4 windows_drivers
+## FIXME: can't we statically link these:  need to change make_usrp_radR_plugin_mingw;
+## these are listed in the order they should be dynamically loaded in
+
+PLUGIN_EXTRA_TARGETS=libgcc_s_dw2-1.dll libstdc++-6.dll libboost_thread-mgw45-mt-1_46_1.dll libusrp-3-3-0-0.dll usrp_radR_plugin.dll
+
+$(eval $(AT_MAKEFILE_END))
 endif

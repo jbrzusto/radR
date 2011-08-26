@@ -106,7 +106,7 @@ RADR_INSTALL_DIR := $(RADR_TOPLEVEL_DIR)/install
 
 ifeq ($(BUILD_PLATFORM),windows)
 CC_TO_USE=gcc
-STRIP=/usr/bin/strip
+STRIP=strip
 else
  ifeq ($(TARGET_PLATFORM),unix)
 CC_TO_USE=gcc

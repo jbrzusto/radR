@@ -1,4 +1,4 @@
-/*  svn $Id: scancvt.c 795 2011-05-31 20:09:01Z john $
+/*  svn $Id: scancvt.c 821 2011-08-26 13:41:39Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
     Copyright (C) 2006, 2007, 2008 John Brzustowski        
@@ -270,9 +270,9 @@ make_scan_converter ( t_scan_converter *cvt,
 	  }
 	  // use the central sample, and mark it as the last for this pixel
 	  SCVT_IND_LAST(l);
-#else
+#else  // DO_SCAN_CONVERSION_SMOOTHING
 	  SCVT_IND(l);
-#endif
+#endif // DO_SCAN_CONVERSION_SMOOTHING
 
 	} else { // no corresponding radar data, so mark it as using no samples (it retains background colour)
 	  SCVT_NO_IND;
@@ -362,16 +362,6 @@ make_bogus_scan_converter ( t_scan_converter *cvt,
     double x, y;
     // -------------------- INDEX FROM SCRATCH --------------------
 
-    cvt->nr = nr; 
-    cvt->nc = nc; 
-    cvt->w = w;
-    cvt->h = h;
-    cvt->xc = xc;
-    cvt->yc = yc;
-    cvt->x0 = x0;
-    cvt->y0 = y0;
-    cvt->scale = scale;
-
     /* we'll need a list big enough to hold up to 1 input slot index per output slot */
       
     inds_needed = w * h;
@@ -398,7 +388,11 @@ make_bogus_scan_converter ( t_scan_converter *cvt,
 	x = i - xc + 0.5;
 	x_src = nc / 2 + x / scale;
 	if (x_src >= 0 && x_src < nc && y_src >= 0 && y_src < nr)
+#ifdef DO_SCAN_CONVERSION_SMOOTHING
+	  SCVT_IND_LAST(SCVT_EXTRA_PRECISION_FACTOR * (x_src + nc * y_src));
+#else
 	  SCVT_IND(SCVT_EXTRA_PRECISION_FACTOR * (x_src + nc * y_src));
+#endif
 	else
 	  SCVT_NO_IND;
       }
@@ -409,6 +403,7 @@ make_bogus_scan_converter ( t_scan_converter *cvt,
     if (inds_alloc > 2 * num_inds) {
       inds = Realloc(inds, num_inds, int);
       inds_alloc = num_inds;
+      puts("Reallocated inds.\n");
     }
     // update from convenience variables
     cvt->inds = inds;

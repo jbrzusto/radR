@@ -65,6 +65,16 @@ load = function() {
   ## set the location of the path to the hardware files
   Sys.setenv(USRP_PATH = path.to.usrp.hw.files)
 
+  ## FIXME: under windows, manually load required .dlls
+  if (.Platform$OS.type != "unix") {
+    for (f in c("libgcc_s_dw2-1.dll",
+                "libstdc++-6.dll",
+                "libboost_thread-mgw45-mt-1_46_1.dll",
+                "libusrp-3-3-0-0.dll",
+                "usrp_radR_plugin.dll"))
+      rss.dyn.load(f, in.dir.of=plugin.file)
+  }
+  
   rss.dyn.load(MYCLASS, in.dir.of=plugin.file)
   
   ## get the list of known antennas
@@ -127,7 +137,9 @@ get.menus = function() {
                    list(pulses.menu="Choose azimuth resolution in pulses per scan",
                         c(list(option="choose.one",
                                on.set = function(n) {
-                                 config(port, n_pulses = allowed$n_pulses[n])
+                                 if (!okay.to.config())
+                                   return()
+                                 config(port, n_pulses =  n_pulses <<- allowed$n_pulses[n])
                                }
                                ),
                           structure(port$config$n_pulses == allowed$n_pulses,
@@ -142,7 +154,9 @@ get.menus = function() {
                    list(samples.menu="Choose samples per pulse",
                         c(list(option="choose.one",
                                on.set = function(n) {
-                                 config(port, n_samples = allowed$n_samples[n])
+                                 if (!okay.to.config())
+                                   return()
+                                 config(port, n_samples = n_samples <<- allowed$n_samples[n])
                                }
                                ),
                           structure(port$config$n_samples == allowed$n_samples,
@@ -159,7 +173,7 @@ get.menus = function() {
                         c(list(option="choose.one",
                                on.set = function(n) {
                                  ## set the default decim rate
-                                 config(port, decim = allowed$decim[n])
+                                 config(port, decim = decim <<- allowed$decim[n])
                                }
                                ),
                           structure(port$config$decim == allowed$decim,
@@ -176,7 +190,9 @@ get.menus = function() {
                    list(samples.menu="Choose number of sweep buffers to maintain",
                         c(list(option="choose.one",
                                on.set = function(n) {
-                                 config(port, n_bufs = allowed$n_bufs[n])
+                                 if (!okay.to.config())
+                                   return()
+                                 config(port, n_bufs = n_bufs <<- allowed$n_bufs[n])
                                }
                                ),
                           structure(port$config$n_bufs == allowed$n_bufs,
@@ -271,6 +287,18 @@ total.range = function(decim=port$config$decim, n_samples=port$config$n_samples)
   n_samples * range.cell.size(decim) / 1000
 }
 
+## for Windows, calling end_getter from a Tcl callback causes
+## a cascade of errors, so we don't allow configuration changes
+## that would cause this.  This function checks whether that's the case.
+
+okay.to.config = function() {
+  if (.Platform$OS.type == "unix" ||
+          ! inherits(RSS$source, "usrp") ||
+          RSS$play.state < RSS$PS$PLAYING)
+    return (TRUE)
+  rss.gui("POPUP_MESSAGEBOX", "Can't reconfigure", "Please pause or stop play before changing this USRP digitization parameter", time.to.live=15)
+  return (FALSE)
+}
 
 ## methods for the usrp port:
 

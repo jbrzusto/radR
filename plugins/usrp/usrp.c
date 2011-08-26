@@ -159,11 +159,11 @@ shut_down (SEXP usxp)
       break;
     me = (URP) EXTPTR_PTR(usxp);
     rv = URP_shut_down(me);
-    cd = (URP_client_data *) URP_get_client_data (me);
-    if (cd && cd->scan_info_vector) {
-      R_ReleaseObject (cd->scan_info_vector);
-      cd->scan_info_vector = NULL;
-    }
+    /* cd = (URP_client_data *) URP_get_client_data (me); */
+    /* if (cd && cd->scan_info_vector) { */
+    /*   R_ReleaseObject (cd->scan_info_vector); */
+    /*   cd->scan_info_vector = NULL; */
+    /* } */
   } while (0);
   return ScalarInteger(rv);
 }
@@ -346,6 +346,7 @@ R_unload_usrp(DllInfo *info)
     URP_client_data * cd = (URP_client_data *) URP_get_client_data (my_only_usrp);
     if (cd && cd->scan_info_vector) {
       R_ReleaseObject (cd->scan_info_vector);
+      cd->scan_info_vector = 0;
     }
     URP_set_client_data (my_only_usrp, 0);
 

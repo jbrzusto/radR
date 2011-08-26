@@ -1,4 +1,4 @@
-## svn $Id: pointerinfo.conf.R 784 2011-05-05 16:51:11Z john $
+## svn $Id: pointerinfo.conf.R 825 2011-08-26 13:54:50Z john $
 ##                                                         
 ##  POINTERINFO  PLUGIN  CONFIG
 ##                                                         
@@ -58,7 +58,7 @@ auto.clipboard = FALSE
 
 formatter = list ( 
   range.bearing = function (rb) {
-    sprintf("range: true=%7.3f km, ground=%7.3f km\nbearing=%5.1fâ—¦  elev. angle=%4.1fâ—¦", rb[2]/1000, rb[1]/1000, rb[3], RSS$scan.info$antenna.angle[1])
+    sprintf("range: true=%7.3f km, ground=%7.3f km\nbearing=%5.1f°  elev. angle=%4.1f°", rb[2]/1000, rb[1]/1000, rb[3], RSS$scan.info$antenna.angle[1])
   },
 
   spatial = function (xyz, t) {

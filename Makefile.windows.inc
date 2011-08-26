@@ -32,19 +32,20 @@ PLATFORM_TARGETS = $(RADR_BINARY_PACKAGES)
 # 	  mkshortcut --icon radR.ico --name radR$$v --show=min --desc="radR for R version $$v" ./radR$$v.bat; \
 # 	done
 
+PROGFILES:=$(shell if [ -d "/cygdrive/c/Program Files (x86)" ]; then echo "Program Files (x86)"; else echo "Program Files"; fi)
 ## the version of R against which to link the .dlls
 R_VERSION = 2.5.1
-RINC = "-I/Program Files/R/R-$(R_VERSION)/include" 
-RLIB = "-L/Program Files/R/R-$(R_VERSION)/bin" "-L/Program Files/R/R-$(R_VERSION)/src/gnuwin32/" -lR
+RINC = "-I/$(PROGFILES)/R/R-$(R_VERSION)/include" 
+RLIB = "-L/$(PROGFILES)/R/R-$(R_VERSION)/bin" "-L/$(PROGFILES)/R/R-$(R_VERSION)/src/gnuwin32/" -lR
 NM = /usr/bin/nm
-RBINDIR = "/cygdrive/c/Program Files/R/R-$(R_VERSION)/bin"
+RBINDIR = "/cygdrive/c/$(PROGFILES)/R/R-$(R_VERSION)/bin"
 RSRCBINDIR = /usr/src/R-$(R_VERSION)/bin
 R = $(RBINDIR)/Rterm.exe
 RCMD = $(RBINDIR)/Rcmd.exe
 
 TCLTK_INC = -Ic:/cygwin/usr/src/tcl8.4.15/generic -Ic:/cygwin/usr/src/tk8.4.15/generic -Ic:/cygwin/usr/src/tcl8.4.15/win -Ic:/cygwin/usr/src/tk8.4.15/win
-TCLTK_LIB = "/Program Files/R/R-$(R_VERSION)/Tcl/bin/tk84.dll" "/Program Files/R/R-$(R_VERSION)/Tcl/bin/tcl84.dll"
-TCLTK_LIB_PATH = "/Program Files/R/R-$(R_VERSION)/Tcl/bin"
+TCLTK_LIB = "/$(PROGFILES)/R/R-$(R_VERSION)/Tcl/bin/tk84.dll" "/$(PROGFILES)/R/R-$(R_VERSION)/Tcl/bin/tcl84.dll"
+TCLTK_LIB_PATH = "/$(PROGFILES)/R/R-$(R_VERSION)/Tcl/bin"
 ## the following path must be given to compile tcl/tk headers
 ## it is included using the 'idirafter' option so that only the
 ## X11 subdirectory is used

@@ -1,4 +1,4 @@
-//  svn: $Id: runtilt1.1.c 790 2011-05-05 19:18:32Z john $
+//  svn: $Id: runtilt1.1.c 833 2011-08-26 16:54:51Z john $
 
 //  Copyright John Brzustowski 2011.  Distributed under the Boost
 //  Software License, Version 1.0. (See accompanying file
@@ -16,6 +16,11 @@
 #include <ctype.h>
 
 #include "tilter1.1.h"
+
+//kludge:  somehow these are not getting defined via the include 
+
+#define NA_ANGLE -360 // must match value used in state class
+#define NOT_A_DATE_TIME ((double) -1) // must match value used in
 
 /**
  * maximum size of a command, in bytes

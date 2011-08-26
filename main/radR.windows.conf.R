@@ -1,4 +1,4 @@
-## svn $Id: radR.windows.conf.R 574 2010-05-11 02:07:15Z john $
+## svn $Id: radR.windows.conf.R 822 2011-08-26 13:42:36Z john $
 ##
 ##  RADR  CONFIGURATION  FILE
 ##
@@ -29,3 +29,6 @@ plugins.to.load = c("zone", "blipmovie", "antenna", "tracker", "bliptrails", "he
 ## the event loop is installed.  NULL means no startup file
 
 startup.file = "main/startup.windows.R"
+
+## what the null device is called in windows
+null.device = "nul"
