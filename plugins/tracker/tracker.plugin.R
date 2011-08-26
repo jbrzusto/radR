@@ -1,4 +1,4 @@
-##  svn $Id: tracker.plugin.R 764 2011-03-10 19:02:24Z john $
+##  svn $Id: tracker.plugin.R 574 2010-05-11 02:07:15Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
@@ -144,6 +144,10 @@ get.menus = function() {
                 ## enable saving to .CSV
                 switch(n,
                        {
+                         if (v)
+                           open.csv.file()
+                         else
+                           close.csv.file()
                          save.to.csv <<- v
                        }
                        )
@@ -163,7 +167,8 @@ get.menus = function() {
              ## remove any trailing scanfile.ext (escaping the ".")
              if (length(grep("\\.csv$", f)) == 0)
                f <- f %:% ".csv"
-             set.csv.filename(f)
+             csv.filename <<- f
+             open.csv.file()
            }),
          "---",
          "Model",
@@ -255,13 +260,24 @@ enable = function(enab) {
     end.all.tracks()
   } else {
     ## enable the hooks that control the DONE_SCAN hook
-    for (hook in c("ONPLAY", "ONPAUSE", "ONSTOP", "PLOT_CURSOR_MOVED", "DONE_SCAN"))
+    for (hook in c("ONPLAY", "ONPAUSE", "ONSTOP", "PLOT_CURSOR_MOVED"))
       rss.enable.hook(hook, name)
 
     gui.setup()
+    
+    ## open appropriate files and/or init variables
+    
+    if (is.null(all.blips) && !is.null(track.filename))
+      open.track.files()
 
-    if (RSS$play.state >= RSS$PS$PLAYING)
-      ensure.files()  ## in case user enables plugin while already playing
+    if (save.to.csv)
+      open.csv.file(no.gui.update=TRUE)
+
+    ## If the all.blips bigframe was successfully opened,
+    ## enable the DONE_SCAN hook to process each scan.
+    
+    if (!is.null(all.blips))
+      rss.enable.hook("DONE_SCAN", name)
   }
 }
 
@@ -278,55 +294,24 @@ reprocess.scan = function() {
   }
 }
 
-ensure.files = function() {
-  ## ensure the track and csv files are open
-  ## if unable to do so, pop up an error message and pause play
-  rv <- TRUE
-  if (is.null(all.blips))
-    rv <- rv && open.track.files()
-  if (is.null(csv.file) && save.to.csv)
-    rv <- rv && open.csv.file(no.gui.update=TRUE)
-  if (!rv) {
-    rss.gui(POPUP_MESSAGEBOX, "Can't open output files", "The track and/or .CSV output files cannot be opened. Play will be paused - please choose new filenames.")
-    rss.gui(PAUSE_PLAY)
-  }
-}
-
-set.csv.filename = function(f) {
-  ## set the filename for output of track data in .CSV format
-  if (enabled && RSS$play.state >= RSS$PS$PLAYING) {
-    rss.gui(POPUP_MESSAGEBOX, "Sorry! No can do", "If you want to change the .CSV filename, pause or stop play first.")
-    return()
-  }
-  csv.filename <<- f
-  if (!is.null(csv.file))
-    close(csv.file)
-  csv.file <<- NULL
-}
-
 set.track.filename = function(f) {
   ## set the base filename for recording
   ## scan, blip, and track info to f
-  if (enabled && RSS$play.state >= RSS$PS$PLAYING) {
-    rss.gui(POPUP_MESSAGEBOX, "Sorry! No can do", "If you want to change output files, pause or stop play first.")
-    return()
-  }
+  
   end.all.tracks()
   
   ## remove any trailing scanfile.ext (escaping the ".")
   f <- sub("\\" %:% scanfile.ext %:% "$", "", f)
   track.filename <<- f
+  open.track.files()
 }
 
 delete.track.file = function() {
   ## delete all track info from the current bigframe/biglist objects
   ## and re-open them afresh.  Play will behave as if the currently-
   ## previewed scan is the first one.
-  if (enabled && RSS$play.state >= RSS$PS$PLAYING) {
-    rss.gui(POPUP_MESSAGEBOX, "Sorry! No can do", "If you want to delete all current tracks, pause or stop play first.")
-    return()
-  }
   end.all.tracks()
+  open.track.files(overwrite=TRUE)
 }
 
 load = function() {
@@ -378,9 +363,8 @@ unload.models = function(save.config) {
 
 open.csv.file = function(no.gui.update = FALSE) {
   ## open a .csv file for writing tracks
-  ## return TRUE on success, FALSE otherwise
   close.csv.file()
-  if (!is.null(csv.filename) && nchar(csv.filename) > 0) {
+  if (!is.null(csv.filename)) {
     csv.file <<- file(csv.filename, "wt")
     if (!is.null(csv.file)) {
       save.to.csv <<- TRUE
@@ -388,14 +372,12 @@ open.csv.file = function(no.gui.update = FALSE) {
         set.csv.menubutton(1, TRUE)
       cat (csv.file.header, file=csv.file)
       rss.enable.hook(RSS$TRACK_HOOK, name)
-      return (TRUE)
     } else {
       save.to.csv <<- FALSE
       if (!no.gui.update)
         set.csv.menubutton(1, FALSE)
     }
   }
-  return (FALSE)
 }
 
 close.csv.file = function() {
@@ -414,31 +396,21 @@ open.track.files = function (overwrite=TRUE) {
   ## preserved.  overwrite=FALSE will be useful if track building is
   ## stopped at a certain scan and later resumed there, or if
   ## we are opening the files to play back their contents (FIXME: implement this).
-
-  ## return TRUE on success, FALSE on failure
-
-  rv <- TRUE
-  if (!is.null(track.filename) && nchar(track.filename) > 0) {
-    tryCatch({
-      blips <- data.frame(x=double(0), y=double(0), z=double(0), t=double(0), ns=integer(0), area=double(0), int=double(0), max=double(0), aspan=integer(0), rspan=integer(0), perim=double(0), range=double(0), scan=integer(0))
-      ## FIXME: what, if anything, should go in the blips file header? radar geometry?
-      all.blips <<- bigframe(track.filename %:% blipfile.ext, if (overwrite) blips else NULL)
-      all.scans <<- biglist(track.filename %:% scanfile.ext, names=c("timestamp", "tracks", "first.blip", "num.blips"),
-                            overwrite=overwrite)
-      all.tracks<<- biglist(track.filename %:% trackfile.ext, names="points", overwrite=overwrite)
-      ##  for version not using bigframe/biglist:
-      ##        all.blips <<- if (overwrite) blips else NULL
-      ##        all.scans <<- list()
-      ##        all.tracks<<- list()
-      num.tracks <<- 0
-      num.blips <<- 0
-      num.scans <<- 0
-      drop.saved.state()
-    }, error = function(e) { rv <<- FALSE})
-  } else {
-    rv <- FALSE
-  }
-  return (rv)
+  
+  blips <- data.frame(x=double(0), y=double(0), z=double(0), t=double(0), ns=integer(0), area=double(0), int=double(0), max=double(0), aspan=integer(0), rspan=integer(0), perim=double(0), range=double(0), scan=integer(0))
+  ## FIXME: what, if anything, should go in the blips file header? radar geometry?
+  all.blips <<- bigframe(track.filename %:% blipfile.ext, if (overwrite) blips else NULL)
+  all.scans <<- biglist(track.filename %:% scanfile.ext, names=c("timestamp", "tracks", "first.blip", "num.blips"),
+                        overwrite=overwrite)
+  all.tracks<<- biglist(track.filename %:% trackfile.ext, names="points", overwrite=overwrite)
+  ##  for version not using bigframe/biglist:
+  ##        all.blips <<- if (overwrite) blips else NULL
+  ##        all.scans <<- list()
+  ##        all.tracks<<- list()
+  num.tracks <<- 0
+  num.blips <<- 0
+  num.scans <<- 0
+  drop.saved.state()
 }
 
 atid2tid = function(atid) {
@@ -1508,11 +1480,17 @@ hooks = list (
 
   ONPLAY = list (enabled = FALSE, read.only = TRUE,
     f = function(...) {
-      ensure.files()
+      ## if the plugin is disabled, don't do anything
+      if (!enabled)
+        return()
+      enable(TRUE)           
     }),
 
   ONPAUSE = list (enabled = FALSE, read.only = TRUE,
     f = function(...) {
+      ## if the plugin is disabled, don't do anything
+      if (!enabled)
+        return()
 
       ## make sure all data is flushed to disk
       ## if the storage is file-based
@@ -1526,6 +1504,8 @@ hooks = list (
   ONSTOP = list (enabled = FALSE, read.only = TRUE,
     f = function(...) {
       ## if the plugin is disabled, don't do anything
+      if (!enabled)
+        return()
       end.all.tracks()
       close.csv.file()
       drop.saved.state()
@@ -1545,10 +1525,8 @@ hooks = list (
       ## record this track to the CSV file
       ## This hook is only enabled when a valid CSV output file has
       ## been enabled.  Its handle is in csv.file
-      if (save.to.csv) {
-        cat(format.track.for.csv(track, index), file=csv.file)
-        cat("\n", file=csv.file)
-      }
+      cat(format.track.for.csv(track, index), file=csv.file)
+      cat("\n", file=csv.file)
     })
 
   )  ## END OF HOOKS

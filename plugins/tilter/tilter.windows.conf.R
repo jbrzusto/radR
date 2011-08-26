@@ -1,4 +1,4 @@
-## svn: $Id: tilter.windows.conf.R 767 2011-04-06 04:50:06Z john $
+## svn: $Id: tilter.windows.conf.R 785 2011-05-05 17:26:03Z john $
 ##                                                         
 ##    Windows-dependent configuration for the tilter plugin.
 

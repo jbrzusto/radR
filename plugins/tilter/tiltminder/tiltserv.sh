@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# svn: $Id: tiltserv.sh 767 2011-04-06 04:50:06Z john $
+# svn: $Id: tiltserv.sh 785 2011-05-05 17:26:03Z john $
 #
 # Configure the controlling serial port and
 # start the tilter server with realtime priority.

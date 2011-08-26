@@ -1,4 +1,4 @@
-/*  svn $Id: radR.c 665 2010-10-08 17:53:49Z john $
+/*  svn $Id: radR.c 803 2011-06-19 00:42:21Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
     Copyright (C) 2006-2009 John Brzustowski        
@@ -666,12 +666,9 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
   cold_thresh = (int) (REAL(threshsxp)[1] * (1 << T_SCORE_FRACTIONAL_BITS));
 
   for (i = 0; i < n; ++i ) {
-    if (score_buff[i] >= hot_thresh) {
+    if (score_buff[i] >= hot_thresh || score_buff[i] <= cold_thresh) {
       class_buff[i] = CLASS_HOT;
       ++ num_hot_samples;
-    } else if (prev_class_buff[i] == CLASS_BLIP && score_buff[i] >= cold_thresh) {
-      class_buff[i] = CLASS_HOT;
-      ++ num_blip_hot_samples;
     }
   }
 
@@ -798,10 +795,8 @@ radR_calculate_scores (SEXP scansxp, SEXP meansxp, SEXP devsxp, SEXP scoresxp) {
 	    if (*celldev != 0) {
 	      // compute the score with as many fractional bits as required
 	      sample_score = (sample_dev << T_SCORE_FRACTIONAL_BITS) / *celldev;
-	      // if there is no overflow (which we check by comparing the upper 
-	      // bits to all zeroes or all ones), use the result
-	      if ((sample_score & ~T_SCORE_INT_BIT_MASK) == 0 ||
-		  (sample_score & ~T_SCORE_INT_BIT_MASK) == ((-1) & ~T_SCORE_INT_BIT_MASK) ) {
+	      // if there is no overflow, use the result
+	      if (sample_score <= T_SCORE_MAX && sample_score >= T_SCORE_MIN) {
 		score_buff[i] = (t_score) sample_score;
 		break;
 	      }
@@ -1761,6 +1756,7 @@ static void (* old_handler)(void);
 static int old_timeout;
 static int radR_installed = 0;
 static int radR_handler_enabled = FALSE;
+static int radR_handler_entered = FALSE;
 static SEXP radR_handler_expr;
 
 extern void rl_callback_handler_remove(void);
@@ -1774,10 +1770,14 @@ void radR_fix_readline_problem(void) {
 
 static void radRHandler(void)
 {
-  if (radR_handler_enabled && radR_handler_expr)
-    eval(radR_handler_expr, R_GlobalEnv);
-  if (old_handler)
-    old_handler();
+  if (! radR_handler_entered) {
+    radR_handler_entered = TRUE; // don't need a lock since this is all done in a single thread
+    if (radR_handler_enabled && radR_handler_expr)
+      eval(radR_handler_expr, R_GlobalEnv);
+    if (old_handler)
+      old_handler();
+    radR_handler_entered = FALSE;
+  }
 }
 
 SEXP radR_install_handler(SEXP handler_function_name)
@@ -1853,13 +1853,25 @@ radR_process_UI_events(void) {
 SEXP
 radR_sleep(SEXP ms) {
   /* a function that sleeps for ms milliseconds */
+  int mtime = INTEGER(AS_INTEGER(ms))[0];
 #ifdef Win32
-  DWORD mtime;
-  ms = AS_INTEGER(ms);
-  mtime = INTEGER(ms)[0];
-  Sleep(mtime);
+  Sleep((DWORD)mtime);
 #else
-  // do nothing on unix
+  struct timespec desired, remaining;
+  int rv;
+  desired.tv_sec = 0;
+  desired.tv_nsec = 1000000 * mtime;
+  for(;;) {
+    rv = nanosleep(&desired, &remaining);
+    if (!rv)
+      break;
+    if (rv == EINTR) {
+#ifdef RADR_DEBUG
+      puts("nanosleep was interrupted");
+#endif
+    }
+    desired = remaining;
+  }
 #endif
   return R_NilValue;
 }
@@ -2176,7 +2188,7 @@ R_CallMethodDef radR_call_methods[]  = {
   MKREF(radR_alloc_patch_image		, 0),
   MKREF(radR_calculate_scores		, 4),
   MKREF(radR_classify_samples		, 4),
-  MKREF(radR_convert_scan		, 12),
+  MKREF(radR_convert_scan		, 13),
   MKREF(radR_find_patches		, 4),
   MKREF(radR_filter_noise               , 2),
   MKREF(get_active_runbuf               , 1),
@@ -2214,6 +2226,7 @@ R_CallMethodDef radR_call_methods[]  = {
   // symbols exported but which are not intended for .Call, but rather direct
   // use by other shared libraries
   MKREF(radR_attach_image_to_extmat     , 3),
+  MKREF(copy_image_channel_to_extmat    , 4),
   MKREF(radR_image_extmat_changed       , 1),
   MKREF(radR_image_swap_RB              , 1),
   MKREF(first_empty_slot                , 1),

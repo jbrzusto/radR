@@ -1,4 +1,4 @@
-//  svn: $Id: minder.cc 775 2011-04-12 14:49:52Z john $
+//  svn: $Id: minder.cc 785 2011-05-05 17:26:03Z john $
 
 //  Copyright John Brzustowski 2010.  Distributed under the Boost
 //  Software License, Version 1.0. (See accompanying file

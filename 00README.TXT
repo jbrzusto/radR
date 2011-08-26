@@ -1,63 +1,6 @@
- svn: $Id: 00README.TXT 817 2011-08-10 15:04:17Z john $ -*- mode: text; mode: auto-fill -*-
-radR 817  10 Aug 2011
-Various fixes to stable windows version.  
-New ONRESUME_PLAY hook allows resuming play when a live data source
-notices the radar is transmitting again.  Only for XIR3000 so far.
+ svn: $Id: 00README.TXT 654 2010-10-05 12:46:34Z john $ -*- mode: text; mode: auto-fill -*-
 
-radR 777  13 Apr 2011
-
-Fixes to tilter plugin:
-- tiltserv now returns correct angle history
-- learning over a volume pattern no longer bleeds blips from learned
-to unlearned angles
-
-
-radR 772  06 Apr 2011 
-
-The tilter plugin now requires rev 1.1 of the tilter board firmware
-(can be used on both rev 1.0 and rev 2.0 tilter boards).  See notes in
-plugins/tilter/tilter.windows.conf.R for what to do if your TTL5USB9M
-shows up as a COM port above COM9 (which the plugin doesn't support).
-
-
-radR 764  10 Mar 2011
-More bug fixes:
- - tracker:  clean up behaviour around enable/disable, old 
-   filenames that are no longer valid, changing output filenames
-   while playing
-
- - xir3000arch: timestamp fix for REC_TYPE_RLC_4 files; was
-   incorrectly treating components of MS_FILETIME as signed,
-   leading to timestamp inversions
- 
-
-radR 760   8 Mar 2011
-
-Bug fix release, mainly.
-main: try not to kill the event loop on errors.
-
-zone and tracker plugins: deal correctly with no-longer-valid names of
-files stored in configuration, and clean up some edge-case behaviour
-in creating/enabling/disabling the exclusion zone.
-
-rawarch plugin: silently correct archives where the last scan wasn't
-fully written to disk (e.g. due to power outage, or disk full).
-
-xir3000arch plugin: don't accept nonsensical dates
-in .REC files - defer to dates parsed from filenames in that case.
-
-seascanarch plugin: fix a typo that was preventing the faster main
-loop from operating when unpacking 12-bit data into 16-bit integers
-
-genblips: calculate correct time at which target is next seen by radar.
-
-
-radR 656   6 Oct 2010
-
-The xir3000 plugin is now built against RTI SDK 1.5.0.012, which
-is more flexible about the location of XIR3000 firmware.  The minimal
-required subset of the RTI SDK is now distributed as part of radR,
-and is used by default.
+radR 654   5 Oct 2010
 
 The xenexarch plugin, for reading .REC files recorded by Russell
 Technologies software, has been renamed to xir3000arch, and now

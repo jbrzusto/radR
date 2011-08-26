@@ -13,3 +13,4 @@
 #include "radR.h"
 #include "patchify.h"
 #include "radRprot.h"
+#include "radRvars.h"

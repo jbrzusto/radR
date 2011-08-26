@@ -1,4 +1,4 @@
-##  svn $Id: rawarch.plugin.R 751 2011-03-07 18:38:01Z john $
+##  svn $Id: rawarch.plugin.R 574 2010-05-11 02:07:15Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006, 2007, 2008 John Brzustowski        
@@ -379,7 +379,7 @@ verify.rawarch = function(port) {
   
   bl<-biglist(fn)
 
-  toc.ok <- TRUE
+  toc.OK <- TRUE
   if (is.null(bl[[1]]) || class(bl[[1]]) != "list" || !all(c("num.scans", "start.time", "end.time") %in% names(bl[[1]]))) {
     ## The table of contents appears to be missing or corrupt
 
@@ -410,7 +410,7 @@ verify.rawarch = function(port) {
       }
     }
   }
-  if (!toc.ok) {
+  if (!toc.OK) {
     ##
     ## For safety, we assume the last item in the biglist
     ## is corrupt. 
@@ -430,31 +430,28 @@ verify.rawarch = function(port) {
     ## run of scans, because otherwise the TOC record will not
     ## be NULL.
 
-    ## msg <- "The table of contents for file '" %:% fn %:% "' is missing or corrupt."
-    ## rv <- rss.gui(POPUP_DIALOG,
-    ##                   title="Fix RAW table of contents?",
-    ##                   msg=msg %:% "\nShould I try to fix it?",
-    ##                   buttons=c("Yes", "No"))
-    
-    ##     if (rv == 2)
-    ##       stop("rawarch: " %:% msg)
+    msg <- "The table of contents for file '" %:% fn %:% "' is missing or corrupt."
+    rv <- rss.gui(POPUP_DIALOG,
+                  title="Fix RAW table of contents?",
+                  msg=msg %:% "\nShould I try to fix it?",
+                  buttons=c("Yes", "No"))
+
+    if (rv == 2)
+      stop("rawarch: " %:% msg)
     
     n <- floor(length(bl) / 2)
-    first.ent <- bl[[2]]
-    last.ent <- bl[[2 * n - 2]]
-    first.ent <- bl[[2]]
-    last.ent <- bl[[2 * n - 2]]
+
     toc <- list(num.scans = as.integer(n - 1),
-                    start.time = structure(as.integer(first.ent$timestamp), class="POSIXct"),
-                    end.time = structure(as.integer(last.ent$timestamp), class="POSIXct"))
-    ## FIXME: why does this dialogue not accept clicks?
-    ##     rv <- rss.gui(POPUP_DIALOG,
-    ##                   title="Write new table of contents?",
-    ##                   msg="For file '" %:% fn %:% "'\nI've inferred this table of contents:\n" %:% paste(capture.output(toc), collapse="\n") %:% "\nShould I write this to disk?",
-    ##                   buttons=c("Yes", "No"))
-    ##     if (rv == 2)
-    ##       stop("rawarch: " %:% msg)
-    
+                    start.time = structure(as.integer(bl[[2]]$timestamp), class="POSIXct"),
+                    end.time = structure(as.integer(bl[[2 * n - 2]]$timestamp), class="POSIXct"))
+
+    rv <- rss.gui(POPUP_DIALOG,
+                  title="Write new table of contents?",
+                  msg="For file '" %:% fn %:% "'\nI've inferred this table of contents:\n" %:% paste(capture.output(toc), collapse="\n") %:% "\nShould I write this to disk?",
+                  buttons=c("Yes", "No"))
+    if (rv == 2)
+      stop("rawarch: " %:% msg)
+
     if (length(bl) == 2*n + 1)
       bl[[2*n+1]] <- NULL
     bl[[2*n]] <- NULL

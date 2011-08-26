@@ -154,8 +154,8 @@ typedef struct MS_STRUCT_PREFIX {
 
 // the Microsoft filetime structure (as found in cygwin's winbase.h)
 typedef struct _FILETIME {
-        unsigned int dwLowDateTime;
-        unsigned int dwHighDateTime;
+        int dwLowDateTime;
+        int dwHighDateTime;
 } FILETIME,*PFILETIME,*LPFILETIME;
 
 // the extra header for segment types RLC_4 and above
@@ -194,5 +194,5 @@ typedef struct MS_STRUCT_PREFIX {
 
 // interconvert these times (ignoring leap seconds)
 
-#define FILETIME_TO_UTC(FT)  ((((FT).dwLowDateTime + (((unsigned long long) (FT).dwHighDateTime) << 32)) - UTC_FILETIME_ORIGIN_DIFF) / 1E7)
-#define UTC_TO_FILETIME(X, FT) ({* (unsigned long long *) &FT = (unsigned long long) (((X) * 1e7) + UTC_FILETIME_ORIGIN_DIFF);})
+#define FILETIME_TO_UTC(FT)  ((((FT).dwLowDateTime + (((long long) (FT).dwHighDateTime) << 32)) - UTC_FILETIME_ORIGIN_DIFF) / 1E7)
+#define UTC_TO_FILETIME(X, FT) ({* (long long *) &FT = (long long) (((X) * 1e7) + UTC_FILETIME_ORIGIN_DIFF);})

@@ -1,4 +1,4 @@
-##  svn $Id: radRutil.R 757 2011-03-08 18:50:59Z john $
+##  svn $Id: radRutil.R 804 2011-06-19 00:43:41Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
@@ -1375,9 +1375,7 @@ rss.load.plugin <- function(plugin.name, manually=TRUE) {
   ## enable the plugin, if it wants to be
 
   if (identical(TRUE, plugin$enabled))
-    rss.enable.plugin(plugin.name, TRUE)
-  else
-    rss.enable.plugin(plugin.name, FALSE)
+    rss.enable.plugin(plugin.name)
 
   ## tell the GUI
   rss.gui(PLUGIN_LOADED, plugin, manually)
@@ -1387,6 +1385,7 @@ rss.load.plugin <- function(plugin.name, manually=TRUE) {
 
 rss.enable.plugin <- function(plugin.name, enable = TRUE) {
   ## enable this plugin
+  ## i.e. enable all hooks set by this plugin
   
   ## is plugin loaded?
   if (! plugin.name %in% RSS$plugins)
@@ -1979,7 +1978,8 @@ rss.convert.scan <- function(reconv,
                                         show.class,
                                         scan.converter,
                                         geom,
-                                        RSS$scan.info$first.sample.dist / RSS$scan.info$sample.dist
+                                        RSS$scan.info$first.sample.dist / RSS$scan.info$sample.dist,
+                                        isTRUE(RSS$scan.info$is.rectangular)
                             )))
     rss.call.hooks(RSS$POST_SCAN_CONVERT_HOOK)
   }
@@ -1988,8 +1988,8 @@ rss.convert.scan <- function(reconv,
 
 rss.plugin.error <- function(msg) {
   ## a plugin has generated an error
-  ## no reason to handle this any differently, is there?
-  stop(msg)
+  RSS$R.level.error <- RSS$errors$PLUGIN_ERROR
+  RSS$R.level.error.msg <- msg
 }
 
 rss.plot.data.source <- function() {

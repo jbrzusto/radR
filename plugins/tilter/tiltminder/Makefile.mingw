@@ -1,4 +1,4 @@
-# svn: $Id: Makefile.mingw 768 2011-04-06 04:53:28Z john $
+# svn: $Id: Makefile.mingw 785 2011-05-05 17:26:03Z john $
 #
 # for building with GNU/Mingw under Cygwin
 #

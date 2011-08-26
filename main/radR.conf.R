@@ -1,4 +1,4 @@
-## svn $Id: radR.conf.R 809 2011-07-29 14:08:53Z john $
+## svn $Id: radR.conf.R 800 2011-06-18 15:03:25Z john $
 ##
 ##  RADR  CONFIGURATION  FILE
 ##
@@ -71,21 +71,16 @@ restart.learning.after.stop = FALSE
 
 cell.dims = c(4, 4)
 
-## These parameters set the hot and cold thresholds.  A sample is deemed
-## "hot" by having a positive deviation from the mean (for its cell)
-## of more than hot_score times the the mean deviation (for that
-## cell).  This is like a "z-score", but with mean deviation instead
-## of standard deviation, and moving averages rather than sample or
-## population means.  Once a sample has become hot and has been part
-## of a blip, it doesn't have to stay as bright to still be considered
-## "hot"; the required score is the cold score.  This allows blips to
-## persist more than they might otherwise.  The cold threshold
-## is obsolete, now that we have the
-## blip.exclude.blips.from.stats.update parameter to prevent
-## contamination of background estimates with blip data, so
-## we set it equal to the hot threshold, meaning it has no effect.
+## These parameters set the high and low score thresholds.  If a
+## sample has a score higher than the first value, or lower than the
+## second value, it is considered "hot".  For the default radar
+## scenario, we set the low threshold at its maximum negative value,
+## which means we're effectively not using it, so that only higher
+## than normal reflectivity is treated as "hot".  For grayscale video,
+## we're interested in things either brighter or darker than the
+## background, so we'd use something like -2.5 for the low threshold.
 
-blip.score.threshold = c(2.5, 2.5)
+blip.score.threshold = c(2.5, -128)
 
 ## To be called a "blip", a contiguous patch of hot samples must
 ## have an apparent area between the following limits (inclusive)
@@ -309,11 +304,4 @@ blip.filtering.parms = c("blip.samples.minmax",
 #"use.blip.filter.expr", "blip.filter.expr"
 
 other.parms = "user.comment"
-
-## Automatically resume from paused state?
-## For live sources, we can choose to resume from a paused state if we notice the
-## source is generating data again.  This variable says whether to do so:
-
-resume.from.paused.state = TRUE
-
 

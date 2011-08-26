@@ -1,4 +1,4 @@
-/*  svn $Id: scancvt.c 587 2010-05-12 09:18:03Z john $
+/*  svn $Id: scancvt.c 795 2011-05-31 20:09:01Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
     Copyright (C) 2006, 2007, 2008 John Brzustowski        
@@ -292,7 +292,131 @@ make_scan_converter ( t_scan_converter *cvt,
   }
   return (cvt);
 }
-  
+ 
+
+static t_scan_converter*
+make_bogus_scan_converter ( t_scan_converter *cvt, 
+		      int nr,
+		      int nc,
+		      int w,
+		      int h,
+		      int x0,
+		      int y0,
+		      int xc,
+		      int yc,
+		      double scale,
+		      int force_new)
+{
+  // create a bogus scan converter for data that's already cartesian data (e.g. video)
+  // 
+  // cvt:  NULL, or an existing scan converter
+  //       Where possible, we modify the existing scan converter
+  //       rather than generate a new one from scratch.
+  //       
+  // nr, nc: dimensions of the data:  nr rows of nc columns each
+  // w, h: dimensions of output (sub) block
+  // x0, y0: offset of output (sub) block in output buffer
+  // xc, yc: offset of data centre in output buffer (need not 
+  //         be within the output sub block)
+  // scale:  pixels per sample 
+  // force_new: if non-zero, a new scan-converter is always generated
+  //
+  // Returns NULL if the parameters fail a sanity check
+
+  int regen = TRUE;  // do we need a complete regeneration of the scan_converter?
+  int *inds = NULL;  // convenience pointer to the index list
+  int num_inds = 0; // number of indices in list
+  int inds_alloc = 0; // number of indices allocated
+  int inds_needed; // number of indices needed 
+
+  // sanity check
+  if (scale < 1e-5 || scale > 1e5)
+    return NULL;
+
+  if (!cvt) {
+    cvt = Calloc(1, t_scan_converter);
+  } else {
+    // set up convenience variables
+
+    inds = cvt->inds;
+    num_inds = cvt->num_inds;
+    inds_alloc = cvt->inds_alloc;
+
+    if (!force_new &&
+	nr == cvt->nr && 
+	nc == cvt->nc && 
+	w  == cvt->w  && 
+	h  == cvt->h  &&
+	x0 - xc == cvt->x0 - cvt->xc && 
+	y0 - yc == cvt->y0 - cvt->yc &&
+	scale == cvt->scale) {
+
+      regen = FALSE; // no need to regenerate
+    }
+  } 
+
+  if (regen) {
+    int i, j;
+    int ihi, jhi;
+    int x_src, y_src;
+    double x, y;
+    // -------------------- INDEX FROM SCRATCH --------------------
+
+    cvt->nr = nr; 
+    cvt->nc = nc; 
+    cvt->w = w;
+    cvt->h = h;
+    cvt->xc = xc;
+    cvt->yc = yc;
+    cvt->x0 = x0;
+    cvt->y0 = y0;
+    cvt->scale = scale;
+
+    /* we'll need a list big enough to hold up to 1 input slot index per output slot */
+      
+    inds_needed = w * h;
+    if (!inds || num_inds < inds_needed) {
+      if (inds)
+	Free (inds);
+      inds = Calloc(inds_needed, int);
+      if (inds) {
+	inds_alloc = inds_needed;
+      } else {
+	error("Out of memory allocating scan converter.  Try using a smaller plot window.");
+      }
+    }
+
+    num_inds = 0;
+
+    jhi = x0 + h;
+    ihi = y0 + w; 
+
+    for (j = x0; j < jhi; ++j ) {
+      y = j - yc + 0.5;
+      y_src = nr / 2 + y / scale;
+      for (i = y0; i < ihi; ++i) {
+	x = i - xc + 0.5;
+	x_src = nc / 2 + x / scale;
+	if (x_src >= 0 && x_src < nc && y_src >= 0 && y_src < nr)
+	  SCVT_IND(SCVT_EXTRA_PRECISION_FACTOR * (x_src + nc * y_src));
+	else
+	  SCVT_NO_IND;
+      }
+    }
+
+    // if we're using too small a fraction of allocated memory, give the rest back
+    // this fraction is arbitrarily set at 1/2, to avoid too much memory fragmentation
+    if (inds_alloc > 2 * num_inds) {
+      inds = Realloc(inds, num_inds, int);
+      inds_alloc = num_inds;
+    }
+    // update from convenience variables
+    cvt->inds = inds;
+    cvt->inds_alloc = inds_alloc;
+    cvt->num_inds = num_inds;
+  }
+  return (cvt);
+} 
 		     
 static void
 convert_scan(t_sample *samp, 
@@ -417,7 +541,7 @@ radR_free_scan_converter(SEXP cvtsxp) {
 }
 
 SEXP
-radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP scalesxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp) 
+radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP scalesxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp, SEXP isrectangularsxp) 
 {
   // convert polar scan data to a cartesian image
   // geomsxp: integer vector: (x0, y0, w, h) giving offset and size in pixels of subimage to be filled within
@@ -436,6 +560,7 @@ radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEX
   int *show_class;
   int i;
   t_scan_converter *cvt;
+  int is_rectangular;
 
   samp = SEXP_TO_EXTMAT(sampsxp);
   pix = SEXP_TO_EXTMAT(pixsxp);
@@ -456,6 +581,7 @@ radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEX
   w = INTEGER(geomsxp)[2];
   h = INTEGER(geomsxp)[3];
   first_range = REAL(AS_NUMERIC(firstrangesxp))[0];
+  is_rectangular = LOGICAL(AS_LOGICAL(isrectangularsxp))[0];
 
   // make sure the pixel buffer actually contains the specified subimage, and bail if not
   if (x0 < 0 || y0 < 0 || x0 + w > pix->cols || y0 + h > pix->rows)
@@ -467,8 +593,13 @@ radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEX
 
   // create a scan_converter
 
-  if (!(cvt = make_scan_converter (cvt, samp->rows, samp->cols, w, h, x0, y0, xc, yc, scale, rotation, first_range, FALSE)))
-    return R_NilValue;
+  if (is_rectangular) {
+    if (!(cvt = make_bogus_scan_converter (cvt, samp->rows, samp->cols, w, h, x0, y0, xc, yc, scale, FALSE)))
+      return R_NilValue;
+  } else {
+    if (!(cvt = make_scan_converter (cvt, samp->rows, samp->cols, w, h, x0, y0, xc, yc, scale, rotation, first_range, FALSE)))
+      return R_NilValue;
+  }
 
   // if at least one class is visible, actually do the scan conversion
   for (i = 0; i < LENGTH(visiblesxp); ++i) {

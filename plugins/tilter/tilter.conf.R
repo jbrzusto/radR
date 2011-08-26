@@ -1,4 +1,4 @@
-## svn $Id: tilter.conf.R 771 2011-04-06 05:38:39Z john $
+## svn $Id: tilter.conf.R 785 2011-05-05 17:26:03Z john $
 ##
 ##    Configuration for the tilter plugin
 

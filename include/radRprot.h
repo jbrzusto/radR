@@ -68,6 +68,6 @@ void R_unload_radR(DllInfo *info);
 /* random.c */
 SEXP random_bytes(SEXP num);
 /* scancvt.c */
-SEXP radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP scalesxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp);
+SEXP radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP scalesxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp, SEXP isrectangularsxp);
 /* statefun.c */
 void estimate_from_approx(const double *ap, unsigned size, unsigned span, double t_start, double t_step, unsigned n_t, double NA, double *est);

@@ -50,8 +50,8 @@ typedef T_SCORE_INTERMEDIATE_TYPE  t_score_intermediate; // the intermediate typ
                                             // bits than t_score does
 #define T_SCORE_TYPE_SIZE sizeof(T_SCORE_TYPE)                                
 #define T_SCORE_INT_BIT_MASK ((1 << (8 * sizeof(t_score))) - 1)  // if a score is computed as wider integer type, this masks off the useful part
-#define T_SCORE_MIN  ((((unsigned)1) << (8 * sizeof(t_score)    )) - 1)
-#define T_SCORE_MAX  ((((unsigned)1) << (8 * sizeof(t_score) - 1)) - 1)
+#define T_SCORE_MAX  ((t_score_intermediate) ((((unsigned)1) << (8 * sizeof(t_score) - 1)) - 1))
+#define T_SCORE_MIN  (-T_SCORE_MAX - 1)
 #define T_SCORE_SCALE (1.0 / (1 << T_SCORE_FRACTIONAL_BITS))
 
 // a type reflecting the options available to the radR_update_stats function
