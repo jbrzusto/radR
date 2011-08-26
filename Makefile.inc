@@ -103,7 +103,7 @@ $$(PLUGIN_LIB) : $$(PLUGIN_LIB_DEPS)
 	$$(PLUGIN_BUILD_LIB_CMD)
 
 $$(PLUGIN_EXTRA_DIRS) : $$(PLUGIN_LIB)
-	for d in $$(PLUGIN_EXTRA_DIRS); do $$(INSTALL) -d $$$$d $$(MY_INSTALL_DIR)/$$$$d; $$(INSTALL) -D $$$$d/* $$(MY_INSTALL_DIR)/$$$$d; done
+	-for d in $$(PLUGIN_EXTRA_DIRS); do $$(INSTALL) -d $$$$d $$(MY_INSTALL_DIR)/$$$$d; $$(INSTALL) -D $$$$d/* $$(MY_INSTALL_DIR)/$$$$d; done
 endef
 
 ## mark stripped R files as precious so they are not deleted.

@@ -32,6 +32,7 @@ PLATFORM_TARGETS = $(RADR_BINARY_PACKAGES)
 # 	  mkshortcut --icon radR.ico --name radR$$v --show=min --desc="radR for R version $$v" ./radR$$v.bat; \
 # 	done
 
+PROGFILES:=$(shell if [ -d "/cygdrive/c/Program Files (x86)" ]; then echo "Program Files (x86)"; else echo "Program Files"; fi)
 ## the version of R against which to link the .dlls
 R_VERSION = 2.5.1
 RINC = "-I/Program Files/R/R-$(R_VERSION)/include" 

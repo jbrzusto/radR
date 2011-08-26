@@ -270,9 +270,9 @@ make_scan_converter ( t_scan_converter *cvt,
 	  }
 	  // use the central sample, and mark it as the last for this pixel
 	  SCVT_IND_LAST(l);
-#else
+#else  // DO_SCAN_CONVERSION_SMOOTHING
 	  SCVT_IND(l);
-#endif
+#endif // DO_SCAN_CONVERSION_SMOOTHING
 
 	} else { // no corresponding radar data, so mark it as using no samples (it retains background colour)
 	  SCVT_NO_IND;

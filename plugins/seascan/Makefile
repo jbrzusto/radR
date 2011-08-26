@@ -9,7 +9,7 @@ $(eval $(AT_MAKEFILE_START))
 
 ## path to the client library that comes with SeaScan
 ifeq ("$(BUILD_PLATFORM)", "windows")
-SEASCAN_PATH = c:/Program\ Files/Rutter/Sigma\ S6/SeaScanRT
+SEASCAN_PATH = c:/Program\ Files (x86)/Rutter/Sigma\ S6/SeaScanRT
 else
 SEASCAN_PATH = /media/sda1/Program\ Files/Rutter/Sigma\ S6/SeaScanRT
 endif

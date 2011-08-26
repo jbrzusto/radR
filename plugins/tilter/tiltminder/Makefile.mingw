@@ -14,25 +14,27 @@ GCC_OPTS_PRODUCTION := -Wall -O2
 GCC_OPTS := $(GCC_OPTS_$(VERSION)) -DWIN32 -D_WIN32_WINNT=0x501
 
 CYGWIN_PATH_TO_MINGW := /cygdrive/c/Mingw/bin
-GCC := $(CYGWIN_PATH_TO_MINGW)/gcc
+GCC := g++
 
 ## target environment (paths are mingw-style)
 
-MINGW_PATH_TO_BOOST := c:/Program\ Files/Boost-1.41.0
-BOOST_INC_PATH := $(MINGW_PATH_TO_BOOST)/include/boost-1_41
-BOOST_LIB_PATH := $(MINGW_PATH_TO_BOOST)/lib
+MINGW_PATH_TO_BOOST := /MinGW/msys/1.0/local
+BOOST_INC_PATH := $(MINGW_PATH_TO_BOOST)/include/boost-1_46_1
+BOOST_LIB_PATH := /MinGW/msys/1.0/local/lib
 
-BOOST_LIBS := $(BOOST_LIB_PATH)/libboost_thread-mgw34-mt.lib \
-	      $(BOOST_LIB_PATH)/libboost_date_time-mgw34-mt.lib
+BOOST_LIBS := $(BOOST_LIB_PATH)/libboost_thread-mgw45-mt-1_46_1.dll \
+	      $(BOOST_LIB_PATH)/libboost_system-mgw45-mt-1_46_1.dll \
+	      $(BOOST_LIB_PATH)/libboost_date_time-mgw45-mt-1_46_1.dll
 
-STD_LIBS := -lstdc++ -lm
+STD_LIBS := -lstdc++ -lm -lws2_32 -lmswsock -lgcc_eh
 
 LIBS := -L$(BOOST_LIB_PATH) $(BOOST_LIBS) $(STD_LIBS)
 
-SERVER_LIBS := $(BOOST_LIB_PATH)/libboost_thread-mgw34-mt.lib \
-	       $(BOOST_LIB_PATH)/libboost_date_time-mgw34-mt.lib \
-	       $(BOOST_LIB_PATH)/libboost_system-mgw34-mt.lib \
-	 	-lwsock32 -lws2_32 $(STD_LIBS)
+SERVER_LIBS := $(STD_LIBS) \
+	-L$(BOOST_LIB_PATH) \
+	-lboost_date_time-mgw45-mt-1_46_1 \
+	-lboost_system-mgw45-mt-1_46_1 \
+	-lboost_thread-mgw45-mt-1_46_1 
 
 INC := -I$(BOOST_INC_PATH)
 
@@ -52,22 +54,31 @@ tilter1.1.dll:	tilter1.1.cc tilter1.1.h $(MINDER_FILES)
 ## runner linked to shared library
 
 runtilt1.1.exe: runtilt1.1.c tilter1.1.dll
-	$(GCC) $(GCC_OPTS) -o $@ $^ $(LIBS)
+	$(GCC) $(GCC_OPTS) $(INC) -o $@ $^ $(LIBS)
 
 ## runner linked statically with tilter1.1 
 
 runtilt1.1s.exe: runtilt1.1.c tilter1.1.cc tilter1.1.h $(MINDER_FILES)
-	$(GCC) $(GCC_OPTS) $(INC) runtilt1.1.c tilter1.1.cc minderutil.cc -o $@ $(LIBS)
+	$(GCC) $(GCC_OPTS) $(INC) -static runtilt1.1.c tilter1.1.cc minderutil.cc -o $@ $(LIBS)
 
 ## build a server that acts like runtilt but listens on a socket
 
 tiltserv1.1.exe: tiltserv1.1.cc tilter1.1.dll
-	$(GCC) $(GCC_OPTS) $(INC)  $^ -o $@ $(SERVER_LIBS)
+	$(GCC) $(GCC_OPTS) $(INC)  $^ -o $@ $(LIBS)
 
 ## static version of server
 
-tiltserv1.1s.exe: tiltserv1.1.cc tilter1.1.cc tilter1.1.h $(MINDER_FILES)
-	$(GCC) $(GCC_OPTS) $(INC) tiltserv1.1.cc tilter1.1.cc minderutil.cc -o $@ $(SERVER_LIBS)
+tiltserv1.1.o: tiltserv1.1.cc
+	$(GCC) $(GCC_OPTS) $(INC) -c $< -o $@
+
+tilter1.1.o: tilter1.1.cc tilter1.1.h
+	$(GCC) $(GCC_OPTS) $(INC) -c $< -o $@
+
+minderutil.o: minderutil.cc
+	$(GCC) $(GCC_OPTS) $(INC) -c $< -o $@
+
+tiltserv1.1s.exe: tiltserv1.1.cc tilter1.1.cc minderutil.cc minder.cc
+	$(GCC) -static -static-libgcc $(GCC_OPTS) $(INC)  $^ -o $@  $(SERVER_LIBS)
 
 ## do this to greatly reduce file sizes, at the expense of debugging information
 

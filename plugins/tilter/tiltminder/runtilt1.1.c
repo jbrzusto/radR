@@ -17,6 +17,11 @@
 
 #include "tilter1.1.h"
 
+//kludge:  somehow these are not getting defined via the include 
+
+#define NA_ANGLE -360 // must match value used in state class
+#define NOT_A_DATE_TIME ((double) -1) // must match value used in
+
 /**
  * maximum size of a command, in bytes
  * 

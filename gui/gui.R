@@ -2904,7 +2904,7 @@ gui.get.event.list <- function() {
             },
 
             SEEK_SCAN_FWD_REV = function(x) {
-              x <- as.integer(x) / GUI$mousewheel.step
+              x <- - as.integer(x) / GUI$mousewheel.step
               .Tcl(".play.slider set [expr [.play.slider get] +" %:% x %:%"]")
             },
             

@@ -57,7 +57,7 @@ NON_INSTALLED_TARGETS_unix = $(PROTOS)
 
 $(R_BATCH_FILES): radR.bat radRcommon.bat
 	for v in $(SUPPORTED_R_VERSIONS); do\
-	  $(SED) -e "s/__RVERSION__/$$v/g" radR.bat > $(RADR_INSTALL_DIR)/radR$$v.bat; \
+	  $(SED) -b -e "s/__RVERSION__/$$v/g" radR.bat > $(RADR_INSTALL_DIR)/radR$$v.bat; \
 	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/radR$$v.bat; \
 	done
 	$(CP) -f radRcommon.bat $(RADR_INSTALL_DIR)/radRcommon.bat
