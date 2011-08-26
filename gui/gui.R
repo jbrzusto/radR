@@ -1,4 +1,4 @@
-##  svn $Id: gui.R 676 2010-11-04 13:13:14Z john $
+##  svn $Id: gui.R 800 2011-06-18 15:03:25Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
@@ -1184,7 +1184,7 @@ gui.create.blip.window <- function () {
                             short.name = "stats_k")
 
 
-    g.hs <- gui.create.gauge(".blip.stats", "hot score", c(0.0, 10.0),
+    g.hs <- gui.create.gauge(".blip.stats", "hot score threshold high", c(-128, 128),
                            GUI$hotscore.spinner.increment,
                            RSS$blip.score.threshold[1],
                            function(x){
@@ -1194,7 +1194,7 @@ gui.create.blip.window <- function () {
                                              convert.scan = TRUE, is.preview = TRUE)
                            })
     
-    g.cs <- gui.create.gauge(".blip.stats", "cold score", c(0.0, 10.0),
+    g.cs <- gui.create.gauge(".blip.stats", "hot score threshold low", c(-128, 128),
                            GUI$coldscore.spinner.increment,
                            RSS$blip.score.threshold[2],
                            function(x){

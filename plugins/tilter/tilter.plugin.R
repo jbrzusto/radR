@@ -1,4 +1,4 @@
-##  svn: $Id: tilter.plugin.R 787 2011-05-05 17:36:51Z john $
+##  svn: $Id: tilter.plugin.R 786 2011-05-05 17:27:52Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski

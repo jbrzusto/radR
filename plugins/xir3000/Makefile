@@ -81,7 +81,7 @@ PLUGIN_EXTRA_DIRS := SDK SDK/FW
 MAKE_SDK_DIR: FORCE
 	TARGDIR=$$(PWD); \
 	cd $(RTI_SDK_DIR)/Release; \
-	for f in $(REQUIRED_SDK_FILES); do /bin/cp "$$f" "$$TARGDIR/SDK/$$f"; done
+	for f in $(REQUIRED_SDK_FILES); do cp "$$f" "$$TARGDIR/SDK/$$f"; done
 
 $(eval $(AT_MAKEFILE_END))
 

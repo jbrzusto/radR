@@ -1,4 +1,4 @@
-/*  svn $Id: xir3000.c 813 2011-07-29 17:40:23Z john $
+/*  svn $Id: xir3000.c 647 2010-10-05 02:12:32Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
     Copyright (C) 2006-2010 John Brzustowski        
@@ -73,29 +73,17 @@ init_device_info() {
     
 SEXP
 end_of_data() {
-
-  // try to detect a shutdown of A/D conversion or the radar itself on
-  // this port returning TRUE if the appropriate situation is
-  // detected, and FALSE otherwise
+  // try to detect a shutdown of A/D conversion on this port
+  // returning TRUE if the appropriate situation is detected,
+  // and FALSE otherwise
 
   STANDBY_MODE standby;
-  BOOL trigger_status;
-  BOOL bp_status;
-  BOOL shm_status;
-
-  // Amazingly, the way we hook up the Decca Bridgemaster E continues to provide
-  // trigger and azimuth signals even when the radar is on standby and not
-  // rotating, so we check the heading marker as well.  Presumably, this is also
-  // how the CSAPI_* functions figure out that there is no more data.
 
   if (!me.is_running)
     RETBOOL(TRUE);
 
-  CS(GetTriggerStatus, me.h, &trigger_status);
-  CS(GetBearingPulseStatus, me.h, &bp_status);
-  CS(GetShipHeadingMarkerStatus, me.h, &shm_status);
   CSE(GetStandByMode, me.h, &standby);
-  RETBOOL((int) standby == STANDBY_ON || ! (trigger_status && bp_status && shm_status));
+  RETBOOL((int) standby == STANDBY_ON);
 }
 
 SEXP
@@ -244,7 +232,7 @@ get_scan_thread (void *vp) {
     } // continue getting pulses for this sweep
 
     // estimate the scan duration by waiting until we have
-    // a new sweep time (indicated by a calculated duration > 0)
+    // a new sweep time (indicated by a calculated duration > 0
 
     for (j = 0; j < NUM_STARTTIME_ESTIMATE_TRIES; ++j) {
       CSQ(GetTimeOfSweep, h, & ts, & ts_vp);

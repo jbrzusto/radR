@@ -30,7 +30,7 @@ get.menus = function() {
                 show[[n]] <<- s
                 rss.gui(SET_PLOT_CURSOR, if (any(show)) "arrow" else "hand2")
               },
-              "Range and bearing"   = show$range.bearing,
+              "Range, bearing, elevation angle"   = show$range.bearing,
               "Spatial coordinates" = show$spatial.coords,
               "Sample details"      = show$sample.details,
               "Cell statistics"     = show$cell.stats,

@@ -480,10 +480,9 @@ verify.blipmovie = function(port) {
 
   toc <- bl[[1]]
 
-  if (!identical(names(toc), c("start.time", "end.time", "num.scans", "first.slot"))) {
+  if (is.null(toc)) {
     toc <- empty.TOC
     first.slot <- 2
-    nrun <- 0
   } else {
     ## check whether the last TOC entry is correct
     nrun <- dim(toc)[1]

@@ -113,6 +113,58 @@ radR_attach_image_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp) {
   return matsxp;
 }
 
+SEXP
+copy_image_channel_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp, SEXP chansxp) {
+  // copy grayscal values attach tcl's 32bpp RGB image pixel storage to an existing extmat
+  // the extmat's type is changed to short, and the channel data will be copied to the
+  // low order 8 bits of each word, in row major order
+  //
+  // name:      character vector, tcl name of the image
+  // tclinterp: integer vector, pointer to the tcl interpreter
+  //            as returned by get_tcl_interp
+  // matsxp:    an extmat, e.g. as returned by R function extmat()
+  // chansxp:   an integer representing channel: red=0, green=1, blue=2, alpha=3 (on a little-endian machine)
+  //
+  // Frees any existing storage belonging to the extmat.
+  // Does not set a "changed" handler
+  
+  Tk_PhotoHandle ph;
+  Tk_PhotoImageBlock pib;
+  Tcl_Interp *my_tcl = (Tcl_Interp*) INTEGER(tclinterp)[0];
+  t_extmat *m = SEXP_TO_EXTMAT(matsxp);
+  unsigned int i;
+  unsigned int n;
+  unsigned char *src;
+  unsigned short *dst;
+  int chan_offset = INTEGER(AS_INTEGER(chansxp))[0];
+  
+  ph = Tk_FindPhoto(my_tcl, CHAR(STRING_ELT(name, 0)));
+  Tk_PhotoGetImage(ph, &pib);
+
+  // set up the extmat metadata
+
+  if (! m->R_owns_storage) {
+    m->ptr = NULL;
+  }
+  m->R_owns_storage = 1;
+  m->changed_fun = m->changed_fun_extra = NULL;
+  m->type = EXTMAT_TYPE_SHORT;
+  m->size = EXTMAT_TYPE_SHORT_SIZE;
+  (*pensure_extmat) (m, pib.height, pib.width);
+
+  // now copy the desired channel
+
+  dst = (unsigned short *) m->ptr;
+  src = ((unsigned char *) pib.pixelPtr) + chan_offset;
+  n = pib.height * pib.width;
+  for (i = 0; i < n; ++i) {
+    *dst++ = (unsigned short) (*src);
+    src += 4;
+  }
+
+  return matsxp;
+}
+
 void
 do_image_extmat_changed (t_extmat *m, int x, int y, int width, int height, int imgWidth, int imgHeight) {
   XRectangle rect;

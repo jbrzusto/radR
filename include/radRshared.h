@@ -36,8 +36,8 @@
 #define T_FRAME_CELL_TYPE int 		// the type used to store accumulated stats for sample cells
 
 #define T_SCORE_TYPE short 		// the type used to store z-score for a sample; this is scaled by 2 << T_SCORE_FRACTIONAL_BITS
-#define T_SCORE_BITS_USED 16    	// how many fractional bits of T_SCORE_TYPE are used (including fractional ones)
-#define T_SCORE_FRACTIONAL_BITS 10   	// how many fractional bits in the fixed point z-score representation
+#define T_SCORE_BITS_USED 16    	// how many bits of T_SCORE_TYPE are used (including fractional ones)
+#define T_SCORE_FRACTIONAL_BITS 8   	// how many fractional bits in the fixed point z-score representation
 #define T_SCORE_INTERMEDIATE_TYPE int 	// the intermediate type used to calculate the score
                                         // this must hold at least T_SCORE_FRACTIONAL_BITS more
                                         // bits than t_score does
@@ -101,30 +101,29 @@
 #define RADR_HOOK_ONPLAY                         15
 #define RADR_HOOK_ONPLAY_CTS                     16
 #define RADR_HOOK_ONPLAY_ONE                     17
-#define RADR_HOOK_ONRESUME_PLAY                  18
-#define RADR_HOOK_ONSTOP                         19
-#define RADR_HOOK_PAINT_BACKGROUND               20
-#define RADR_HOOK_PATCH                          21
-#define RADR_HOOK_PATCH_STATS                    22
-#define RADR_HOOK_PLOT_CURSOR_MOVED              23
-#define RADR_HOOK_PLOT_PANNED                    24
-#define RADR_HOOK_PLOT_ROTATED                   25
-#define RADR_HOOK_PLOT_ZOOMED                    26
-#define RADR_HOOK_POST_SCAN_CONVERT              27
-#define RADR_HOOK_POST_STATS                     28
-#define RADR_HOOK_PRE_GET_SCAN                   29
-#define RADR_HOOK_PRE_PROCESS                    30
-#define RADR_HOOK_PRE_SCAN_CONVERT               31
-#define RADR_HOOK_PRE_STATS                      32
-#define RADR_HOOK_PUT_SCAN_DATA                  33
-#define RADR_HOOK_RAW_BLIPS                      34
-#define RADR_HOOK_RESTART_LEARNING               35
-#define RADR_HOOK_SCAN_INFO                      36
-#define RADR_HOOK_SCAN_ROW                       37
-#define RADR_HOOK_SCORES                         38
-#define RADR_HOOK_START_SINK                     39
-#define RADR_HOOK_START_SOURCE                   40
-#define RADR_HOOK_STATS                          41
-#define RADR_HOOK_TK_PLOT_MODE                   42
-#define RADR_HOOK_TRACK                          43
-#define RADR_HOOK_UPDATE_PARMS                   44
+#define RADR_HOOK_ONSTOP                         18
+#define RADR_HOOK_PAINT_BACKGROUND               19
+#define RADR_HOOK_PATCH                          20
+#define RADR_HOOK_PATCH_STATS                    21
+#define RADR_HOOK_PLOT_CURSOR_MOVED              22
+#define RADR_HOOK_PLOT_PANNED                    23
+#define RADR_HOOK_PLOT_ROTATED                   24
+#define RADR_HOOK_PLOT_ZOOMED                    25
+#define RADR_HOOK_POST_SCAN_CONVERT              26
+#define RADR_HOOK_POST_STATS                     27
+#define RADR_HOOK_PRE_GET_SCAN                   28
+#define RADR_HOOK_PRE_PROCESS                    29
+#define RADR_HOOK_PRE_SCAN_CONVERT               30
+#define RADR_HOOK_PRE_STATS                      31
+#define RADR_HOOK_PUT_SCAN_DATA                  32
+#define RADR_HOOK_RAW_BLIPS                      33
+#define RADR_HOOK_RESTART_LEARNING               34
+#define RADR_HOOK_SCAN_INFO                      35
+#define RADR_HOOK_SCAN_ROW                       36
+#define RADR_HOOK_SCORES                         37
+#define RADR_HOOK_START_SINK                     38
+#define RADR_HOOK_START_SOURCE                   39
+#define RADR_HOOK_STATS                          40
+#define RADR_HOOK_TK_PLOT_MODE                   41
+#define RADR_HOOK_TRACK                          42
+#define RADR_HOOK_UPDATE_PARMS                   43

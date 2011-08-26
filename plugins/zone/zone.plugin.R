@@ -1,4 +1,4 @@
-##  svn $Id: zone.plugin.R 759 2011-03-08 19:32:04Z john $
+##  svn $Id: zone.plugin.R 626 2010-07-17 00:03:27Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
@@ -166,10 +166,8 @@ get.menus = function() {
                 title = "Choose a zone file", 
                 file.types = file.types.list,
                 on.set = function(f) {
-                  if (length(f) > 0 && nchar(f[1]) > 0) {
-                    load.zones(f)
-                    do.update()
-                  }
+                  load.zones(f)
+                  do.update()
                 },
                 init.file = function () zones.file
                 ),
@@ -226,13 +224,13 @@ do.update = function() {
   ## update the current preview to take into account zone changes
   if (RSS$play.state < RSS$PS$PLAYING) {
     update.zones()
-    if ( ! isTRUE(zones$exclusion$enabled))
-      reset.excluded(RSS$class.mat)
     rss.process.scan(put.scan = FALSE,
                      calculate.scores = FALSE,
                      convert.scan = TRUE,
                      is.preview = TRUE)
   }
+  if ( ! isTRUE(zones$exclusion$enabled))
+    reset.excluded(RSS$class.mat)
 }
 
 enable.zones = function(which = TRUE, enable=TRUE) {
@@ -298,9 +296,8 @@ rename.zone = function(old.id) {
   }
 }  
 
-load.zones = function(f, ignore=FALSE) {
+load.zones = function(f) {
   ## load zones from the file f
-  ## ignore file-not-found if ignore is TRUE
   ok <- FALSE
   if (file.exists(f)) {
     e <- new.env()
@@ -330,14 +327,11 @@ load.zones = function(f, ignore=FALSE) {
     }
   }
   if (ok) {
-    enable(TRUE)
     show.zones(zones %$0% visible)
     zones.file <<- f
     sync.patchstats.hook()
   } else {
-    enable(FALSE)
-    if (!ignore)
-      rss.plugin.error("unable to load zones from file " %:% f)
+    rss.plugin.error("unable to load zones from file " %:% f)
   }
 }
 
@@ -375,7 +369,7 @@ create.new.zone = function() {
 
   if (is.null(id))
     return()
-
+  
   ## create a new zone near the middle of the current plot window
   ## i.e. whose "bounding box" is the middle third of the plot in both x and y
 
@@ -390,9 +384,7 @@ create.new.zone = function() {
   copy.current.zoneable.pars(id)
   
   exclusion.to.first()
-
-  enable(TRUE)
-
+  
   show.zone.with.id(id)
 }
 
@@ -606,7 +598,7 @@ delete.zone = function(zone) {
 
 load = function() {
   rss.dyn.load(MYCLASS, in.dir.of=plugin.file)
-  load.zones(zones.file, ignore=TRUE)
+  load.zones(zones.file)
   patch.zone.index <<- extmat("patch zone index", type="int", dim=c(10, 1))
 }
 
@@ -618,14 +610,13 @@ unload = function(save.config) {
   rss.dyn.unload(MYCLASS)
 }
 
-sync.patchstats.hook = function() {
+sync.patchstats.hook <- function() {
   ## enable the patchstats hook if necessary
   rss.enable.hook("PATCH_STATS", MYCLASS, enabled && any(zones %$0% enabled))
 }
 
 enable = function(enab) {
   enabled <<- enab
-  enab <- enab && !is.null(zones)
   for (h in c("GET_SCAN_INFO", "CLASSIFY", "PRE_SCAN_CONVERT", "PLOT_CURSOR_MOVED"))
     rss.enable.hook(h, MYCLASS, enab)
   rss.enable.hook("FULL_SCAN", MYCLASS, enab && zero.exclusion)

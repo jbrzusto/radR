@@ -101,7 +101,7 @@ typedef struct scan_converter_struct {
 // FORWARD DECLARATIONS
 
 SEXP
-radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP ppssxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp);
+radR_convert_scan(SEXP sampsxp, SEXP pixsxp, SEXP classsxp, SEXP palettesxp, SEXP centresxp, SEXP ppssxp, SEXP rotsxp, SEXP bitshiftsxp, SEXP visiblesxp, SEXP cvtsxp, SEXP geomsxp, SEXP firstrangesxp, SEXP isrectangularsxp);
 
 #ifdef DO_ALPHA_BLENDING
 /*
