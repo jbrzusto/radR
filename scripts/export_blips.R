@@ -86,7 +86,7 @@ retain.blip.at.sample.pulse <- function(sp) {
 }
 
 retain.blip.at.pointer <- function() {
-  retain.blip.at.sample.pulse(gui.plot.coords.to.sample.pulse(GUI$last.pointer.coords))
+  retain.blip.at.sample.pulse(GUI$tx.plot.to.matrix(GUI$last.pointer.coords))
 }
 
 save.retained.blips <- function() {

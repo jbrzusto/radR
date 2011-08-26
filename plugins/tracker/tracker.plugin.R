@@ -712,7 +712,7 @@ gui.track.started = function(track, tid = track$index, state=track$state) {
   ## return the gui id of the new canvas item, or NULL if it is not created
   ## we transpose and c() to get coordinates in X1, Y1, X2, Y2, ... order
 
-  blip.coords <- c(t(gui.xy.to.plot.coords(as.matrix(all.blips[track$points, COL.X:COL.Y]))))
+  blip.coords <- c(t(GUI$tx..xy.to.plot(as.matrix(all.blips[track$points, COL.X:COL.Y]))))
 
   ## if this is a nascent track, replace coords with the nascent track symbol
 
@@ -759,9 +759,9 @@ gui.blip.added.to.track = function(track) {
     ## set the state to active
     gui.tracks$state[gid] <<- TS.ACTIVE
     ## get the coordinates of all points
-    blip.coords <- t(gui.xy.to.plot.coords(as.matrix(all.blips[track$points, COL.X:COL.Y])))
+    blip.coords <- t(GUI$tx.xy.to.plot(as.matrix(all.blips[track$points, COL.X:COL.Y])))
   } else {
-    blip.coords <- gui.xy.to.plot.coords(as.matrix(all.blips[track$points[np], COL.X:COL.Y]))
+    blip.coords <- GUI$tx.xy.to.plot(as.matrix(all.blips[track$points[np], COL.X:COL.Y]))
   }
   tcl(GUI$plot, "insert", tkid, "end", paste(blip.coords, collapse=" "))
   gui.tracks$np[gid] <<- np

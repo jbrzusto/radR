@@ -22,7 +22,7 @@
 library("rgl")
 
 gui.current.patch <- function() {
-  xy <- rss.patch.at.sample.pulse(gui.plot.coords.to.sample.pulse(GUI$last.pointer.coords))
+  xy <- rss.patch.at.sample.pulse(GUI$tx.plot.to.matrix(GUI$last.pointer.coords))
   cbind(xy, RSS$scan.mat[xy])
 } 
                                                                   
@@ -64,7 +64,7 @@ blip.3d <- function(coords=NULL, sp=NULL, append=FALSE) {
 
 this.blip.3d <- function(append=FALSE) {
   ## plot the blip at the most recent pointer coordinates
-  blip.3d(gui.plot.coords.to.sample.pulse(GUI$last.pointer.coords), append=append)
+  blip.3d(GUI$tx.plot.to.matrix(GUI$last.pointer.coords), append=append)
 }
 
 ## Control-b in the plot window will make a 3d plot of the blip

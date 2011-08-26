@@ -742,9 +742,9 @@ gui.show.pointer.info <- function(plot.coords = GUI$last.pointer.coords)
     ## the cursor location.  The second element is text to be copied to
     ## the clipboard.  Elements that are empty strings are ignored.
 
-    spatial.coords <- gui.plot.coords.to.spatial(plot.coords)
+    spatial.coords <- GUI$tx.plot.to.spatial(plot.coords)
     if (RSS$have.valid$bitmap && RSS$have.valid$scan.data) {
-      sample.coords <- gui.plot.coords.to.sample.pulse(plot.coords)
+      sample.coords <- GUI$tx.plot.to.matrix(plot.coords)
       cell.coords <- 1 + floor((sample.coords - 1) / RSS$cell.dims)
     } else {
       sample.coords <- NULL
@@ -2122,6 +2122,10 @@ GUI.init <- function() {
                      play.num.scans                = 0,
                      play.start.time               = NULL,
                      plot                          = ".plot.frame.canvas", ## tk name of plot canvas
+                     tx.plot.to.spatial            = NULL,  ## coordinate transforms
+                     tx.plot.to.matrix             = NULL,
+                     tx.xy.to.plot                 = NULL,
+                     tx.xyz.to.plot                = NULL,
                      plot.dim                      = NULL,
                      plot.image.name               = "::img::plot",  ## name of image for tk plot
                      prev.plot.geom                = list(),  ## for saving plot geometry when switching between tk and native modes
@@ -2133,6 +2137,9 @@ GUI.init <- function() {
 
                      PARENT = .GlobalEnv
                      )
+  
+  ## set default coordinate transforms
+  gui.set.coord.tx()
 
   ## append configuration information
   
@@ -2791,7 +2798,7 @@ gui.get.event.list <- function() {
             },
 
             DRAG_RANGE_RINGS = function(x, y) {
-              radius <- gui.plot.coords.to.spatial(as.integer(c(x, y)))$rb[1]
+              radius <- GUI$tx.plot.to.spatial(as.integer(c(x, y)))$rb[1]
               delta <- tclreal(".pctl.rangeringslider.spin", "cget", "-increment")
               tcl(".pctl.rangeringslider.spin", "set", max(delta, round(radius / (max(1, min(GUI$num.range.rings, round(radius / GUI$range.ring.spacing)))) + delta)))
               tcl(".pctl.rangeringslider.spin", "invoke", "buttondown")
@@ -2913,7 +2920,7 @@ gui.get.event.list <- function() {
             },
 
             MARK_PLOT_POINT = function(x, y) {
-              rss.call.hooks(RSS$MARK_PLOT_POINT_HOOK, gui.plot.coords.to.spatial(as.integer(c(x, y))))
+              rss.call.hooks(RSS$MARK_PLOT_POINT_HOOK, GUI$tx.plot.to.spatial(as.integer(c(x, y))))
             },
               
             ## a do-nothing event (for effectively deleting tcl default bindings)

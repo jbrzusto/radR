@@ -134,7 +134,7 @@ draw.zone = function(canvas, zone) {
   a[[2]] <- a[[1]] + zone$a[[2]] * (pi / 180)
              
 
-  org <- c(gui.xy.to.plot.coords(t(zone$.origin)))
+  org <- c(GUI$tx.xy.to.plot(t(zone$.origin)))
   ## control point coordinates
   ## notice that the screen y-axis increases downward
   p <- list()
@@ -289,7 +289,7 @@ drag.zone = function(pc, ...) {
   if (is.null(info <- item.info.zone(canvas, zone)))
     return(NULL)
   if (isTRUE(zone$.edit)) {
-    org <- c(gui.xy.to.plot.coords(t(zone$.origin)))
+    org <- c(GUI$tx.xy.to.plot(t(zone$.origin)))
     relpos <- pc - org
     relstart <- zone$.start.pos - org
 
@@ -388,7 +388,7 @@ quit.zone = function(canvas, zone, cancel=FALSE) {
 handle.context.menu.zone = function() {
   ## handler for the zone context menu; its environment contains canvas, zone, what, segno
 
-  relpos <- pos - c(gui.xy.to.plot.coords(t(zone$.origin)))
+  relpos <- pos - c(GUI$tx.xy.to.plot(t(zone$.origin)))
   imin <- 1 + (zone$r[[2]][segno] < zone$r[[1]][segno])
   imax <- 3 - imin
   rhere <- sqrt(sum(relpos^2)) * zone$.geom()$mpp

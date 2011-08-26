@@ -665,7 +665,7 @@ gui.show.busy <- function(busy = TRUE) {
   ## DO NOTHING - this is just annoying
 }
 
-gui.plot.coords.to.sample.pulse <- function(coords) {
+gui.tx.plot.to.matrix <- function(coords) {
   ## convert xy coordinates in the plot window
   ## to row/column coordinates in the raw data
   ## i.e. to pulse number / sample number
@@ -683,7 +683,7 @@ gui.plot.coords.to.sample.pulse <- function(coords) {
   return (if (is.matrix(coords)) rv else c(rv))
 }
 
-gui.plot.coords.to.spatial <- function(coords) {
+gui.tx.plot.to.spatial <- function(coords) {
   ## given plot coordinates coords (pixels in the x and y directions)
   ## return a two element list:
   ## rv$rb: a ground range, axial range, bearing vector (metres, metres, degrees)
@@ -711,7 +711,7 @@ gui.plot.coords.to.spatial <- function(coords) {
   return(list(rb=c(ground.range, axial.range, bearing), xyz=c(ground.range * cos(theta), ground.range * sin(theta), z), t=time))
 }
 
-gui.xyz.to.plot.coords <- function(xyz) {
+gui.tx.xyz.to.plot <- function(xyz) {
 
   ## xyz: an n x 3 matrix of spatial x, y, z coordinates (in metres
   ## East, North, Up, relative to the radar)
@@ -728,7 +728,7 @@ gui.xyz.to.plot.coords <- function(xyz) {
   return(cbind(GUI$plot.origin[1] + planar.range * cos(theta), GUI$plot.origin[2] - planar.range * sin(theta)))
 }
 
-gui.xy.to.plot.coords <- function(xy) {
+gui.tx.xy.to.plot <- function(xy) {
 
   ## xy: an n x 2 matrix of planar spatial x, y coordinates (in metres
   ## East, North, relative to the radar)
@@ -1511,4 +1511,14 @@ gui.state.has.key <- function(s, k) {
   return(as.logical(intToBits(as.integer(s))[GUI$motion.state.key.bits[[k]]]))
 }
   
-  
+gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.to.plot = NULL, xyz.to.plot = NULL) {
+  ## set the coordinate transforms; this might be called by the start.up and shut.down
+  ## methods of a data source in order to implement a different coordinate system
+  ## A NULL value for any parameter means to use the built-in default
+
+  GUI$tx.plot.to.matrix <- if (is.null(plot.to.matrix)) gui.tx.plot.to.matrix else plot.to.matrix
+  GUI$tx.plot.to.spatial <- if (is.null(plot.to.spatial)) gui.tx.plot.to.spatial else plot.to.spatial
+  GUI$tx.xy.to.plot <- if (is.null(xy.to.plot)) gui.tx.xy.to.plot else xy.to.plot
+  GUI$tx.xyz.to.plot <- if (is.null(xyz.to.plot)) gui.tx.xyz.to.plot else xyz.to.plot
+}
+
