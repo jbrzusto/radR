@@ -1,0 +1,102 @@
+               -*- mode: text; mode: auto-fill -*-
+
+Notes and quirks of radR:
+
+- xenex plugin: to use the XIR3000C (USB radar board) it appears that
+  the following files need to be copied
+
+  into the R bin directory (e.g. c:\Program Files\R\R-2.5.1\bin):
+  - usbvpfull*.cfg (binary antenna config files)
+  - FW (folder with firmware)
+  - *.CNF (user antenna config files)
+  Otherwise, symptoms such as inability to open the USB radar source
+  or a message saying "radar does not appear to be running" will arise.
+
+- when debugging under windows, make sure PATH includes c:/Program
+  Files/R/R-x.y.z/Tcl/bin before /bin, otherwise the cygwin tk library
+  is loaded, instead of the mingw tk library, and this hangs.  Also,
+  if using the cygwin debugger, make sure to set TEMP=c:/cygwin/tmp
+
+- options()$error == NULL in the radR console window, because the
+usual radR error handler is temporarily disabled when evaluating
+expressions from the console.
+
+- in the ungated SeaScan archives from Tadoussac sent to us by Melanie,
+every 4th or 5th raw sample row seems not to correspond to an actual
+radar pulse - the data fluctuate around background level.  This leads
+to an ugly and uninformative patter of scattered black radial lines
+as part of the scan, as can be seen by playing back the archive through
+seascan and viewing it with, e.g. SEASCANRCU (or is it SU4000.exe?)
+This is best seen with pulse filtering and scan conversion both turned off.
+
+- tcltk "bug": an infinite sequence of Enter/Leave events triggered by
+  adding arrowheads to a canvas line item during an Enter event
+  handler, as demonstrated by the following (try it in wish)
+
+    canvas .c
+    .c create line 10 10 100 100 -fill black -tags myline
+    pack .c
+    .c bind myline <Leave> {puts {.c bbox myline}; .c itemconfigure myline -arrow none; puts Leaving;puts {.c bbox myline}}
+    .c bind myline <Enter> {puts {.c bbox myline}; .c itemconfigure myline -arrow both; puts Entering;puts {.c bbox myline}}
+
+  # Now mouse around one of the line endpoints; 
+  # the highlighting will stop, and the print output
+  # shows an infinite sequence of mutually triggering
+  # Enter and Leave events.=======
+
+- tcltk bug:  an infinite sequence of Enter/Leave events triggered by
+  adding arrowheads to a canvas line item during an Enter event
+  handler, as demonstrated by the following (try it in wish)
+
+  Here's a copy of my bug report for future reference:
+================================================================================
+For Tk toolkit
+Section 0.5 Canvas items
+
+Summary:
+arrow reconfig triggers infinite Enter/Leave event sequence
+
+Detailed description:
+Submitted by John Brzustowski 
+jbrzusto@fastmail.fm
+
+VERSIONS/PLATFORMS
+  Tk 8.4.13 on linux 2.6.13
+  Tk 8.4.13 and 8.4.1 on cygwin 1.5.23, Windows XP
+
+SUMMARY
+If a canvas line item has its Enter/Leave events bound to handlers that configure arrows on and off, then triggering the handlers from some screen locations leads to an infinite sequence of mutually triggering Enter/Leave events.  See "PATCH" below for
+where in the Tk code the problem lies.
+
+EXAMPLE
+canvas .c
+.c create line 10 10 100 100 -fill black -tags myline
+pack .c
+.c bind myline <Leave> {.c itemconfigure myline -arrow none; puts Leaving}
+.c bind myline <Enter> {.c itemconfigure myline -arrow both; puts Entering}
+
+If you mouse around one of the line endpoints enough,
+you'll lock up event processing and the print output   
+will show an infinite sequence of 
+mutually triggering Enter and Leave events.
+(On Windows, the print output does not appear during the lockup.)
+
+I can understand how *adding* arrows could trigger an Enter event, since the line item is being enlarged, possibly to include the previously excluded pointer position.
+However, I can't see why adding arrows should trigger a Leave event, nor why removing them should trigger an Enter event (at least on the line item itself).
+
+PATCH
+The following patch removes the problem.  However, I don't understand the rationale for the code as originally written, therefore I'm not recommending this as a fix - it needs more thought.
+
+diff generic/tkCanvLine.c generic/mytkCanvLine.c
+2175,2176c2175,2176
+< 	linePtr->coordPtr[0] = poly[0] - backup*cosTheta;
+< 	linePtr->coordPtr[1] = poly[1] - backup*sinTheta;
+---
+> 	linePtr->coordPtr[0] = poly[0];
+> 	linePtr->coordPtr[1] = poly[1];
+2214,2215c2214,2215
+< 	coordPtr[2] = poly[0] - backup*cosTheta;
+< 	coordPtr[3] = poly[1] - backup*sinTheta;
+---
+> 	coordPtr[2] = poly[0];
+> 	coordPtr[3] = poly[1];

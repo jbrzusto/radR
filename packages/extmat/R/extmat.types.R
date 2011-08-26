@@ -1,0 +1,11 @@
+extmat.types <- c("char"               = 1,
+                  "unsigned char"      = 2,
+                  "short"              = 3,
+                  "unsigned short"     = 4,
+                  "int"                = 5,
+                  "unsigned int"       = 6,
+                  "long long"          = 7,
+                  "unsigned long long" = 8,
+                  "float"              = 9,
+                  "double"             = 10,
+                  "user"               = 11)

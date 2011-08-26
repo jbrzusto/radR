@@ -1,0 +1,99 @@
+/* svn: $Id: pulses.mx 574 2010-05-11 02:07:15Z john $
+
+ find the beam axis and waveguide long axis angles (i.e. azimuth and
+ elevation for each) when the rotation axis is given by these two
+ parameters:
+
+        Azi: angle clockwise from y axis
+       Elev: angle above horizontal
+
+ (as opposed to simply vertical, which corresponds to azi=DONT_CARE
+ and elev = 90 degrees)
+
+ Assumes an antenna with waveguide mounted such that its long axis is
+ perpendicular to the rotation axis, and such that beam axis is normal
+ to the waveguide aperture, so that if rotation occurs clockwise around
+ the z axis, looking down from positive to negative z, then at t=0, the
+ y axis is the beam axis, and the x axis is the waveguide long axis.
+
+*/
+
+load("vect")$
+
+/* function to rotate vector v an amount elrot around the axis at
+   angle azi in the xy plane */
+
+vrot(v, azi, elrot) :=
+  block(/*[u, u1, u2, vp, v1, v2, v1r, v2r], */
+
+/*  unit vector along axis around which radar's rotation axis has itself been rotated */
+
+u : [-sin(azi), cos(azi), 0],
+
+/*  unit vectors spanning plane perpendicular to u */
+
+u1 : [   0    ,    0    , 1],
+
+u2 : [cos(azi), sin(azi), 0],
+
+/*  projection of v into u1, u2 plane: */
+
+vp : v - (v . u) * u,
+
+/*  coordinates of v in u1, u2 plane: */
+
+v1 : vp . u1,
+v2 : vp . u2,
+
+/*  rotation by angle rot of v coordinates in u1, u2 plane, in direction
+     from u1 to u2: */
+
+v1r : v1 * cos(elrot) - v2 * sin(elrot),
+v2r : v2 * cos(elrot) + v1 * sin(elrot),
+
+/*  rotated v */
+
+  (v - vp) + v1r * u1 + v2r * u2
+)$
+
+/*  do this for x and y axes, and format for C */
+
+display2d:false$
+
+subs:["^"=SQUARE,sin=sin_d, cos=cos_d]$
+c_azi : %pi/2 - tmp_ax_azi[i]$   /*  convert compass azimuth to math azimuth */
+c_rot : %pi/2 - tmp_ax_elev[i]$  /*  amount of rotation from vertical position */
+
+subst(subs, factor(vrot([0, 0, 1], c_azi, c_rot))); /* axis of rotation (ra, below) */
+subst(subs, factor(vrot([0, 1, 0], c_azi, c_rot))); /* "north" axis (u1, below) */
+subst(subs, factor(vrot([1, 0, 0], c_azi, c_rot))); /* "east" axis (u2, below) */
+
+/* Use output from above code to find waveguide long axis */
+
+/* unit rotation axis */
+
+rax : sin(tmp_ax_azi[i]) * cos(tmp_ax_elev[i])$
+ray : cos(tmp_ax_azi[i]) * cos(tmp_ax_elev[i])$
+raz : sin(tmp_ax_elev[i])$
+
+/* unit basis vectors for plane perpendicular to axis of rotation */
+
+u1x : cos(tmp_ax_azi[i]) * sin(tmp_ax_azi[i]) * (sin(tmp_ax_elev[i]) - 1.0);
+u1y : (sin(tmp_ax_azi[i]))^2 + sin(tmp_ax_elev[i]) * (cos(tmp_ax_azi[i]))^2;
+u1z : -cos(tmp_ax_azi[i]) * cos(tmp_ax_elev[i]);
+
+u2x : 1 + sin(tmp_ax_elev[i]) - u1y;
+u2y : u1x;
+u2z : -sin(tmp_ax_azi[i]) * cos(tmp_ax_elev[i]);
+
+/* unit beam axis */
+bax : cos(tmp_tilt[i]) * (cos(theta) * u1x + sin(theta) * u2x) + sin(tmp_tilt[i]) * rax$
+bay : cos(tmp_tilt[i]) * (cos(theta) * u1y + sin(theta) * u2y) + sin(tmp_tilt[i]) * ray$
+baz : cos(tmp_tilt[i]) * (cos(theta) * u1z + sin(theta) * u2z) + sin(tmp_tilt[i]) * raz$
+
+/* waveguide long axis - perpendicular to both rotation axis and beam axis */
+fullratsimp(express([rax, ray, raz] ~ [bax, bay, baz]));
+
+
+
+

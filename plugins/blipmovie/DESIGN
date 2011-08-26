@@ -1,0 +1,108 @@
+Design of the New Blipmovie Plugin for radR
+
+
+Summary:
+
+items stored in biglist slots:
+
+  SLOT                           ITEM
+==============================================================================================================
+   1			: table of contents (starting list slot, # of scans, start/end times for each run)
+   2			: header for first run, giving n.items
+   3			: scan.info for first scan of first run (full list)
+   4			: 1st data item for first scan of first run
+   ...
+   4 + n.items - 1	: last data item for first scan of first run
+   4 + n.items          : scan.info for 2nd scan of first run (differential list)
+   4 + n.items + 1      : first data item for 2nd scan of first run
+   ...
+   4 + 2n.items         : last data item for 2nd scan of first run
+   ...
+   k                    : last data item for last scan of first run
+   k + 1                : header for 2nd run, giving n.items
+   ...
+
+Definitions:
+
+   - "scan": a sequence of temporally consecutive pulses, and any data associated with them
+     
+   - scan data are classified as either:
+
+     - "metadata": radar settings chosen by the operator or hardware, e.g. location, time, beam shape and angle, pulse length, power, wavelength etc.; typically small
+
+     - "data": results of measurements made by the radar: echo strength, doppler, etc.; typically large
+
+   - "run": a sequence of consecutive scans from a single antenna, uniformly spaced in time ("uniform" to within the limits dictated by hardware)
+
+Decisions:
+
+=> Use a biglist as the underlying data structure
+   - allows individual items to be accessed easily from R
+   - allows arbitrary R objects to be stored
+   - fast random access of sequential object
+   - easy to change the backend from the current custom code to an existing dbm-style library such as qdbm or Tokyo Cabinet; this could improve performance and/or file size and/or allow arbitrary indexes for the biglist (rather than just integers, we could use character vectors, e.g.)
+
+Metadata:
+=> For each scan, one biglist item provides metadata
+
+   - this is an R list with all "small" scan metadata, and is stored as a single slot in the biglist to simplify access
+   
+   - plugins can provide extra items for this by implementing a GET_SCAN_INFO hook function, which must return a possibly NULL list of scan metadata.  The list must have the same number of slots as the length of the character vector provided by the plugin's GET_SCAN_INFO_NAMES. The names item for this is ignored.
+
+   - plugins which intend to provide extra metadata must provide the list of names of the slots in their list by implementing the GET_SCAN_INFO_NAMES hook function, which returns a character vector of names for the scan header items the plugin will provide.
+
+   - the full list of metadata for each scan is stored, rather than trying to achieve the small savings of writing only those metadata which have changed from the previous scan (this way, the metadata for a randomly accessed scan is immediately available without reconstruction)
+
+   - the names() attribute of the metadata list is stored only once, in the biglist header (element "metadata.names"), as it is constant for a given blipmovie  
+
+Data:
+=> For each scan, one or more biglist items provide (non-meta) data
+
+   - because individual scan data elements are large and/or not required in a subsequent read, each scan data element is stored in its own slot in the biglist
+
+   - each scan within a run has the same number of biglist slots reserved for it, but a plugin can opt to not write items to their reserved slots.  When reading the blipmovie, such non-written items will be read as NULLs.
+     
+   - a plugin must indicate the (maximum) number of data items it will write per scan by implementing a GET_SCAN_DATA_NAMES hook function which returns a character vector indicating the names of items it might write, and their order.
+
+   - a plugin which writes scan data items must implement a PUT_SCAN_DATA hook function, which is passed two parameters:
+       - the biglist being used to record the blipmovie
+       - the index of the first slot into which the plugin should save its data items
+   The plugin must write data items in the same order and to the same slots as it promised to do so in its GET_SCAN_DATA_NAMES hook function.  The plugin may leave some or all slots empty by simply not writing to those, if it does not wish to save items in them.
+
+   - the names for the data items in a scan are stored in the biglist header (element "data.names")
+
+A plugin should also implement a GET_SCAN_DATA hook function to read items it has written to a blipmovie.  This function takes parameters:
+  - the biglist
+  - the names of the items the plugin had written
+  - the index in the biglist of the first of these items
+The function may choose to read all, some, or non of the data items, according to its current settings, but any which it reads should be restored to the "usual location" where they are stored when generated de novo. (e.g. raw scan data should be restored to RSS$scan.mat)
+
+Runs and the Table of Contents
+=> For convenience, a single blipmovie will allow multiple runs to be saved. The runs must be non-overlapping in time, and ordered from earliest to latest.  All runs must 
+
+=> To manage runs, the first item in the blipmovie biglist is the table of contents, a dataframe with these columns, each row representing one run:
+   - start.time (POSIXct): the timestamp of the start of the first scan in each run, with fractional seconds
+   - end.time (POSIXct): the timestamp of the end of the last scan in each run, with fractional seconds
+   - duration (double): the mean duration of a scan in this run, in seconds; generally, end.time ~= start.time + (num.scans - 1) * duration, but it's possible that the scans don't fill the full time allotted to them
+   - num.scans (int): the number of scans in the run
+   - the first slot for each run is a header indicating what data items are present in the scan.
+	
+Changes to Existing Plugins
+
+=> antenna: add hooks as described above
+
+=> parmhistory: this will now be obsolete
+
+=> seascan: add hooks as described above
+
+=> savescores: will be obsolete
+
+Other changes
+
+=> radR shared library:  new functions to get or set the full list of active patch runs; these should be in sorted order, unlike the current blipmoviearch plugin
+
+=> blipmoviearch: sort runs by sample within pulse, since we need this for the new blipmovie
+
+=> patchify: get rid of sorted flag, since this will always be the case
+
+

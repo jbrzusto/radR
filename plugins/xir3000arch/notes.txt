@@ -1,0 +1,41 @@
+	svn:$Id$
+
+Notes on the archive files recorded by RTI software
+
+- each file represents a single sweep (aka "scan" in radR usage)
+
+- each data segment within a file might or might not be compressed -
+  the flag in its header must be checked
+
+- this plugin attempts to deal correctly with sweeps where the sample
+  clock changes, by using the coarsest clock found, and resampling
+  pulses to match it (i.e. use the largest maximum range in the sweep)
+  A change in sample clock triggers a restart of learning, if radR is finding
+  blips.
+
+- sensor segments contain the full block of data, but the flag header
+  indicates which items are actually valid
+
+- sweep duration calculations should be very precise for files of
+  version >= REC_TYPE_RLC_4, except when the sample clock changes
+
+- for files recorded with an XIR3000, mapping from range index and
+  sample rate to sample_clock is:
+
+  sample_clock = sample_rate / 2^(range_index)
+  (for files recorded by the XIR3000)
+
+- for files recorded by the old RIB hardware, the sample_clock depends
+  on the DSP version (7 or 9) as well as the range_index, and the DSP
+  version is not recorded in the file, so the user must guess which
+  applies to a particular archive.
+
+  sample_clock = if (DSP_VERSION == 7) 324.40 MHz / 2^(range_index)
+  	         else if (DSP_VERSION == 9) 108.13 MHz / 2^(range_index)
+
+  If the sample_clock rate is higher than the fundamental A/D
+  conversion clock rate of 54MHz, this presumably implies that sample
+  values are duplicated in adjacent slots.
+                
+
+ 

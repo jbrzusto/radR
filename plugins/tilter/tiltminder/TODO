@@ -1,0 +1,18 @@
+ --- svn: $Id: TODO 468 2010-02-26 21:01:17Z john $ ---
+
+
+TODO
+
+- function to return a compressed history for a time window:
+  this is a minimal set of (time, state) pairs for which 
+  the error in linear approximation of state throughout the window
+  is at most some specified amount. e.g. tell me everything I need
+  to know to estimate the angle for each pulse in a scan with
+  an error of at most 0.1 degrees.  For a time window with no
+  change in state, this is a single number.  For other cases,
+  there will be 2n numbers: n pairs of (time, state).
+
+- make a template class for a minderserver
+
+- make it convenient to have the server listen to all (not just
+   loopback) network interfaces

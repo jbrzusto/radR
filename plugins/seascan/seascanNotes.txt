@@ -1,0 +1,119 @@
+// SeaScan0.bin file format:  ;;;              -*- mode: c++ -*-
+
+// Note: the value of MaximumGatedImageSize in SeaScan0.ini should be
+// set to 8388608 (8 meg) so that we can get the most data per scan
+// possible.  If a requested mode would seem to require more data than
+// that value, e.g. azimuth resolution of 4096 times 2048 samples per
+// pulse times 2 bytes per sample, then the number of pulses digitized
+// is reduced by SeaScan so that the total fits into 8 megabytes.  If
+// the requested radar mode has a lower PRF than would be required to
+// obtain the requested number of pulses per scan, then final user
+// data will contain repeated pulses to "stretch" the data to the
+// desired size.  This stretching should be avoided, since it means
+// additional processing without giving any more real data.
+//
+
+{
+    // HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\RADARSITE00
+    { 
+	// @ 0
+	int SyncReg;
+	int ConfigReg;
+	int FTCReg;
+	int VideoReg;
+
+	int AcquireModes;
+	int PRFs;
+	int PulseLengths;
+	int ACPs;    // this is not the "base ACPs" that the radar
+	             // scanner actually produces, but the "Azimuth
+	             // Resolution" field on the first page of the
+	             // SeaScanRCU program.  SeaScanRCU uses this
+	             // value for all PRFs // but SeaScan itself can
+	             // have a different azimuth resolution for each
+	             // PRF using the QuadrantSize field, and does
+	             // not appear to directly use this ACPs field.
+	             // SeaScanRCU forces the QuadrantSize field of
+	             // each PRF to equal ACPs / 4.
+	int Gain;
+	int Offset;
+	int EnableGyro;
+	int HeadingAdjust;
+	int VideoDelay;
+    }
+
+    // @ 0x0034   
+    // HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\GPS
+    {
+	int LongDeg;
+	int LongMin;
+	int LongSec;
+	int LongHundredthsSec;
+	int LongHemisphere;
+	int LatDeg;
+	int LatMin;
+	int LatSec;
+	int LatHundredthsSec;
+	int LatHemisphere;
+	int GPSBaud;
+	int GPSPort;
+	int GPSSentence;
+
+    }
+} [2]  // why twice with identical values in each?!
+
+
+// @ 0x00d0
+// HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\PLENxx
+{  // struct PLEN
+    int nsPulseLength;
+    int minPRFIndex; // origin 1
+    int maxPRFIndex; // origin 1
+    int defaultModeIndex; // origin 1
+} [0 .. num_PLEN]
+// @ 0x130
+
+// HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\PRFxx
+{  // struct PRF
+    int LowerLimit;    // these are obtained as the mean of floor(1.0e6 / PRF) for consecutive 
+    int UpperLimit;    // PRFs, except that the first LowerLimit is 1, and the last UpperLimit is 16384
+    int Decimation;
+    int MaxPulseBytes;
+    int SegmentSize;
+    int QuadrantSize;  // This can be used to change the azimuth resolution for this mode.
+    int DefaultPLEN;
+    int WindowLength; // in HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\PULSEFILTERxx
+} [0 .. num_PRF]      // Except for the bogus first entry, these are stored in INCREASING order of PRF, but PRF_01 is still the largest
+                      // PRF value, and PRF_n is the smallest.
+
+
+// @ 0x01d0
+// HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\MODExx
+{ // struct MODE
+  int PixelConfig;   // (sampling rate - see below)
+  int RangeCollapse; // (*1)  (Always seems to be 1. When set to zero, craps out.  Other values have no effect.)
+  int PulseBytes;    // (This is actually # of samples per pulse).
+  int Decimation;    // (*1)  (Always seems to be 1.  When set to 2, each set of 3 consecutive pulses is identical).
+                     // The two marked (*) might be swapped.
+} [0 .. num_MODE]
+
+// HKEY_USERS\S-1-5-21-1837096339-316136562-2951392067-1005\Software\SigmaEngineering\Phase3\GYRO
+{
+    int GyroBaud;
+    int GyroPort;
+    int GyroPresent;
+}
+
+
+/* PixelConfig meanings: */
+
+/* 0x08:  2.5 MHz */
+/* 0x09:  5.0 MHz */
+/* 0x07:  7.5 MHz */
+/* 0x02: 10.0 MHz */
+/* 0x04: 20.0 MHz */
+/* 0x0a: 30.0 MHz */
+/* 0x01: 40.0 MHz */
+/* 0x0b: 60.0 MHz */
+
+

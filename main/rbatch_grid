@@ -1,0 +1,24 @@
+#!/bin/sh
+#
+# rbatch: run radR on set of blipmovies to process each one for tracks
+# usage:  rbatch [--parms PARMFILE] FILE1 ... FILEN
+# e.g.:   rbatch /array/data1/jbrzusto/data/CS*.bma
+#
+# parameter overrides are taken from PARMFILE, if the --parms option is specified,
+# otherwise from the radRparm.R in the user's home directory, if that exists.
+# 
+
+cd /array/home/jbrzusto/radR/run
+if [ "$1" == "--parms" ]; then 
+    shift
+    PARMS="--parms $1"
+    shift
+else
+    PARMS=""
+fi
+for x in "$@"; do
+    echo Submitting radR job for file "$x"
+    qsub rqone "$PARMS" $x
+done
+qstat -u `whoami`
+echo Use qstat to see your jobs among all those in the queue.

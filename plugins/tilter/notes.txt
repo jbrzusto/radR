@@ -1,0 +1,179 @@
+ svn: $Id: notes.txt 767 2011-04-06 04:50:06Z john $
+
+Notes on Dave Wilson's remote-controlled radar dish tilter, and its
+set up and control by software.
+(by John Brzustowski:  jbrzusto who is at fastmail dot fm).
+
+REV 2.0 BOARD IMPORTANT NOTE:
+The optoisolator path for the command line, selected by putting a
+jumper across pins 1 and 2 of J10, seems flaky: using this path,
+the tilter will often stop responding to commands, even though
+the LED shows they are being received.  Using the zener-diode-protected
+path (jumper across pins 2 and 3 of J10), we don't see this behaviour.
+
+TILTER STEPPING
+
+The tilter is driven by a 200-step motor in half stepping mode,
+so that each step is 0.9 degrees.  This drives a 24 tooth gear
+which drives a 30 tooth gear which drives an 8 TPI lead screw.
+So each tilter step moves the lead screw through
+0.9 * 24 / 30 = 0.72 degrees and thus drives the tilter lead screw
+nut through 0.72 / (8 * 360) = 0.00025 inches.
+So the total travel of the lead screw for the 907 scaled steps between 0
+and 90 degrees is 907 * 23 * 0.00025 = 5.21525 inches
+(23 is a scaling factor in the tilter controller code).
+
+Because the tilter control code is in interpreted BASIC bytecode, the
+precise timing of stepping has to be found by running the code
+through a simulator.  Doing this resulted in the timing constants
+coded in tilter1.0.cc
+
+COMMAND LATENCY
+
+There is a forced 1.5 second latency after the calibrate command, during
+which no commands are accepted.
+For other commands, there is a 0.5 second latency.
+There is also a small set-up time for commands, before stepping begins.
+
+TILTER WIRING
+
+The tilter is the unit Dave Wilson <info@emc.net> has invented for
+remotely changing the elevation angle of a parabolic radar antenna
+mounted on a Furuno scanner.
+
+The tilter has four coloured leads emerging in a gray cable:
+
+red:  +35 to +42 volt power supply
+white: +5V data (i.e. serial line on which tilter receives commands)
+black: ground
+green: shield
+
+The Deutsch waterproof 3 pin connector between scanner and tilter box
+uses A for black, B for red, and C for white.
+
+In the Furuno 1954C scanner, I've connected black and green to case ground,
+which is continuous with the ground lines in the PSU<->scanner cable.
+
+The 1954C has two leads marked "spare" in the main cable.  These
+terminate in a female 0.156" spacing connector, which mates
+with the male JB22. (In the 1964C, these leads provide extra +12V power.)
+
+I've terminated the red and white wires from the tilter in a similar
+female 0.156" spacing connector.  I also made a male/male
+connector with 0.156" spacing square pins.
+
+So instead of connecting the "spare" two-lead plug from the PSU cable to JB22,
+it is connected to the male/male adapter, which is in turn connected
+to the cable from the tilter.
+
+The male/male adapter consists of two two-pin 0.156" male plugs (intended
+for soldering into a PCB) mated at their short pin ends by female RS232
+lead ends, crimped and soldered then covered with heat shrink tubing and
+brush-on insulator.
+
+The pinout:
+
++35V tilter power (red) = lead 12 (orange) in PSU cable
++5V tilter data (white) = lead 13 (green) in PSU cable
+
+Note that there are two green and two orange leads in the PSU cable.
+The ones we use are the thicker ones (indicated with [B] in the Furuno
+diagrams).
+
+CABLE SWITCHBOX
+
+I've built a simple box with these functions:
+
+     - turn off the radar trigger: allows the radar to rotate and
+     receive without transmitting; useful for calibration and indoor
+     testing.  There are two LEDs: one shows that there is power, and
+     the other is on whenever the trigger is on. 
+    
+     - connect the serial control port (TTL5USB9M) and 35V power
+     supply to the spare leads in the PSU<->Scanner cable.  This is
+     only for the FR-1954C, not the FR-1964C since the latter uses
+     these leads for carrying additional power to the scanner.
+
+The adjacent red and black plugs receive +35 and ground from the power
+supply, and the other black plug receives the ground from the
+PSU<->Scanner cable shielding (these grounds are of course wired
+together).  The other plugs should connect to the PSU<->Scanner cable,
+with the plug having only two of the four leads going toward the PSU
+end (the plug genders enforce this).
+
+SENDING TILTER COMMANDS
+
+The tilter accepts commands along a serial line, but does not reply
+(the data receive line on the TTL5USB9M is not connected to anything).
+The serial line is set at 4800 baud, no parity, 1 stop bit, and 8 data bits,
+with CTS handshaking turned off.
+  
+The command strings take the following form:
+
+$IIHDT,26,1,N,E
+
+which has an implied carriage return (CR = ASCII 13) character at the end.
+
+"$IIHDT" is a constant command string header
+"26" is the target angle, in degrees
+"1" is the speed at which the tilter should move the antenna toward the target angle
+    Currently (2009/05/26), this is not used and the tilter always uses the same speed
+"N" is operating mode: "N" for normal, and "C" for calibrated.  In normal mode, the tilter
+uses its internal record of the current antenna angle and calculates how far and in which
+direction to move the antenna from there in order to reach the target angle.  In calibrated
+mode, the tilter first takes the antenna to 0 degrees (where it activates a microswitch),
+and then to the target angle.  
+
+"E" is an end of command marker
+
+The commas are required as is the CR at the end of the command.
+
+INITIALIZATION
+
+At each powerup, and before data acquisition begins, the tilter must
+be forced into a calibration sequence, because there is no persistent
+hardware storage of the antenna angle.  For safety reasons, this
+initial calibration should only be done under explicit user control,
+with a dialog that is activated from the plugin menu and/or
+when "play" is hit without the calibration having been done manually.
+The choices should be:
+
+ - yes, calibrate the angle
+ - no, skip calibration; assume the the antenna is already at 0 degrees
+ - cancel 
+
+
+3D DISPLAY
+
+We'd like to use an rgl window to display blips (or a cloud of raw
+data) in 3d, keeping only the "last n scans of data". The "last n
+scans" is a bit trickier than it is for the bliptrail plugin, because
+of the possibly back-and-forth motion of the antenna.  What we really
+want is to retain the most recent scan from each elevation angle in
+the current volume pattern, possibly only as far back as a specified
+maximum time.  This should probably go in a different plugin, but its
+interaction with the tilter plugin will come in deciding how many
+scans to keep, since the number corresponding to a single arm of the
+volume scan (e.g. from 10 to 80 degrees, or from 80 to 10 degrees)
+seems reasonable.  This might simply mean having the tilter plugin
+export functions that return the current volume pattern and current
+location within it.
+
+CONTROLLING THE TILTER FROM RADR
+
+I've developed a simple template class for operating a device like
+the tilter.  See the tiltminder subdirectory.
+
+radR launches a tiltminder server process to control the tilter, and
+communicates with it using text to/from a local socket.  The server
+runs at realtime priority.  If radR crashes without shutting down
+the server, the latter can be killed from the Windows Task Manager
+or linux command line.
+
+radR tells the server what pattern to operate the tilter in, and when
+to begin the pattern.  The server issues commands to the tilter, and keeps
+track of their recent history.  At the end of each scan, radR asks
+the server to estimate the angle at 240 evenly spaced times in the scan.
+Given the tilter's stepping rate of approximately 10 degrees per second,
+and the radar's rotation period of 2.4 seconds, this limits the error in
+estimated elevation angle for any pulse in the scan to roughly 0.1 degrees.

@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# rqone: run radR on a single blipmovie to process it for tracks
+# usage:  rbatch FILE1
+# e.g.:   rbatch /array/data1/jbrzusto/data/my_movie.bma
+# a blipmovie can be specified by giving the full name of any of its files
+# (ending in .bma, .blp, .smp, or .scr), or by leaving off the ending entirely.
+#
+# Output is stored in the same directory as the data files.
+#
+# Parameter values can be specified in the file radRparm.R 
+# in the user's home directory.
+#
+# Run from current directory
+#$ -cwd
+
+# Use this shell
+#$ -S /bin/bash
+
+# Make this job have the following name when shown in qstat
+#$ -N radR
+
+# Mail me a notice after it's done (e = ended)
+###DON'T DO THIS: MAIL ON CLUSTER SEEMS BROKEN
+###$ -m e
+###$ -M jbrzusto@ncf.ca
+
+# Load any local settings.  Note: this is dot space /etc/profile
+. /etc/profile
+
+# environment needed to correctly run radR
+
+export LD_LIBRARY_PATH="/gridware/sge/lib/lx24-amd64:/array/home/jbrzusto/local/lib"
+export R_TCLTK_PATH="/array/home/jbrzusto/my_R_libraries"
+export R_INSTALL_PATH="/array/apps/shared/lib64/R"
+export TCLTK_INCLUDE_PATH="./tcltk"
+export TCLTK_LIB_PATH="/array/home/jbrzusto/local/lib"
+export R_BUILD_PLATFORM="x86_64-unknown-linux-gnu"
+export R_LIBS=/array/home/jbrzusto/my_R_libraries/:/array/apps/shared/lib64/R/library
+
+# pretend we're using X so tcl/tk loads properly
+export DISPLAY=:0
+
+# Run my command.
+
+R --no-save --args --no-gui --source process_one.R "$@"
+
+

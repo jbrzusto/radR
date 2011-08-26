@@ -1,0 +1,17 @@
+#include <stdlib.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <signal.h>
+#include "radR.h"
+#include "patchify.h"
+#include "radRprot.h"
+#include <windows.h>
+#include <wingdi.h>
+#include <windowsx.h>
+#include <tcl.h>
+#include <tk.h>
+#include <tkInt.h>
+#include <tkPlatDecls.h>
+#include "radRvars.h"

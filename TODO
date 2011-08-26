@@ -1,0 +1,1003 @@
+                              -*- mode: text; mode: auto-fill -*-
+TODO
+====
+- (2010/03/30) When updating radR version: add new script to copy over
+  config information from a previous radR installation.  Allow user to
+  choose which plugins/parameters this happens for.  Allow plugins to
+  specify extra files that should be (optionally) copied over; e.g.
+  seascan plugin's SeaScan0.ini/bin
+
+- (2009/06/25) Tilter: ask user to select COM port initially, and try
+  to detect when choice of COM port is incorrect (i.e. deal with
+  Windows comm errors)
+
+- (2009/06/25) generic: why are port methods for NULL not created?
+  e.g. end.of.data.NULL
+  
+- (2009/04/08) Why is assigning to a small rectangle of a dataframe so slow?
+  It appears that the problem is in the logic of the `???<-`
+  functions, because adding a second layer of list makes it slow:
+
+    f<-data.frame(x=1:1e7)
+    for (i in 1:5) print(system.time(f$x[1]<-1))   ## slowest
+
+    f<-list(x=1:1e7) 
+    for (i in 1:5) print(system.time(f$x[1]<-1))   ## fastest
+
+    f<-list(x=list(y=1:1e7)) 
+    for (i in 1:5) print(system.time(f$x$y[1]<-1))   ## 2nd fastest
+  
+    f<-list(x=list(y=list(z=1:1e7)))
+    for (i in 1:5) print(system.time(f$x$y$z[1]<-1))   ## 3rd fastest
+
+    f<-list(x=list(y=list(z=list(t=1:1e7))))
+    for (i in 1:5) print(system.time(f$x$y$z$t[1]<-1))   ## 4th fastest
+
+    f<-list(x=list(y=list(z=list(t=list(a=1:1e7)))))
+    for (i in 1:5) print(system.time(f$x$y$z$t$a[1]<-1))   ## 5th fastest
+
+each list layer appears to increase time consumption by the same
+amount.
+
+
+- (2009/03/09) allow specification of tracker parameters in special
+  zones
+
+- (2009/03/06) split out antenna angle into two pieces: declination (angle
+  between vertical and axis of rotation - usually 0) and tilt
+  (angle between beam axis and axis of rotation - usually 90 
+  for a t-bar).  Typically, it is the former that is adjustable
+  with a t-bar, and the latter with a dish.  
+
+- (2009/03/06) change scan conversion so it deals intelligently with declination
+  angle (it already deals correctly with tilt assuming declination =
+  0); change range rings and compass so they make sense.
+
+- get radR working with R 2.8.1 (skip intermediate versions since
+  2.5.1); issues: 
+
+    - R_serialize / R_Serialize and unserialize calling conventions
+      changed.
+    - no embedded '\0' in strings any more, so use RAWSXP for BLOBs
+      in blipmovies, rawarch etc.
+
+- (2009/03/02) generalized parameter set save/load: we should be able to save and
+  load arbitrary sets of parameters (i.e. from main, gui and plugins),
+  and reload them, giving the user a gui for selecting which
+  parameters to save, or which current parameters to overwrite from
+  the file.
+
+- (2009/03/02) R expression controls: if the user enters an expression
+  with an error, provide the full R error message in a popup window.
+  Perhaps allow a resizable popup editor too.
+
+- blipmovie/blipmoviearch: deal with an overridden, negative value of
+  RSS$scan.info$first.sample.dist; i.e. deal with data having been
+  recorded with bogus samples at the start of each pulse due to a
+  too-small trigger delay.  One approach: remove or shorten runs 
+  with bogus samples (this is correct but tricky).  Another approach:
+  filter out entire blips if their centre is within the bogus sample
+  zone (this is easier, but not very clean).
+
+- rawarch: don't record portions of the data which are either excluded
+  or in the bogus sample zone (corresponding to negative
+  first.sample.dist); when re-reading such data, fill the scan matrix
+  as appropriate.  Adjust samples.per.pulse and first.sample.dist
+  accordingly.  If we add "inclusion", only write data from that.
+
+- physically sensible patch-finding: an alternative algorithm can be
+  implemented with two changes:
+  - compress_row: ensure each "run" (i.e. consecutive samples within a
+  pulse) is unimodal, which represents a pulse hitting a "single" target 
+  - patchify_image: change the rules for merging runs in adjacent
+    pulses:  many ways to go, but one would be to allow any run to be
+    merged to at most one run in the subsequent pulse; presumably, the
+    first of the longest overlaps would be used.
+
+- seascan: check whether modelines with different ACPs for the same
+  PRF can coexist and be selected.  I think so, but my own docs say
+  otherwise....  Also, verify that mode table->.BIN file conversion works.
+	
+- zone plugin: maybe allow an inclusion zone, which if it exists,
+  serves as the complement of the exclusion zone.  Other special zones can 
+  exist within the inclusion zone (which is the only reason it needs
+  slightly more complicated treatment than just compiling the
+  exclusion zone into its complement).  We wouldn't allow both inclusion
+  and exclusion zones to exist at the same time.
+
+- unix: why do bugs in R code called from C code cause a nested readline
+  error that can't be recovered from?  In particular, R hook functions
+  called from inside C do this.  Do I need to start a new context?
+
+- R 2.5.1 has a major bug in pointer deparsing: if an extptr is
+  deparsed, the stack is smashed.  This can happen if a
+  PLOT_CURSOR_MOVED hook returns an extpr rather than a string,
+  but is much more basic:
+  e.g. :
+
+     library(tcltk)
+     paste(c("a", tcl("toplevel", ".a")))
+
+  will smash the stack.
+
+  Work around this!!
+	
+- get a backup of the wiki, and install on discovery
+
+- add a histogram to each blipmovie with mean sample value, # blips
+  per scan
+
+- temporal control of parameters etc.  e.g. Different parameters for nighttime
+
+- extmat: in assign/subassign, check that RHS has positive length
+  if LHS does.
+
+- gui console: limit the size of objects printed to the console!	
+
+- seascanarch: fix reading of ungated data; see Melanie's various files!
+
+- clean up handling of ports as strictenvs; this implies a better
+  scheme for getting ports from a plugin, because we should be allowed
+  to have e.g. more than one rawarch writer in existence, but perhaps
+  only one xenex RIB reader.  In most cases, this just requires a fix
+  to how the gui provides a file-based port and attaches it to a file.
+  Currently, the From: and To: button menu hierarchies hold and re-use
+  a static copy of each port object, rather than allocating a new one
+  each time, even though the get.ports() method for at least some
+  plugins generates a strictenv object from scratch each time it is
+  called.
+
+- replace my crappy R configuration file rewriter with more elegant
+  version that uses R 2.5.X's srcfile attributes (yay - I'm glad
+  I didn't have to write that stuff myself).  OR NOT: this only
+  keeps track at the outermost expression level, not at the list
+  element level.  Doh...
+   
+- replace rawarch plugin with options to blipmovie to save (partial?)
+  raw data
+
+- ??still the case?? BUG: fix Seascan plugin: scan.info$duration appears incorrect when other
+  numbers of pulses per scan are used.  (e.g. 1.6 seconds with 3072)
+
+- Create Iris plugin:  should bring in 8-bit volume sweep data as list of extmats,
+  with attributes giving angular coordinates, timestamps, etc. of each
+  ray.  Should allow browsing of web-accessible data(?).
+
+- BUG: what is going on with the min-gain thing?  A track is built
+  specifying a particular min gain, but some points are missed that
+  seem to have sufficient gain to be added.  
+
+- tracker gain stuff: display gain in logarithmic units (decibels?)
+
+
+- Suggest to r-devel that there be a way of specifying close() of a connection without destroying
+  it.  This would be nice to have at both the R level and at the level of the proposed R connections
+  API.  e.g. close <- function(x, destroy=TRUE, ...) or closeNoDestroy <- function(x, ...)
+
+- PARTLY DONE: via the UPDATE_PARMS HOOK INSTEAD. STILL NEED TO CHECK
+  POINTERINFO AND BLIPTRAILS PLUGINS TO SEE WHETHER THEY SHOULD
+  IMPLEMENT SUCH A HOOK. add a new hook SCAN_DIMS_CHANGED which is
+  atomically called after the scan and other matrices are resized.
+  ("atomically" means no tcl event is allowed between the resize and
+  the return of the last hook function.  This is required by at least
+  the bliptrails plugin, since its matrices are assumed by it to match
+  the sizes of the data matrices, and in particular, the
+  PLOT_CURSOR_MOVED hook can be called after a resize, leading to a
+  crap out.
+
+- use dual-ported Tcl objects together with R active bindings so that all interface objects
+  have corresponding named objects in R which reflect state in both directions 
+  (e.g. blip.blipping <- TRUE in R sets the interface control, and vice versa)
+
+- in tracker, use row.names and character indexing in gui.tracks table to simplify code
+  (i.e. gid is row name, not a separate column)
+
+- strip binned pulse data from weather radar gifs, create/update raw archive from gif directory
+
+- let plugins add items to the plot window title
+  (e.g. num active tracks); 
+
+- replace dimensions in plot window title with a moveable canvas scale bar
+
+- console: Shift-Return should insert a blank line, not process; use
+  text attributes to distinguish the prompt string from user input to
+  simplify multiline inputs and editing for resubmission
+
+- player: add a spinbox driven date/time gauge for the current location, so a time
+  can be entered directly or mousewheeled precisely; a "set" button or hitting enter
+  in the field seeks to the given date; mousewheeling over an element of the date/time
+  changes that element only and seeks to the new date/time
+
+- pointerinfo: provide in globals two functions:
+   register.pointer.info ("name") which provides a name for the pointerinfo
+   menu; returns an index into POINTERINFO$show 
+   unregister.pointer.info("name"), which says to remove name
+   Then the pointerinfo menu controls display of info from other plugins.
+   The PLOT_CURSOR_MOVED hook should pass the vector logical POINTERINFO$show, wherein
+   the index returned by register.pointer.info is used to determine whether
+   the particular plugins' info is to be displayed.
+
+- alternative palette editor for non-gradient palettes with predetermined item names;
+  in this case, palette is a character vector with element names being the colours.
+  Use this for canvas items (including compass, range rings, ...)
+ 
+- kalman filter for the tracker; two ways to go: 
+
+    1. a separate model using bank of differing-state kalman filters
+    per target (like the paper that I've misplaced);
+
+    2. in the MFC model, a single-kalman filter per target, whose
+    state info is computed/maintained as for the existing
+    linear-motion model.
+
+
+- for ungated data, do (optionally) pulse filtering: each output pulse
+  is the mean of all pulses which are closer to the output azimuth than to any
+  other output azimuth
+
+- recycle right hand side values in "[<-.bigframe"; be more flexible
+  about the signatures matching
+
+- fix the blipmovies and seascan archives that Carolyn had trouble with
+  see: /home/john/projects/radar/Carolyn/SSAProblems.txt
+  and: /home/john/projects/radar/Carolyn/blipmovieProblems.txt
+
+- deal with the discrepancy Carolyn found in score calculation:
+  see: /home/john/projects/radar/radR/problemCodeFromCarolyn.txt
+
+- simplify error handling: all radR shared library calls should use 
+  R's builtin error handling/generation code.
+
+- better parsing of configuration files, so that:
+	1. lists can have more than one item of the same name
+	2. new list items can be added between load and save of
+	   a config file.
+   Why?  Considerable simplification of code if we can store
+   palettes like this:
+       list("#ffffff" = 1.0, "#000000" = 0.0)
+   and store window info like this:
+       list(".pctl" = list(geometry="200x300+20+30", title="display options", state="enabled")
+   etc.
+   instead of having to use one vector for the list names, and then a vector
+   for each list component 
+   - this should be relatively easy.  Use library calls to R's object parsing code.
+ 
+- fix the "Overwrite?" warning when a file is to be opened for append
+  (or different menu entries for opening a writer, depending on whether
+  it is for overwriting or appending)
+
+- generic interface methods should call rss.gui with appropriate parms
+  so that the GUI reflects the backend (if GUI$enabled is TRUE and
+  GUI$track.backend.state is TRUE)
+
+- convert event loop logic to a makefile logic:
+  - target is a (string, timestamp) pair
+  - prereqs(target) returns a list of targets which are
+    prerequisites of target, by dispatching to methods prereqs.TARGETNAME
+  - actions(target): rules for making targets (just a function for each target?)
+  - have(target) returns a boolean: do we have this target?, also by dispatch on name
+    This is instead of maintaining an evergrowing array 
+
+- make quitting R upon quitting of radR configurable in radR.conf.R or via --args to R
+
+- put the current timestamp in the player window title; if not updating.plot.while.playing,
+  put a message to that effect in the plot window title and don't update its timestamp:  the
+  plot window timestamp should always match the contents it displays.
+
+- make scan and run indexes available via (NOT DONE:)current.scan,
+  (DONE):current.run methods for radR modules?
+
+- the Record button should allow recording to start even while playing.
+
+- filter out foreign radar (patches that are only one pulse wide but
+  many samples deep); we can determine the most common pulse lengths
+  and specifically look for those, in case that simplifies it
+
+- add buttons for single (and fast) step back and forward, DONE: Home, End in the archive
+
+- hitting play while "Live Radar" is selected gives error if no radar available
+  (error appears to show up in sleep)
+
+- DO THIS WITH THE PATCH_STATS HOOK; ALL PATCH DATA IS AVAILABLE IN RSS$PATCHES:
+  add a hot patch-area histogram plot, showing the location
+  of blip min/max (need to add an all-patches hook?, not just all-blips hook?)
+
+- EXTEND THE RAWARCH PLUGIN FOR THIS: save losslessly-compressed radar data in a modified seascan archive
+
+================================================================================
+                                     FIXED/DONE
+================================================================================
+- (2009/04/06) batch processing not working in Windows?
+  (2009/04/21) FIXED; (rev. 334)
+
+- (2009/03/09) the mfc parameter "small penalty for blips missing from
+  tracks" has never actually been included in the track calculations.
+  Do so!?
+  (2009/03/20) DONE; (rev. 283)
+
+- (2009/03/09) BUG: why do gain values in the tracker pointerinfo component
+  often show +/-Inf no matter what the cursor position?
+  (2009/03/10) FIXED; (rev. 277)
+
+- (2009/03/02) console window: allow multiline console input with
+  (2009/03/04) DONE; rev. 258
+  We take as input everything from the previous prompt (or start
+  of window) to the next prompt (or end of window).
+  
+- why do controls windows get placed stupidly upon creation, and not
+  maintain their locations across workspace switches (in unix)
+(2009/03/02) FIXED; (rev. 253)
+
+- gamma scales should have same behaviour as other scales w.r.t keystrokes
+(2009/03/02) DONE; (rev. 252)
+
+- fix tab order in blip window
+(2009/01/23) DONE; (rev. 159)
+
+- why do gauge adjustments to min/max samples or area require reclassification of samples in order
+  to show changes in whether a patch is blip-coloured?
+(2009/03/02) NON_BUG: this isn't true.
+
+- epal: why does adding a point to a gradient change it?  It
+  shouldn't do so until the point is dragged or modified.
+(2009/03/02) NON-BUG: this isn't true.
+
+- why does File | Save workspace crash Rgui (on windows)?  
+(2009/03/02) FIXED (rev 250): 
+  R_MakeExternalPtr was being called nearly everywhere with NULL
+  instead of R_NilValue for TAG and PROTECT! (save.image() under linux
+  was also crashing R
+
+- allow blip selection based on min/max fraction of samples in patch sector
+  which are actually in patch, the idea being that real blips tend to be concave,
+  and so should have a high proportion of the samples in the patch sector (i.e.
+  the smallest sector enclosing the entire patch)
+(2009/03/02) DONE:
+   use a filter expression (new in rev. 231); e.g.:
+     ns / aspan * rspan < MAX && ns / aspan * rspan > MIN
+
+- Urgent: Multi-threaded data getters have introduced some race
+  conditions into the GUI.  Fix these by generalizing rss.new.parm()
+  to rss.defer(), which would maintain a list of actions to be
+  deferred until the next top-of-scan, including parameter
+  assignments, GUI updates, etc.  So instead of calling
+  rss.new.parm(name, value), we would do rss.defer.assign(NAME, RHS,
+  RSS) or rss.defer.call(f(...)).  The right hand side to an assignment
+  or the "..." arguments to f are evaluated immediately, but the final
+  assignment or funtion call is delayed until the top of the next
+  scan, when they are performed in the same order that rss.defer.*() was
+  called.  Note that no-one uses rss.parm(), the function that was
+  intended to allow fetching the most recent value set for a parm
+  via a call to rss.new.parm, and so we obviously don't need access
+  to new parm values until the call to rss.update.blip.parms, which
+  is now replaced by rss.do.defers()
+MAINLY FIXED:
+  There might be other such race conditions, but the
+  general framework for solving them is to refactor the gui event handler
+  into a part done immediately, and a part deferred until after we're
+  finished processing the current scan.
+ 
+- do we handle previews correctly in the tracker???  
+(2009/03/02) DONE:
+  tracker plugin and nearest neighbour model were doing this; it was
+  added to multiframecorr in radR246
+
+- genblips: why doesn't it work any more
+(2009/03/02) FIXED: 
+  various bugs; last fixed as of rev. 247
+  
+- add zone parameters to batch parameters file
+DONE:
+  user can specify a zonefile name; all other parameter sections
+  should be reimplemented in this simpler way
+
+- antenna plugin: when reverting from overriding to not overriding
+  a parameter, the original scan.info parameter for the current scan
+  is not restored.  Only an issue for previewing, but would be nice
+  to clean up.  Do this by caching overridden values.
+DONE:
+  easy; just restore from RSS$source.scan.info when turning off override
+
+- unix: the Enter key on the keypad does not work in gauges (needs to be 
+  bound separately because it's a KP_Enter?
+FIXED
+
+- why does rotating a screen with no data do nothing and then
+  mess up tk plotting mode?
+FIXED
+
+- the exclusion zone does not work with blipmovies, because these
+  construct blips directly from the files, rather than painting the
+  file data into the scan.mat and class.mat and rebuilding patches
+  from that.  One way to deal with this is for the zone plugin
+  to run a trivial reject-everything filter in the exclusion zone.
+  This would have the side effect of filtering blips whose "centre of
+  mass" was in the exclusion zone even if the blip wasn't, but this
+  kind of blip is probably bogus anyway.
+DONE: rev. 163
+
+- DONE: can we re-arrange the code in rss.process.one.scan and
+  rss.event.loop so that scans from a live source are previewed
+  rather than postviewed?  This would mean checking for a change
+  in new.play.state after get.scan, but before the remaining
+  processing.  The only time we'd have to postview scans is when
+  the user hit "stop" 
+
+MAINLY DONE - gifmovie plugin:
+
+   - DONE: integrate gifsicle use for the combining stage; GIFSICLE IS
+     USED TO GRAB EACH FRAME AS A GIF; IT WOULD BE FASTER TO DUMP THE
+     WINDOW CONTENTS AS A SIMPLE WIDTH,HEIGHT,RGBDATA FILE, THEN USE
+     GIFSICLE TO READ THESE INTO GIFS AND MERGE THEM.  HIGHER SPEED
+     MIGHT LET US CAPTURE FRAMES AT TIMED INTERVALS, RATHER THAN WITH
+     EACH PROCESSED SCAN, FOR "INSTRUCTIONAL VIDEO" CREATION
+
+   - DONE: let the user pick a folder, template filename, and interframe
+     delay from the gifmovie plugin menu
+
+   - DONE: it should be possible (as in "it's easy in linux but I don't know
+     how to do it in windows") to avoid radR having to be in Tk
+     plotting mode in order to capture gif frames; this can probably be
+     done with a small function in the platform dependent gui code
+
+   - DONE: optionally grab the window frame (i.e. including the titelbar)
+     and even the whole screen (to show other windows) when capturing
+     gifmovies (probably the code for the previous entry will do this too)
+
+- NO; DO THIS WITH BIGFRAMES/BIGLISTS SEE NEXT POINT 
+  track building: to support this, get bma2 working, but rename this
+  to radR feature file  ".rff"  format.  It will be able to hold
+  blips, tracks, and raw data.  An R-level object file format 
+  consisting of a seekable (by time or index) sequence of R objects.
+
+- DONE: USE BIGFRAMES/BIGLISTS; extend the blipmovie archive to include a double lat and long for each
+  scan, and the z-score for each sample; save raw blip geometry info, then samples data matching
+  that geometry; that way, runs_are_sorted will be true when reading from a blipmovie, and 
+  filesize will be considerably reduced.  Allow a biglist's index to just be a column or two
+  in an arbitrary bigframe.  Convert existing blipmovies to this format, including fixing Carolyn's
+  problem ones.
+
+- DONE (SINGLE MAXIMUM SAMPLE VALUE IS FOUND FOR EACH PATCH) when
+  creating blip info summaries, extract the maximum of brightest 5
+  (e.g.) reflectivities, for use in trying to calculate relative radar
+  cross section.
+
+- (NO: THIS WAS A VNCCLIENT ISSUE) add a white-outlined black crosshair to the windows version for use
+  as a cursor (same cursor as the unix version uses in the plot
+  window)
+
+
+- DONE: XXX.plugin.R files should be parse/eval'd into the existing
+  strictenv where their config info has been loaded, to allow
+  for reference to config vars in static plugin var definitions
+ 
+
+- DONE: can start with radRnogui.R instead of radR.R don't library( "tcltk") if GUI$enabled is FALSE
+
+- DONE: path to user's SeaScan setup is configurable, and
+  radRX-Y-Z.bat adds this path to the %PATH% so that the client dll is
+  found
+  IS THIS REQUIRED?  DON'T WE LINK DIRECTLY TO CLIENT12.DLL? recall
+  how to create libClient12.a from Client12.dll, and search for the
+  latter in several sensible directories, also by the name of just
+  Client.dll
+
+- NO: XENEX XIR3000C PROBABLY MEANS WE DON'T NEED TO USE A PS3.
+  for Cell Broadband Engine (PS3), there are load/store instructions that swap byte order for
+  16 and 32 bit words.  There is a little-endian mode which can be switched into for dealing with
+  64 bit words.  So all radR code will assume little-endian except for that platform, where a few
+  special places will deal with endianness in data-structure formats; (seascan, seascanarch, blipmoviearch)
+
+- DONE: SELECTED TRACK FEATURE SUPERSEDES THIS; mouse over a track
+  should use "index", "@x,y" to give info about particular points
+  along the track
+
+- DONE: palettes now support transparency with an alpha value for each
+  colour.  underlay: alpha blending of underlay image with trails with
+  underlay; the actual blending would take place in
+  radR.c:convert_scan; the bliptrails plugin would include an alpha parameter for determining
+  the blending level.  Eventually, done more elegantly using layers.
+
+- DONE: convert_scan: allow scan_conversion into a subrectangle of the
+  pixel buffer; this way, multiple radars can be viewed at once on the
+  same display; this requires passing a span parameter which says how
+  many pixels per row in the full matrix; the cache and the saved
+  parameter values used to judge its validity should all be hidden in
+  an opaque structure passed from and to the the caller.  That way,
+  each data source has its own cache.  For optimality, when the entire
+  screen is to be scan converted, the appropriate subrectangle for
+  each data source is calculated, and the h and w parameters apply to
+  this subrectangle only.  Areas not covered by sources are
+  effectively treated identically to those pixels in a rectangle
+  outside of the source's circle.  The order in which sources are
+  scan_converted into the pixel buffer determines the z order.
+  Additionally, an alpha value should be provided to allow
+  transparency.  Or some kind of averaging for where sources overlap.
+ 
+- NO; WE NOW HAVE AN INHOUSE RAW ARCHIVE FORMAT. write raw seascan
+  archives; I keep putting this off, but it is worth doing.
+
+- DONE (INTERNALLY AND BY BMDEBUG.C) fix the blipmovie archive code so that it is smarter at guessing when
+  a blipmovie archive suffers from non-updated headers; use file size
+  to determine the length of recorded data.
+
+- DONE: deal with tcltk #include files which are needed for building radR.
+  Add them to the radR source distribution?  They are not part of R.
+
+- FIXED: why does zooming slowly shift the compass ring (in Tk plotting mode)
+
+- DONE: multi frame correspondence model for the tracker
+
+- DONE: redo part of underlay in C
+
+- FIXED: BUG: max area filtering not working; apparently, blip area calculation is different
+	between filter and pointerinfo!
+
+- FIXED: BUG: after first run of a new radR installation, the Help | View License option
+  disappears (it's gone from the config file; maybe a bug in rss.rewrite.config)
+
+- DONE: put in decent funtions to radRutil for conversion between pulse/sample and xy
+  and xyz coordinates, given antenna info etc.
+
+- DONE: tracker infrastructure: new function for replacing the last n blips in a track with m new points
+  and gui support for it: replace.track.tail (tid, old.tail.length, new.tail); if the new tail is
+  empty, the track is deleted
+
+- DONE: remove one layer of menu for gauge items:  any menu with gauges should get a single,
+  named entry that pops up the gauge window.  
+
+Done:
+{
+    From: Phil Taylor <ptaylor@resalliance.org>
+    Sender: tabanid@gmail.com
+    To: john <jbrzusto@ncf.ca>
+    Subject: Re: What's up
+    Date: Wed, 24 Oct 2007 14:18:52 -0400
+
+...
+
+    Can I ask for one more (tiny) thing?
+
+    1) In the tracks, the perim column doesn't come through.
+    2) Can I get exactly the same output for the saveblips?
+
+    That way, I can output all blips (plus info) for a given snippet, and then
+    compare blips that are part of tracks to all of the blips (for some possible
+    disrimination-type things.
+...
+}
+
+Done: 
+{
+    From: "Phil Taylor" <philip.taylor@acadiau.ca>
+    To: "john" <jbrzusto@fastmail.fm>
+    Cc: "'Carolyn Matkovich'" <carolyn_matkovich@yahoo.com>
+    Subject: RE: correcting dipping tracks etc.
+    Date: Mon, 8 Oct 2007 14:26:56 -0400
+...
+    Anyhow, now with the tracker working so well, we should be able to
+    just extract blips that are part of tracks (or more simply, save
+    all the blip information with each track).
+
+    You told me how to do that, but I wonder if it would be more efficient for
+    you to just add that to the next iteration (i.e. to add angular radius,
+    aziumuthal radius, z, and anything else simple to the saves tracks csv file.
+...
+}
+
+- FIXED: PF_PATCH_AND_BLIP_HOOKS() WAS USING OLD CALLING CONVENTION;
+  BUG: an enabled blip hook always filters out all blips, regardless of
+  return value.
+
+- FIXED: SEND SPLASH MESSAGE TO CONSOLE, NOT PLOT WIN. BUG: on first run of radR after re-install, splash message doesn't appear
+  (it's almost certainly a race condition with gui.continue.create.plot.window())
+
+- FIXED: resizing plot window in tkplot mode redraws range rings (when range ring plotting is off)
+
+- DONE: add RSS$is.preview.scan and RSS$last.previewed.scan.timestamp and handle this
+  in radR.R, not tracker.plugin.R
+
+- DONE: add radar elevation, lat/long, antenna angle and aperture to the information
+  available in the blipmovie scan headers and at runtime in general.  For sources
+  e.g. seascan that might not provide all this info, provide a plugin or
+  something to read radar configuration information
+
+- DONE: add x, y, height to the pointerinfo window (once the previous has been done)
+
+- DONE: .csv output for the tracker; separate from bigframe/biglist output,
+  this dumps tracks to a .csv file as they are completed
+
+- DONE: WITHDRAW, RATHER THAN DEICONIFY, WINDOWS WHEN USER HITS CLOSE BUTTON
+  use dynamic create/destroy for as many windows as possible, to avoid cluttering
+  window manager switchers; this should include the gauge windows
+
+- NOT WORTH THE TROUBLE: compass rose: increase tick spacing when zooming out
+
+- DONE: pointerinfo: allow anchoring of popup window; ALREADY WORKS BY DISABLING APPROPRIATE
+  "SHOW" FEATURES FROM MENU:allow popup only on non-background
+   
+- DONE: when a palette has two colour points and these are perfectly aligned,
+  approx throws an error because it is expecting distinct x values; 
+  the code that checks for a single-point palette needs to check for 
+  multiple identical points
+
+- DONE; SET plugin$always.on = TRUE: allow for non-abling plugins (e.g. "antenna"); the plugin menu should
+  not display an "Enabled" checkbox for these.  Perhaps by setting
+  enabled = NA in plugin.conf.R??
+
+- DONE: palettes and the bliptrails plugin
+  add persistent blips, using class = 3, to the plotting, with selectable
+  number of scans and fadeout.  need code to extract the active patches
+  from the runlist and make a duplicate active-only version as an extmat,
+  and code to paint the class mat from one of these (but only where
+  the class mat is not already blip-coloured) Perhaps do this as a plugin
+  and extend the plugin menu syntax to allow for single-item controls
+  like scales, colour choosers, labels, etc.
+
+- DONE: more flexible palettes:  each pixel class should have a full 8 or 16-bit
+  palette, generated by linear interpolation from a user list of
+  (value, colour) pairs.  Gamma would still work in the natural way here,
+  skewing the map left or right.  Palettes should have names and
+  descriptions and be saved in their own XXX.palette.R files
+
+- DONE: blipmoviearch.c: Reader: check for a .scr file and use it if found
+  to get scores for blip samples; this is not the file produced by the savescores
+  plugin but by the new blipmoviearch writer, which saves scores there.
+
+- DONE: log errors to a logfile specified in radR.conf.R (log with system timestamp,
+  current source, current sink, and current scan timestamp, if these exist)
+
+- DONE: tearoff menus should redirect mousewheel events like other windows
+  do (ie. when they have focus but the mouse is over a different window)
+
+- FIXED: seek.time on blipmovie archives hangs
+
+- FIXED: seek.scan on blipmovie archives crashes if no call to 
+  start.up has been made
+
+- DONE: allow blips to be cut out of the stats updating;
+  i.e. don't use sample scores from the blip part of a cell in updating stats.
+  If there are no non-blip samples for a cell, just leave the mean and abs dev
+  unchanged.
+
+- DONE: convert "RSS$have." to "RSS$have$" (a strictenv) and make sure these are treated correctly
+  under the cleaned up module model:
+
+- DONE: keep track of the path from which libraries are dyn.loaded() so that
+  when dyn.unload()ing a library, on windows, if the current directory
+  has been changed by a file open dialog, dyn.unload can still work.
+
+- DONE; NEEDS TESTING: add support for ungated data to the seascanarch module
+
+- DONE: don't allow empty runs in blipmovie archives; 
+
+- DONE: after selecting a "To:" port, set the record button to on (configurable
+  by GUI$press.record.after.choosing.sink
+
+- FIXED: fix the pulse zero error in reading from a seascan archive
+
+- DONE: convert current use of the strictenv() constructor to as.strictenv(), and make
+  the strictenv() constructor take a name=val list
+
+- NOT POSSIBLE: cache the trig calculations for a given window size to improve zoom
+  (ZOOM IN NOW DONE WITH INDEX CACHE MANIPULATION) and pan speed?
+  this would be a cache sitting under the convolution cache;
+  i.e. invalidating the trig cache would automatically invalidate the
+  convolution cache, but not vice versa - assembling tracks (a list in
+  itself)
+
+- FIXED: rotation bug: sometimes a single-step of the mousewheel (with Shift held down) rotates
+  the compass but not the plot.  Probably a round-off problem somewhere.  The single mousewheel
+  step should rotate the plot exactly one pulse.
+
+- DONE: SEE GUI.ADD.MENU and GUI.DROP.MENU clean up nested menu item addition/deletion: given a tcl prefix, a
+  (relative to the prefix) tcl path name (as a character
+  scalar) and a full list of menu titles (one for each element in the tcl path), add/remove
+  the item along with any intervening menus, renaming them if necessary.
+
+- DONE: retool modules as plugins, combining the blipmoviearch module
+  with the blipmovie plugin, and converting the seascan and seascanarch
+  modules to plugins.  The plugin model is more flexible, and the blipmovie
+  development has shown there is no clear distinction between data sources
+  and processing-stack inserts, because some data sources naturally replace
+  stages in the processing stack.  .
+  Just add a "globals" field to the plugin list with items that
+  should get assigned in the global environment (e.g. the various class
+  methods for units and ports), and make get.units() and get.ports()
+  items of the plugin.
+
+- DONE: new simplified plugin/interface semantics to replace modules
+        interface method:
+        ================
+        get.ports: get the list of ports
+ 
+        port methods:
+        ============
+	start.up: open files/channels and position the pointer to the first available scan;
+	          if can.specify.start.time is TRUE, accepts a timestamp parameter
+                  (e.g. this can be used for starting up the Seascan archive playback at a 
+                   particular time)
+	config: accepts a ... parameter; if present, sets named configuration items,
+	     otherwise returns named list of current configuration
+
+
+	get.scan.info: return scan info for the next available scan (and guarantee that the
+	     next call to get.scan.data will return the data for this scan); repeated calls
+	     advance the pointer in an archive; for a live source, repeated calls may
+	     block and are guaranteed to not return the same scan more than once
+
+	get.scan.data: return the data for the scan whose header information was returned by
+	     the most recent call to get.scan.info; returns NULL if called twice without
+	     an intervening call to get.scan.info
+
+	seek.scan: make the next call to get.scan.info return info for the sought scan
+	seek.time: make the next call to get.scan.info return info for the sought scan, which
+             is the first scan satisfying:
+                    scan.timestamp <= sought.timestamp <= scan.timestamp + scan.duration
+	     return error if channel hasn't been started up, or 
+
+	next.scan: no longer used.
+	shut.down: close channels / files.
+
+- DONE: WE USE radR.install.handler TO INSTALL rss.event.loop as a
+  handler integration of radR into R event loop (DONE in unix version;
+  multi-threaded nature of Windows version might mean this is not required)
+
+- DONE: gui.create.menu.button should not use tk_optionMenu, since the button loses spaces in 
+  the name; retool the tcl code for tk_optionMenu into R
+
+- DONE: THE BLIPMOVIE ARCHIVE NOW USES THE SINK PARADIGM, WHICH SEEMS
+  BETTER.  decide whether a plugin or a data sink approach is more
+  natural for recording.  The data sink menu would have to allow
+  selection of multiple sinks.
+
+- DONE: compass (and DONE WITH ZOOM_IN TOO): ability to rotate plot - this
+  is actually easy: the convolution cache can be rotated!)
+
+- DONE: THE POINTERINFO PLUGIN
+  EVM (this is a straight line from the centre to the "compass" that
+  could give us bearing).  Helpful when someone wants to say, "The bird
+  is 200 m out at 45 degrees."
+   
+- DONE: THE POINTERINFO PLUGIN OR Just a "marker" or cursor that you hover over a particular blip
+  and some sort of box that outputs the range and bearing at that
+  approximate location.  SeaView has this at the very top of the Table
+  of Contents.  (RANGE, BEARING, LAT, LONG, PATCH STATS; turn on/off
+  via menu)
+
+
+- DONE: rework the GUI as a true event-based system, using synthetic events for
+  all functions, and a config-file-based mapping from real to synthetic events
+
+- DONE: check bounds for indexes of extmats
+
+
+- DONE: use ints not shorts in the extmat indexing functions,
+  because the length of an nx2 matrix index can be larger than
+  a short.
+  
+- DONE: fix rss.patch.at.rc to use the (sample, pulse) ordering
+  used everywhere else!
+
+
+- DONE:  make GUI and RSS environments, not plain lists; ALSO DONE FOR PLUGINS.
+
+- DONE WITH RSS.GET.AND.SET() INSTEAD.  Use an activebinding to properly implement the lock between
+  the blipping loop and the GUI currently dealt with by the variable new.play.state
+  (possibly the setter function returns the original value)
+
+- DONE: hide the slider when live, replacing it with a message about number of scans read or something
+
+- NO: THIS IS EASILY OBTAINED BY THE HOOK CODE IF REQUIRED; SAME COULD BE SAID
+  FOR SAMPLE VALUES AND SCORES!
+  send the patch hook the sample values and cell values (mean, sd) for each sample
+
+- DONE: final algorithm transparency issues: the score calculated for each
+  sample should be available to R as an external matrix (as the raw
+  scan data, sample classifications, cell mean and deviances
+  etc. already are); also, scan conversion should be able to use these
+  sample scores, rather than the raw values, as the data to be
+  displayed in the plot.  I think this is an important pair of
+  features.  
+
+- DONE: change the blip and patch hooks to provide the z-scores as well 
+  as sample values
+
+- UNDER CONSTRUCTION: wiki at radr.wiki.com
+
+- DONE: zero-line-straddling patch-split up issue: make the patchify
+  algorithm wrap-around from the last to the first pulse in a scan,
+  and simplify/speed up the merging steps of the sweeper algorithm
+
+
+- DONE: SIMPLE CONCATENATION OF THE SCAN FILES (WITHOUT REPEATING THE PREAMBLE), AND 
+  CONTINUATION OF THE BLIP AND SAMPLE FILES.
+  slightly extend the blipmovie format so that it can hold multiple
+  segments; this is just for the convenience of having a playlist
+  with multiple segments, rather than one long segment with
+  discontinuous regions.
+
+- DONE: allow the R callback for patchstats to force acceptance/rejection of all patches
+  (i.e. return a logical vector of length (num_patches), with TRUE representing "accept"
+  and FALSE, "reject"
+
+- DONE:? patchify_buffer needs to reallocate the image structure if the input
+  buffer changes in size from the previous call
+
+- DONE: learning mode:  when should it be on/off
+
+- DONE: when rewriting the radRconf files, why the extra blank lines showing up at the beginning?
+
+- DONE reincorporate changes made to blipmovie plugin in Wolfville back
+  into the trunk (learn how to do this as a branch + merge in svn)
+
+- DONE separate GUI choice for blip filtering vs. blip finding so that
+  blip movies can be filtered and resaved.  Also change blipmoviearch
+  so that it calls the blip hook when this filtering is enabled
+
+- DONE: make the parameter-history recorder (currently part of saveblips)
+  a plugin so that it can be used with other plugins, especially
+  blipmovie
+
+- DONE: add a user event recorder, allowing categorized, timestamped
+  comments (e.g. "rain begin here") to be saved in a file
+
+- DONE: separate radR.c into
+
+	(1) windows-specific gui with API (DONE)
+
+	(2) seascan-specific backend with API (DONE)
+
+	(3) generic control module with generic data structures (DONE) (radR.R)
+            (usable with different backends and guis)
+
+	(4) data-processing module (DONE: radR.c)
+
+  and create a modular makefile.
+
+- NO: change the blipfile format to match seascan archive in overall
+  structure
+
+- DONE: allow selection of blipfile location and graceful error if it
+  can't be opened
+
+- DONE, mmostly: plotting window with controls for: zoom, pan/centre, range-ring,
+hot/cold, plot colour, showing blips, compass, rotation
+
+- DONE: A DETACHABLE PLUGIN MENU annotations control window
+
+- DONE: fix my alleged fix of the plot-window-too-big issue. (arith
+except in radR.c: 439
+
+- DONE WITH BLIPMOVIE: ability to read/playback blip archive
+
+- DONE: better plotting of blips.  Make sure circles actually enclose all of the pixels in a patch, e.g.
+or just colour these insead, or plot (and save?) sectors
+
+- NO: OPTIMIZED BY CACHING CONVOLUTION COEFFICIENTS; re-implement
+  scan-conversion using the concentric circle approach, all in integers;
+  use smart clipping to skip circle segments outside the window.
+
+- DONE: no more funny stuff in plot window; pan with left button; re-centre with middle button; right button pops
+  up menu of control windows to show; closing a control window just hides it
+
+- DONE: allow blip selection based on min/max angular width and radial thickness
+
+- DONE: timezone in radRconf.R file; should be applied to all time displays
+
+
+- DONE: R functions of extmats: 
+	dim.extmat: returns dimensions, 
+	  [.extmat: (indexing) 
+	[<-.extmat: indexed assignment
+  Then hooks from R can be called just as natural functions,
+  except that to get the raw data from the extmat requires using []
+  (and [] with no args returns entire matrix)
+
+- DONE: for C calls of R hooks, the syntax is
+  do_R_hook(WHATEVER_HOOK, t_extmat *x, t_extmat *y, ..., NULL)
+  which repacks each non-null extmat as an extmat SEXP, 
+  then calls the defined R hook.  The hook function is responsible
+  for doing any assignment.
+
+- FIXED: why does the R Windows plotting device not show up when running radR over Remote Desktop.  Does it
+  show up on skylark, or is this an RDP problem.  PROBLEM WAS WITH STARTING RADR.R IN .RPROFILE, before
+  STANDARD PACKAGES HAD BEEN READ IN.
+
+- FIXED: when a segment is selected from .playlist, we are not correctly setting
+  new_archive_image_index and/or new_archive_segment_index so that moving the
+  slider shows images in the previously selected segment (and the slider 
+  count and resolution match that).  On the other hand, hitting play
+  after selecting a segment works correctly.  
+
+- DONE: save and restore all control parameters and window geometries between sessions
+  (using R); easiest way is to create a list of all relevant parameters that
+  is saved in R-readable form
+
+- DONE; EFFECTIVELY TREATED BY OFFSCREEN BITMAP CONSTRUCTION:
+update_plot_window should be given a flag word indicating what needs
+re-calculating.  (already done for scan conversion, perhaps that's all
+that's needed)
+
+- DONE: construct entire plot off-screen, then just blit the resulting bitmap to screen
+ so that we avoid all the range-circle drawing flicker
+
+- DONE: USE R HOOKS: histogram plots for: cell means and devs, sample values
+
+- DONE: min/max # of samples for a patch, in addition to patch area
+
+- DONE: fix crash: doing go() after ctrl-Q while blipping causes SEGV in rss_classify_samples:
+    1811:     cell_hot_thresh  = hot_num  * *celldev;
+
+- DONE: when hitting play, do not necessarily rewind.
+
+- DONE: allow the R call back for each individual patch to force acceptance/rejection
+  of that patch.
+
+- DONE: blip sample min/max should be area min/max instead
+
+- DO NOT DO THIS:  patch algorithm needs to wrap at end of screen, to get around the cut
+at 0=360 degrees.  Method:  don't record closing patches whose first run is in row
+0 (their cell run pointers will be intact), and after the last row of data has
+been swept, do one more sweep phase with row 0 as the first row.  next_run offsets
+will have to be negative for the patches still open in row n if they continue
+into row 0.  HUGE PAIN TO DO THIS.  DEAL WITH THE CUT LATER IN TRACK PROCESSING.
+
+- patch callbacks should operate on a per-run basis, not per-cell, for
+  better efficiency.  DONE
+
+- by default, plot and control windows should not overlap
+**FIXED: default positions are now abutting
+
+- change next_run offsets into pointers(?)  DONE
+
+- Still need to investigate that initial crash (once that's out of the
+way, you'll not have to run gdb and do all that other junk, just run
+Rgui and source the file, and we can probably set up an icon to do
+that on the desktop).  The crash occurs on the first call to 
+rss.server.status() and is a SEGV in rpcrt4.dll or somesuch windows library
+**FIXED: Okay, this is now just handled by setting the SIGSEGV handler to ignore
+upon entry to RSigGetServerStatus, then resetting it upon exit.
+
+- more sensible information in plot window title bar (no need for parameters
+which are visible in the other control windows)
+**FIXED: both window dims in km, no more params
+
+- Also, fix the mis-centred circles and ...
+**FIXED: when I last worked on this bit, I'd been assuming the plot was currently
+centred in its window, which it was not
+
+- double left-click to recentre display on centre of window
+**FIXED
+
+
+- slider on tape playback should move to correct frame
+DONE:  (but not implemented(?)/tested with Seascan playback)
+
+- when selecting a new archive, automatically plot the first
+image, without doing any blipping on it, and without advancing
+the archive_image_index pointer.
+
+- don't use SeaScan for reading tape archive (and ability to choose
+input file) DONE.
+
+- clean up window code to use R variables as quasi-tcl names, 
+  e.g. tcl(".rssplot") -> R(..rssplot) and the R thinggy is a closure
+  which parses arguments like tcl does, except that any argument beginning
+  with two dots becomes the quoted version beginning with one, then
+  passes the whole thing to tcl(), so that we can say, in R, 
+
+  ..rssplot(geometry="whatever") to mean tcl(".rssplot", geometry="whatever")
+
+  and a ..tcl function which is like tcl except also does those ..XX->".X" translations
+  and converts any non-existent argument to its quoted form
+  maybe call it .., so we can do and al
+
+  ..(button, ..rssplot.b, text="something") to get tcl("button", ".rssplot.b", text="something")
+
+DONE:  see TCL, TCL2, new tcl functions.  can do, e.g. ..play.slider(set, 100)
+
+
+
+
+

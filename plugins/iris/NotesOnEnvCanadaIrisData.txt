@@ -1,0 +1,77 @@
+Notes on the Iris Radar data files from Environment Canada
+
+Typical filename:
+
+  wvy_20031113123202_20031114122310.tar.gz
+
+with contents:
+
+    mode       owner       size     date      time      name
+  -rwxr--r-- rapid/rapid  952320 2003-11-13 07:33:48 CONVOL:20031113123202
+  -rwxr--r-- rapid/rapid  927744 2003-11-13 07:43:08 CONVOL:20031113124200
+  -rwxr--r-- rapid/rapid  903168 2003-11-13 07:53:29 CONVOL:20031113125156
+  -rwxr--r-- rapid/rapid  890880 2003-11-13 08:02:49 CONVOL:20031113130156
+  -rw------- rapid/rapid  348183 2003-11-13 08:13:34 CONVOL:20031113131152
+  -rwxr--r-- rapid/rapid  847872 2003-11-13 08:22:54 CONVOL:20031113132148
+  ...
+  -rwxr--r-- rapid/rapid  473088 2003-11-13 07:40:28 DOPVOL1_A:20031113123238
+  -rwxr--r-- rapid/rapid  454656 2003-11-13 07:49:48 DOPVOL1_A:20031113124228
+  ...
+  -rwxr--r-- rapid/rapid  497664 2003-11-13 07:40:28 DOPVOL1_B:20031113123311
+  -rwxr--r-- rapid/rapid  479232 2003-11-13 07:49:48 DOPVOL1_B:20031113124314
+  ...
+  -rwxr--r-- rapid/rapid  460800 2003-11-13 07:40:28 DOPVOL1_C:20031113123422
+  -rwxr--r-- rapid/rapid  448512 2003-11-13 07:49:48 DOPVOL1_C:20031113124420
+  ...
+  -rwxr--r-- rapid/rapid  172032 2003-11-13 07:40:28 DOPVOL2:20031113123444
+  -rwxr--r-- rapid/rapid  165888 2003-11-13 07:49:49 DOPVOL2:20031113124446
+  -rwxr--r-- rapid/rapid  165888 2003-11-13 08:00:09 DOPVOL2:20031113125444
+  ...
+
+The basename of these gzipped tar archives is a 3 letter radar code
+followed by two 13-digit timestamps in YYYYMMDDHHMMSS form, separated
+by '_'s.
+
+Each file in the archive is an Iris Raw Product file, as described in
+section 3.5.4 of [1].  Its name is a product name and a timestamp
+separated by a ':'.
+
+The CONVOL files have a single product per sweep.
+The DOPVOL1_x files have four products per sweep.
+The DOPVOL2 files have two products per sweep. (?)
+
+Some files may have size 0 in the tar listing, in which case they
+are ignored.  Files which have "-rw-------" as their mode field in the
+tar listing appear to be incomplete:  they all caused my code to crash,
+and they are all significantly shorter than the files before and after
+them in the archives; the one I examined in detail was abruptly truncated.
+Presumably, the mode field is meant to flag this condition.
+
+The iwritn field in ingest_data_header says how many full rays for a given
+product were in a sweep for each product.  However, a ray_header with no
+data is written even for "empty" rays, and so we use the irtotl field
+in ingest_data_header to count rays in sweeps, since this matches the 
+number of ray headers in the sweep.
+
+A "ray" is data from one or more pulses covering a particular span of
+azimuth and elevation; i.e. a spherical "sector" with a spherical
+rectangle as its cap outline, rather than a circle.  The azimuth and
+elevation are represented as "binary angles" , which are unsigned
+short integers from 0 to 65535 representing angles 0, d, 2d, 3d,
+...65535d where d = 2 pi/65536 (i.e. fractions of a circle from
+north).
+
+Different sweeps may have different numbers of rays and different
+numbers of bins per ray.  So far, we only support the case where each
+ray in a sweep has the same number of bins, as appears to be
+the case in Environment Canada files.
+
+Rays have 8 bits per bin for both CONVOL and DOPVOL files.
+
+Reflectivity is (x-64) / 2.
+
+
+
+================================================================================
+[1] Iris Programmer's Manual (March 2007).  Retrieved from 
+http://www.sigmet.com/products/iris/documentation on Nov. 22, 2007.

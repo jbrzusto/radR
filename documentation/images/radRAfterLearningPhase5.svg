@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="534.4577"
+   height="448.70801"
+   id="svg14806"
+   sodipodi:version="0.32"
+   inkscape:version="0.44.1"
+   version="1.0"
+   sodipodi:docbase="C:\Documents and Settings\TY\Desktop"
+   sodipodi:docname="radRAfterLearningPhase5.svg"
+   inkscape:export-filename="C:\Documents and Settings\TY\Desktop\radRAfterLearningPhase5.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs14808">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend"
+       style="overflow:visible">
+      <path
+         id="path7070"
+         d="M 0,0 L 5,-5 L -12.5,0 L 5,5 L 0,0 z "
+         style="fill-rule:evenodd;stroke:black;stroke-width:1pt;marker-start:none"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.216827"
+     inkscape:cx="267.22885"
+     inkscape:cy="224.354"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     inkscape:window-width="1024"
+     inkscape:window-height="742"
+     inkscape:window-x="-4"
+     inkscape:window-y="-4" />
+  <metadata
+     id="metadata14811">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-107.7711,-308.0082)">
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="190.53238"
+       y="317.12537"
+       id="text12471"><tspan
+         sodipodi:role="line"
+         id="tspan12473"
+         x="190.53238"
+         y="317.12537"
+         style="font-weight:bold">After the Learning Phase (V):  Updating Running Cell Stats</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="107.44888"
+       y="447.94666"
+       id="text12475"><tspan
+         sodipodi:role="line"
+         id="tspan12477"
+         x="107.44888"
+         y="447.94666">t = 16</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="170.26131"
+       y="415.99536"
+       id="text12479"><tspan
+         sodipodi:role="line"
+         id="tspan12481"
+         x="170.26131"
+         y="415.99536">running_cell_mean(16) = <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12529">k</tspan> * running_cell_mean(15) + (1 - <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12537">k</tspan>) * cell_mean(16)</tspan><tspan
+         sodipodi:role="line"
+         x="170.26131"
+         y="430.99536"
+         id="tspan12483" /><tspan
+         sodipodi:role="line"
+         x="170.26131"
+         y="445.99536"
+         id="tspan12485" /></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="140.05215"
+       y="341.90576"
+       id="text12491"><tspan
+         sodipodi:role="line"
+         id="tspan12493"
+         x="140.05215"
+         y="341.90576">For each cell, we update its running stats using the current stats estimates.</tspan><tspan
+         sodipodi:role="line"
+         x="140.05215"
+         y="356.90576"
+         id="tspan12495">The running stats characterize the background of each cell, averaged over time.</tspan><tspan
+         sodipodi:role="line"
+         x="140.05215"
+         y="371.90576"
+         id="tspan12507">Sample scores in the next scan are calculated using the updated running stats</tspan><tspan
+         sodipodi:role="line"
+         x="140.05215"
+         y="386.90576"
+         id="tspan12511">from the current scan (see above).</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="172.68784"
+       y="511.30493"
+       id="text12499"><tspan
+         sodipodi:role="line"
+         id="tspan12501"
+         x="172.68784"
+         y="511.30493"
+         style="font-weight:bold"><tspan
+           style="font-style:italic"
+           id="tspan12545">k</tspan><tspan
+           style="font-weight:normal"
+           id="tspan12503"> is the stats update decay constant, between 0 and 1</tspan></tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="526.30493"
+         style="font-weight:normal"
+         id="tspan12505">- the extreme value <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12547">k</tspan>=0 represents no memory:  samples scores are</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="541.30493"
+         style="font-weight:normal"
+         id="tspan12513">  calculated using cell means and deviances estimate purely from</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="556.30493"
+         style="font-weight:normal"
+         id="tspan12519">  the current scan</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="571.30493"
+         style="font-weight:normal"
+         id="tspan13508" /><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="586.30493"
+         style="font-weight:normal"
+         id="tspan12515">- the extreme value <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12551">k</tspan>=1 represents no further learning:  samples</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="601.30493"
+         style="font-weight:normal"
+         id="tspan12517">  scores are always compared against the cell means and deviances</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="616.30493"
+         style="font-weight:normal"
+         id="tspan12521">  calculated during the learning phase.  This is equivalent to turning off</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="631.30493"
+         style="font-weight:normal"
+         id="tspan12523">  the &quot;<tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12525">update stats every scan</tspan>&quot; option in radR.</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="646.30493"
+         style="font-weight:normal"
+         id="tspan13510" /><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="661.30493"
+         style="font-weight:normal"
+         id="tspan12555">- intermediate values of <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12557">k</tspan> represent weightings between past and </tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="676.30493"
+         style="font-weight:normal"
+         id="tspan12563">  current estimates of background means and deviances; using a smaller</tspan><tspan
+         sodipodi:role="line"
+         x="172.68784"
+         y="691.30493"
+         style="font-weight:normal"
+         id="tspan12565"><tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12567">  k</tspan> will cause radR to adapat more quickly to changing background conditions</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="170.35672"
+       y="481.02979"
+       id="text12579"><tspan
+         sodipodi:role="line"
+         id="tspan12581"
+         x="170.35672"
+         y="481.02979">running_cell_dev(16)    = <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12583">k</tspan> * running_cell_dev(15)    + (1 - <tspan
+   style="font-style:italic;font-weight:bold"
+   id="tspan12587">k</tspan>) * cell_dev(16)</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="268.01971"
+       y="449.43774"
+       id="text12591"><tspan
+         sodipodi:role="line"
+         id="tspan12593"
+         x="268.01971"
+         y="449.43774"
+         style="font-size:10px;font-style:italic">long-term estimates</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="455.65317"
+       y="449.43835"
+       id="text12595"><tspan
+         sodipodi:role="line"
+         id="tspan12597"
+         x="455.65317"
+         y="449.43835"
+         style="font-size:10px;font-style:italic">single-scan estimates</tspan></text>
+    <path
+       style="opacity:1;fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1;display:inline"
+       d="M 264.93917,445.15421 C 243.72285,445.72741 239.45614,436.35141 235.48109,429.71521"
+       id="path12601"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="opacity:1;fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1;display:inline"
+       d="M 264.29082,447.99481 C 243.0745,447.42161 239.04358,454.54891 235.38219,463.43381"
+       id="path13488"
+       sodipodi:nodetypes="cc" />
+    <g
+       style="opacity:1;display:inline"
+       id="g13494"
+       transform="matrix(-1,0,0,1,592.9039,-1240.285)">
+      <path
+         sodipodi:nodetypes="cc"
+         id="path13496"
+         d="M 217.3129,1685.5495 C 196.09658,1686.1227 191.19432,1680.7289 185,1670"
+         style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path13498"
+         d="M 218.20533,1688.2796 C 196.98901,1687.7064 192.3129,1695 184.9011,1703.7186"
+         style="opacity:1;fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1;display:inline" />
+    </g>
+    <g
+       style="opacity:1;display:inline"
+       id="g13500"
+       transform="matrix(-1,0,0,1,779.9584,-1240.285)">
+      <path
+         sodipodi:nodetypes="cc"
+         id="path13502"
+         d="M 206.21632,1685.439 C 185,1686.0122 185,1678.16 185,1670"
+         style="fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1" />
+      <path
+         sodipodi:nodetypes="cc"
+         id="path13504"
+         d="M 206.11742,1688.2796 C 184.9011,1687.7064 184.9011,1695.5586 184.9011,1703.7186"
+         style="opacity:1;fill:none;fill-rule:evenodd;stroke:black;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1;display:inline" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;opacity:1;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;display:inline;font-family:Bitstream Vera Sans"
+       x="178.59097"
+       y="716.85779"
+       id="text13512"><tspan
+         sodipodi:role="line"
+         id="tspan13514"
+         x="178.59097"
+         y="716.85779"
+         style="font-size:10px;font-style:italic"><tspan
+   style="font-size:10px;font-style:italic;font-weight:bold"
+   id="tspan13524">Note</tspan>:  if all the samples in a cell belong to blips, then the running stats for that cell </tspan><tspan
+         sodipodi:role="line"
+         x="178.59097"
+         y="729.35779"
+         id="tspan13516"
+         style="font-size:10px;font-style:italic">           remain unchanged:</tspan><tspan
+         sodipodi:role="line"
+         x="178.59097"
+         y="741.85779"
+         style="font-size:10px;font-style:italic"
+         id="tspan13528">                                           running_cell_mean(16) = running_cell_mean(15)</tspan><tspan
+         sodipodi:role="line"
+         x="178.59097"
+         y="754.35779"
+         id="tspan13522"
+         style="font-size:10px;font-style:italic">                                           running_cell_dev(16)    = running_cell_dev(15)</tspan></text>
+  </g>
+</svg>

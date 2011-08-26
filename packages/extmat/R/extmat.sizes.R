@@ -1,0 +1,11 @@
+extmat.sizes <- c("char"               = 1,
+                  "unsigned char"      = 1,
+                  "short"              = 2,
+                  "unsigned short"     = 2,
+                  "int"                = 4,
+                  "unsigned int"       = 4,
+                  "long long"          = 8,
+                  "unsigned long long" = 8,
+                  "float"              = 4,
+                  "double"             = 8,
+                  "user"               = NA)

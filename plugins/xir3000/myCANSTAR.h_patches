@@ -1,0 +1,29 @@
+--- CANSTAR.H	2010-06-09 16:09:48.000000000 -0300
++++ CANSTAR.H	2010-10-04 22:59:07.323457600 -0300
+@@ -995,7 +995,7 @@
+    
+    ULONG          ulPBSweepRate; 
+    ULONG          ulPBRateFactor; 
+-   bool           bSyncPBToFileTime; 
++   BOOL           bSyncPBToFileTime; 
+ 
+ } PLAYBACK_PARAM;
+ 
+@@ -1100,7 +1100,7 @@
+ #if defined(__cplusplus)
+ #define PRE    extern "C"
+ #else
+-#define PRE    
++#define PRE    extern
+ #endif
+ 
+ PRE BOOL    WINAPIX  CSAPI_AddApiTraceGroup (DWORD dwGroup);
+@@ -1280,7 +1280,7 @@
+ PRE BOOL    WINAPIX  CSAPI_SetStandByMode (HDEV Handle, STANDBY_MODE eStandBy);
+ PRE BOOL    WINAPIX  CSAPI_SetVideoNegative (HDEV Handle, BOOL bNegVideo);
+ PRE BOOL    WINAPIX  CSAPI_ShowScan (HDEV Handle, UINT uScanNo);
+-PRE BOOL    WINAPIX  CSAPI_ShowScanExt (HDEV Handle, UINT uScanNo, PVOID pUserPtr = NULL);
++PRE BOOL    WINAPIX  CSAPI_ShowScanExt (HDEV Handle, UINT uScanNo, PVOID pUserPtr);
+ PRE BOOL	   WINAPIX  CSAPI_SetNonMovingRemoval (HDEV Handle, BOOL bInOnlyMoving);
+ PRE BOOL	   WINAPIX  CSAPI_GetNonMovingRemoval (HDEV Handle, BOOL *bOutOnlyMoving);
+ PRE BOOL	   WINAPIX  CSAPI_SetTrailsDisplay (HDEV Handle, BOOL bInTrailsDisplay);

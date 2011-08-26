@@ -1,0 +1,185 @@
+#!/usr/bin/perl -W
+#     -*- mode: cperl -*-
+#
+# Rpp    -  trivial R preprocessor for conditional code inclusion.
+#           Accepts an R input file and command line variable
+#           assignments like $VERSION=DEBUG.
+#           Outputs the same R file,
+#           subject to the following commands in the input file, which
+#           are not printed.
+#
+#           ###.eval expr                ## evaluate a Perl expression
+#           ###.if expr
+#           ###.elsif expr
+#           ###.else 
+#           ###.endif
+#           ###.include "filename"       ## (conditionally) include another source file
+#
+#           only lines at level zero or all of whose enclosing if clauses
+#           are true are printed, in the obvious way.
+#
+#           "expr" are represent perl expressions
+#
+#           Command line arguments can be either string variable
+#           assignments of the form VARNAME=VALUE (where VALUE does
+#           not contain whitespace or "="), or arbitrary perl
+#           expressions.
+#
+#           The only command line parameter accepted is "--lineinfo LINFOFILE", which causes output of 
+#           line origin information to LINFOFILE, in the form
+#           ORIGINAL_LINE[, ORIGINAL_FILE]
+#           which for each written to stdout, gives its origin, including the name
+#           of the included file from which it came, if any.
+#
+#           e.g.
+#
+#              Rpp --lineinfo tmp2.R.lineinfoVERSION=DEBUG '$x="something weird"' < tmp.R > tmp2.R
+#
+#           where tmp.R is:
+#
+#             ###.if $x =~ /weird/
+#                  ...(1)
+#             ###.endif
+#             ###.eval $FULLDEBUG=($VERSION eq FULLDEBUG);$DEBUG=($VERSION eq DEBUG);$PROD=($VERSION eq PRODUCTION)
+#             ###.if $FULLDEBUG
+#                  ...(2)
+#             ###.elsif $DEBUG
+#                  ...(3)
+#             ###.else
+#                  ...(4)
+#             ###.endif
+#
+#           creates tmp2.R, containing these sections:
+#
+#             ...(1)
+#             ...(3)
+#
+#           and tmp2.R.lineinfo, which looks like:
+#           1,tmp.R
+#           2,tmp.R
+#           ...
+#           
+#
+# John Brzustowski, jbrzusto -=at=- fastmail -=dot=- fm, 2007
+# Placed in the public domain.
+
+my @parts;
+while ($#ARGV >= 0) {
+  $arg = shift();
+  if ($arg eq "--lineinfo") {
+    open LINFO, '>', shift();
+  } else {
+    if ($arg =~ /^[a-zA-Z_]+=/) {
+      @parts = split /=/, $arg;  # create an expression for this simple variable assignment
+      $arg = '$' . $parts[0] . '="' . $parts[1] . '"';
+    }
+    eval $arg;
+  }
+}
+
+my @stack;  		# cumulative ANDed truth value from nested .if statements
+my @stack2; 		# number of .if and .elsif that will be terminated by the next .endif
+                        # negative entries flag those levels where a .else has been seen
+my @lines = <STDIN>; 	# source lines
+my $n = $#lines;        # number of source lines in toplevel file
+
+my @inc_file_hash = {"/dev/stdin" => 1};     # hash of names of already included files (within stack)
+my @inc_file_names = ("R source file");  # stack of names of included files
+my $inc_file = 0;       # index into included file stack
+my @inc_file_first = (0); # index among all lines of first line in each included file
+my @inc_file_last = ($n - 1); # index among all lines of last line in each included file
+my @inc_line_ind = (0); # stack of line indexes where includes happened
+my $i = 0;  		# counts source lines
+my $j;      		# counts stacked .endifs
+my $v;      		# truth value popped from stack
+my $MAX_RECURSIVE_INCLUDES=10; # maximum number of times a file can be recursively included
+
+sub mydie {
+  my $emsg = shift(@_) . " at line " . ($i - $inc_file_first[$inc_file] + 1) . " in '" . $inc_file_names[$inc_file] . "'\n";
+  while ($inc_file > 0) {
+    --$inc_file;
+    $emsg = $emsg . "   included from line " . ($inc_line_ind[$inc_file + 1] - $inc_file_first[$inc_file] + 1). " of '" . $inc_file_names[$inc_file] . "'\n";
+  }
+  die($emsg);
+}
+
+unshift @stack, 1;      # wrap code in a .if with a TRUE condition
+
+while ($i <= $n) {
+  if ($lines[$i] =~ /^\#\#\#\.if (.*)$/) {
+    #
+    # .if
+    #
+    unshift (@stack, $stack[0] && eval($1));
+    unshift @stack2, 1;
+  } elsif ($lines[$i] =~ /^\#\#\#\.elsif (.*)$/) {
+    #
+    # .elsif
+    #
+    $v = shift @stack;
+    unshift (@stack, $stack[0] && ! $v);
+    unshift (@stack, $stack[0] && eval($1));
+    mydie ("Rpp: .elsif without corresponding .if") if ($#stack2 == -1);
+    mydie ("Rpp: .elsif follows .else") if ($stack2[0] < 0);
+    ++$stack2[0];
+  } elsif ($lines[$i] =~ /^\#\#\#\.else([ \t].*)?$/) {
+    #
+    # .else
+    #
+    mydie ("Rpp: .else without corresponding .if") if ($#stack < 1);
+    mydie ("Rpp: more than one .else in a .if statement") if ($stack2[0] < 0);
+    $v = shift @stack;
+    unshift (@stack, $stack[0] && ! $v);
+    $stack2[0] = - $stack2[0];
+  } elsif ($lines[$i] =~ /^\#\#\#\.endif([ \t].*)?$/) {
+    #
+    # .endif
+    #
+    mydie ("Rpp: .endif without corresponding .if") if ($#stack2 < 0);
+    $j = abs(shift(@stack2));
+    shift @stack while ($j-- > 0);
+  } elsif ($lines[$i] =~ /^\#\#\#\.eval([ \t].*)?$/) {
+    #
+    # .eval
+    #
+    eval($1) if ($1);
+  } elsif ($lines[$i] =~ /^\#\#\#\.include[ \t]*"(.*)"[ \t]*$/) {
+    #
+    # .include
+    #
+    if ($stack[0] && $1) {
+      mydie("Rpp: include can't find file '" . $1 . "'") if (! -f $1);
+      mydie("Rpp: attempt to include file '" . $1 . "' exceeds MAX_RECURSIVE_INCLUDES=" . $MAX_RECURSIVE_INCLUDES) if ($inc_file_hash{$1} && $inc_file_hash{$1} == $MAX_RECURSIVE_INCLUDES);
+      ++$inc_file_hash{$1};
+      push @inc_file_names, $1;
+      open INCFILE, "<", $1;
+      my @inclines = <INCFILE>;
+      splice(@lines, $i + 1, 0, @inclines);
+      push @inc_file_first, $i + 1;
+      push @inc_file_last, $i + @inclines;
+      push @inc_line_ind, $i;
+      $n = $n + @inclines;
+      ++$inc_file;
+    }
+  } elsif ($lines[$i] =~ /^\#\#\#(\.[a-zA-Z]+)([ \t].*)?$/) {
+    #
+    # (bad control word)
+    #
+    mydie("Rpp: unknown control word '" . $1 . "'");
+  } else {
+    #
+    # (normal source line)
+    #
+    print $lines[$i] if ($stack[0]);
+    # line origin information
+    printf LINFO "%d%s\n", ($i + 1 - $inc_file_first[$#inc_file_first]), ($inc_file > 0) ? "," . $inc_file_names[$#inc_file_first] : "" if($stack[0]);
+  }
+  ++$i;
+  if ($inc_file > 0 && $i > $inc_file_last[$inc_file]) {
+    # we've finished the current include file,
+    # so reduce its current nesting by one.
+    --$inc_file_hash{$inc_file_names[$inc_file]};
+    --$inc_file ;
+  }
+}
+mydie("Rpp: .if without corresponding .endif") if ($#stack != 0);

@@ -1,0 +1,15 @@
+#include <stdlib.h>
+#include <malloc.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <signal.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/XShm.h>
+#include <tcl.h>
+#include <tk.h>
+#include <tkInt.h>
+#include "radR.h"
+#include "patchify.h"
+#include "radRprot.h"

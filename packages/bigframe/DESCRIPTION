@@ -1,0 +1,10 @@
+Package: bigframe
+Type: Package
+Title: simple disk-based data frames with fixed-sized rows
+Version: 1.0
+Date: 2007-08-17
+Author: John Brzustowski
+Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
+Depends: methods
+Description: Creates file-backed data.frame like objects.  Data are inserted/extracted/deleted using indexing and indexed assignment.  Allowed column types are logical, integer, real, complex, and character.  Character columns are given maximum string lengths (from 4 to 512) at creation time.  Assigning to non-contiguous parts of the frame fills intervening rows with NA values, extending the file.  Deleting rows from the end of a bigframe truncates the associated file.
+License: GPL

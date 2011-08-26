@@ -1,0 +1,73 @@
+#!/bin/bash
+##  svn $Id: $
+##
+##  radR : an R-based platform for acquisition and analysis of radar data
+##  Copyright (C) 2006, 2007, 2008 John Brzustowski        
+##
+##  This program is free software; you can redistribute it and/or modify
+##  it under the terms of the GNU General Public License as published by
+##  the Free Software Foundation; either version 2 of the License, or
+##  (at your option) any later version.
+##
+##  This program is distributed in the hope that it will be useful,
+##  but WITHOUT ANY WARRANTY; without even the implied warranty of
+##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##  GNU General Public License for more details.
+##
+##  You should have received a copy of the GNU General Public License
+##  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+################################################################################
+#
+# rbatch: run process_one.R on a set of files; 
+#         e.g. process a bunch of blip movies to extract tracks
+#
+# usage:  rbatch [--parm PARMFILE] FILE1 ... FILEN
+#
+# e.g.:   rbatch /array/data1/jbrzusto/data/CS*.bma
+#
+# Parameter overrides are taken from PARMFILE, if the --parms option is specified.
+# 
+# NOTE: this file must be executed from the toplevel radR directory.
+
+RVERSION=2.5.1
+
+if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "" ]; then
+    cat <<-EOF
+		rbatch runs process_one.R on a set of files; 
+		       e.g. process a bunch of blip movies to extract tracks
+		
+		usage:  rbatch [--no-progress] [--parm PARMFILE] FILE1 ... FILEN
+		
+		e.g.:   rbatch /array/data1/jbrzusto/data/CS*.bma
+		
+		Parameter overrides are taken from PARMFILE, if the --parms option is specified.
+		Specifying --no-progress prevents a running display of scans processed.
+	EOF
+    exit 1;
+fi
+
+if [ "$1" == "--no-progress" ]; then 
+    shift
+    PROGRESS=""
+else 
+    PROGRESS="--show-progress"
+fi
+
+if [ "$1" == "--parms" -o "$1" == "--parm" ]; then 
+    shift
+    if [ ! -f "$1" ]; then
+	echo "The parm file '$1' does not exist"
+	exit 1;
+    fi;
+    PARMS="--parm $1"
+    shift
+else
+    PARMS=""
+fi
+
+for x in "$@"; do
+    R-$RVERSION --no-save --quiet --args --no-gui $PROGRESS --source main/process_one.R $PARMS "$x"
+done
+
+echo
