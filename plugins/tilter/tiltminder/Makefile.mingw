@@ -40,7 +40,7 @@ INC := -I$(BOOST_INC_PATH)
 
 MINDER_FILES := minder.cc minderutil.hpp minderutil.cc mindertypedefs.hpp
 
-all: dynamic static
+all: tiltserv1.1s.exe ##dynamic static
 
 dynamic: runtilt1.1.exe tiltserv1.1.exe
 
