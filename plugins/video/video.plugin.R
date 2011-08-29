@@ -43,7 +43,7 @@ get.ports = function() {
                         is.seekable = TRUE,
                         file.ext = "wmv",
                         can.specify.start.time = TRUE,
-                        config = list(filename = NULL, frame.interval=default.frame.interval, width=default.width, height=default.height),
+                        config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height),
                         has.toc = TRUE,
                         cur.run = 0,
                         cur.scan = 0,
@@ -94,13 +94,13 @@ get.menus = function() {
                }
                ),
          list ("gauge",
-               label = "desired frame interval, in seconds" ,
-               range = c(0.01, 1000),
-               increment = 0.01,
-               value = default.frame.interval,
-               on.set = function(x) { default.frame.interval <<- x;
+               label = "desired frame rate, in frames per seconds" ,
+               range = c(0.001, 1000),
+               increment = 1,
+               value = default.frame.rate,
+               on.set = function(x) { default.frame.rate <<- x;
                                     if (inherits(RSS$source, MYCLASS))
-                                      config(RSS$source, frame.interval=x)
+                                      config(RSS$source, frame.rate=x)
                                     }
                ),
          list ("gauge",
@@ -158,8 +158,8 @@ sprintf("radR interface port: %s: %s: %s",
                height = {
                  port$config$height <- opts[[opt]]
                },
-               frame.interval = {
-                 port$config$frame.interval <- opts[[opt]]
+               frame.rate = {
+                 port$config$frame.rate <- opts[[opt]]
                },
                {
                  rss.plugin.error("video: unknown configuration option for port: " %:% opt)
@@ -208,9 +208,9 @@ sprintf("radR interface port: %s: %s: %s",
                     
                     bits.per.sample = 15, ## even though the gray channel is only 8 bits, we shift up to improve stats
                     
-                    timestamp = port$start.time + (port$cur.scan - 1) * port$config$frame.interval,
+                    timestamp = port$start.time + (port$cur.scan - 1) / port$config$frame.rate,
                     
-                    duration = port$config$frame.interval * 1000,
+                    duration = 1000 / port$config$frame.rate,
 
                     ## FIXME: the rest of this needs rethinking for video data
                     ## In principal, each sample is a polyhedron extending to infinity,
@@ -288,12 +288,12 @@ sprintf("radR interface port: %s: %s: %s",
     if (is.null(port$start.time))
       port$start.time <- Sys.time()
 
-    ns = as.integer(floor(as.numeric(port$duration) / port$config$frame.interval))
+    ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
     
     port$contents <- list (
                           num.scans = ns,
                           start.time = structure(as.numeric(port$start.time), class="POSIXct"),
-                          end.time = structure(as.numeric(port$start.time + port$config$frame.interval * ns), class="POSIXct")
+                          end.time = structure(as.numeric(port$start.time + ns / port$config$frame.rate), class="POSIXct")
                            )
 
     port$cur.run <- 1
@@ -344,10 +344,10 @@ open.video.at.cur.scan = function(port) {
 
   cmd <- paste("(/bin/cat", paste("'", port$config$filename, "'", sep=""),
                "|", ffmpeg.path,
-               "-ss", round((port$cur.scan - 1) * port$config$frame.interval,2), ## seek to frame
+               "-ss", round((port$cur.scan - 1) / port$config$frame.rate,2), ## seek to frame
                "-flags gray",
                "-i pipe:0", ## read from stdin; this prevents ffmpeg from interfering with piping
-               "-r ", 1 / port$config$frame.interval,  ## output at desired frame rate
+               "-r ", port$config$frame.rate,  ## output at desired frame rate
                "-f rawvideo", ## output format is sequence of raw frames
                "-vcodec pgm", ## output codec is portable gray map
                "-s", paste(port$config$width, port$config$height, sep="x"), ## ask for size at current setting
