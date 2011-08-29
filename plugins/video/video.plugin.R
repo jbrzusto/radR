@@ -342,11 +342,11 @@ open.video.at.cur.scan = function(port) {
   if (!is.null(video.pipe))
     close(video.pipe)
 
-  cmd <- paste("(/bin/cat", paste("'", port$config$filename, "'", sep=""),
-               "|", ffmpeg.path,
+  cmd <- paste(ffmpeg.path,
                "-ss", round((port$cur.scan - 1) / port$config$frame.rate,2), ## seek to frame
                "-flags gray",
-               "-i pipe:0", ## read from stdin; this prevents ffmpeg from interfering with piping
+               "-i",
+               paste("\"", port$config$filename, "\"", sep=""),
                "-r ", port$config$frame.rate,  ## output at desired frame rate
                "-f rawvideo", ## output format is sequence of raw frames
                "-vcodec pgm", ## output codec is portable gray map
