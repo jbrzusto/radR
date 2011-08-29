@@ -1,4 +1,4 @@
-##  svn $Id: video.plugin.R 798 2011-06-18 13:21:56Z john $
+##  svn $Id: video.plugin.R 829 2011-08-26 14:30:08Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2011 John Brzustowski
@@ -329,9 +329,9 @@ sprintf("radR interface port: %s: %s: %s",
 ##   file.path(dirname(datafilename), "_metadata.R")
 ## }
 
-## get the video duration 
+## get the video duration in seconds
 get.video.duration = function(f) {
-  as.difftime(strsplit(grep("Duration", readLines(pipe(paste(ffmpeg.path, "-i", f, "-vframes 0 2>&1"))), value=TRUE), ",")[[1]][1], format="  Duration: %H:%M:%OS")
+  as.numeric(as.difftime(strsplit(grep("Duration", readLines(pipe(paste(ffmpeg.path, "-i", f, "-vframes 0 2>&1"))), value=TRUE), ",")[[1]][1], format="  Duration: %H:%M:%OS", units="secs"))
 }
 
 open.video.at.cur.scan = function(port) {
@@ -342,17 +342,29 @@ open.video.at.cur.scan = function(port) {
   if (!is.null(video.pipe))
     close(video.pipe)
 
-  cmd <- paste("(/bin/cat", paste("'", port$config$filename, "'", sep=""),
-               "|", ffmpeg.path,
+  ## cmd <- paste("(/bin/cat", paste("'", port$config$filename, "'", sep=""),
+  ##              "|", ffmpeg.path,
+  ##              "-ss", round((port$cur.scan - 1) * port$config$frame.interval,2), ## seek to frame
+  ##              "-flags gray",
+  ##              "-i pipe:0", ## read from stdin; this prevents ffmpeg from interfering with piping
+  ##              "-r ", 1 / port$config$frame.interval,  ## output at desired frame rate
+  ##              "-f rawvideo", ## output format is sequence of raw frames
+  ##              "-vcodec pgm", ## output codec is portable gray map
+  ##              "-s", paste(port$config$width, port$config$height, sep="x"), ## ask for size at current setting
+  ##              "pipe:1)",      ## output to standard output
+  ##              "2>/dev/null") ## hide ffmpeg splash info
+  cmd <- paste(ffmpeg.path,
                "-ss", round((port$cur.scan - 1) * port$config$frame.interval,2), ## seek to frame
                "-flags gray",
-               "-i pipe:0", ## read from stdin; this prevents ffmpeg from interfering with piping
+               "-i ",
+               paste("\"", port$config$filename, "\"", sep=""),
                "-r ", 1 / port$config$frame.interval,  ## output at desired frame rate
                "-f rawvideo", ## output format is sequence of raw frames
                "-vcodec pgm", ## output codec is portable gray map
+               "-pix_fmt gray", ## output pixel format is grayscale (8-bit)
                "-s", paste(port$config$width, port$config$height, sep="x"), ## ask for size at current setting
-               "pipe:1)",      ## output to standard output
-               "2>/dev/null") ## hide ffmpeg splash info
+               "pipe:1",      ## output to standard output
+               paste("2>", RSS$null.device, sep=""))  ## hide ffmpeg splash & info
   
   video.pipe <<- pipe(cmd, "rb")
 }
