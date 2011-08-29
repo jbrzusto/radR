@@ -8,12 +8,8 @@ ifeq ("$(TARGET_PLATFORM)", "windows")
 $(eval $(AT_MAKEFILE_START))
 
 ## path to the client library that comes with SeaScan
-ifeq ("$(BUILD_PLATFORM)", "windows")
-SEASCAN_PATH = c:/Program\ Files (x86)/Rutter/Sigma\ S6/SeaScanRT
-else
-SEASCAN_PATH = /media/sda1/Program\ Files/Rutter/Sigma\ S6/SeaScanRT
-endif
-SEASCAN_CLIENT_LIBRARY = $(SEASCAN_PATH)/Client.dll
+SEASCAN_PATH = /$(PROGFILES)/Rutter/Sigma S6/SeaScanRT
+SEASCAN_CLIENT_LIBRARY = "$(SEASCAN_PATH)/Client.dll"
 ## include the pthreads library
 
 PLUGIN_LIB_EXTRA_DEPS = $(wildcard $(RADR_LIB_DIR)/pthreadGC2*.dll) $(RADR_INCLUDE_DIR)/threadutil.h
