@@ -17,8 +17,7 @@
 SHLIB_SUFFIX_unix = .so
 EXE_SUFFIX_unix = 
 CP = /bin/cp
-SVN = $(shell which svn)
-SVNADMIN = $(shell which svnadmin)
+HEAD = /bin/head
 ## version of R you are building against
 R_MAJOR_VERSION = 2
 R_MINOR_VERSION = 5

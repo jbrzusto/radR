@@ -12,10 +12,9 @@
 ###     and you should use /bin/make to get make version >= 3.80
 ###
 
-### Determine the svn revision for this build
+### Determine the git revision for this build
 
-RADR_REVISION := $(shell svn info . | grep Revision | gawk '{print $$2}')
-RADR_LAST_CHANGED := $(shell svn info . | grep "Last Changed Date")
+RADR_REVISION := $(shell git rev-parse --abbrev-ref HEAD)-$(shell git log --format=format:%ci | gawk '{print gensub("-","","g",$$1) gensub(":","","g",$$2);exit(0);}')
 
 ### Determine the platform.  You can specify the linux->windows cross compilation
 ### by invoking like this:
@@ -31,6 +30,12 @@ BUILD_PLATFORM_MAKEFILE = Makefile.$(BUILD_PLATFORM).inc
 
 ### unless the user has specified a target platform, it is the same as the build platform
 TARGET_PLATFORM:=$(if $(TARGET_PLATFORM),$(TARGET_PLATFORM),$(BUILD_PLATFORM))
+
+SRC_DIST_NAME := radR-$(RADR_REVISION)
+SRC_DIST_FILE := $(SRC_DIST_NAME)-src.tar
+SRC_DIST_FILE_COMP := $(SRC_DIST_FILE).gz
+BIN_DIST_NAME := radR-$(RADR_REVISION)-$(TARGET_PLATFORM)
+BIN_DIST_FILE := $(BIN_DIST_NAME).zip
 
 ### For building under windows/mingw, we need to prefix
 ### the toplevel path:
@@ -142,18 +147,12 @@ RM	= /bin/rm
 SCP     = scp
 SED     = /bin/sed
 SSH     = ssh
-SVN     = svn
-SVNADMIN= svnadmin
 TAR	= /bin/tar
 ZIPPROG = /usr/bin/zip  # don't call this ZIP, since it is exported to the shell, and the zip program uses it as a variable of options
 UNZIPPROG = /usr/bin/unzip
 
 R_FILE_CHECKER=$(BUILDSCRIPTS_DIR)/filecheck.R
 RPP=$(BUILDSCRIPTS_DIR)/Rpp
-
-## Repository root:
-
-SVN_REPOS_ROOT = $(shell svn info . | gawk '/Repository Root:/{print gensub("Repository Root: ", "", "g", $$0);}')
 
 PLUGIN_DIR		= $(RADR_TOPLEVEL_DIR)/plugins
 PLUGIN_INSTALL_DIR	= $(RADR_INSTALL_DIR)/plugins
@@ -185,8 +184,6 @@ SCP_UPLOAD_USER=john@discovery
 SCP_BACKUP_DEST=$(SCP_UPLOAD_USER):
 SCP_UPLOAD_DIR=/home/www/html/radR/
 SCP_UPLOAD_DEST=$(SCP_UPLOAD_USER):$(SCP_UPLOAD_DIR)
-LOCAL_SVN_DIR=/home/svn/radR
-LOCAL_SVN_BKUP_DIR=/home/john/bkup/svn
 RPP_OPTS_DEBUG='DEBUG=1'
 RPP_OPTS_PRODUCTION='DEBUG=0'
 RPP_OPTS_BCHECK_DEBUG='DEBUG=1'
@@ -199,8 +196,6 @@ RPP_OPTS_BCHECK_PRODUCTION='DEBUG=0'
 #############################################################
 ##MAKEFILE_DEP = Makefile $(BUILD_PLATFORM_MAKEFILE)
 MAKEFILE_DEP = 
-
-BINARY_DIST_FILE = $(RADR_TOPLEVEL_DIR)/radR$(RADR_REVISION)$(TARGET_PLATFORM).zip
 
 $(eval $(AT_MAKEFILE_START))
 
@@ -215,7 +210,7 @@ $(RADR_INSTALL_DIR)/LICENSE.TXT: LICENSE.TXT
 
 $(RADR_INSTALL_DIR)/VERSION.TXT: FORCE
 	echo "This is revision $(RADR_REVISION) of radR." > $@
-	echo "$(RADR_LAST_CHANGED)" >> $@
+	git log --format=short | $(HEAD) -5l >> $@
 	echo "Built for R version $(R_VERSION)" >> $@
 
 $(RADR_INSTALL_DIR)/00README.TXT: 00README.TXT
@@ -231,9 +226,9 @@ endif
 
 ifneq ($(TARGET_PLATFORM),unix)
 binary:
-	$(RM) -f $(BINARY_DIST_FILE) ; \
+	$(RM) -f $(BIN_DIST_FILE) ; \
 	cd $(RADR_INSTALL_DIR)       ; \
-	$(ZIPPROG) -r $(BINARY_DIST_FILE) . -x ".svn*"
+	$(ZIPPROG) -r ../$(BIN_DIST_FILE) . -x ".git*"
 else
 binary:
 
@@ -358,34 +353,20 @@ reinstall:  FORCE
 $(SUBDIRS_CLEAN):
 	$(MYMAKE) $(subst _clean,,$@) clean
 
-
-
-bkup_svn: CHANGELOG
-	rm -rf $(LOCAL_SVN_BKUP_DIR)/radR
-	$(SVNADMIN) hotcopy $(LOCAL_SVN_DIR)/ $(LOCAL_SVN_BKUP_DIR)/radR
-	$(TAR) -czvf $(LOCAL_SVN_BKUP_DIR)/radR_svn.tgz $(LOCAL_SVN_BKUP_DIR)/radR
-	$(SCP) $(LOCAL_SVN_BKUP_DIR)/radR_svn.tgz $(SCP_BACKUP_DEST)
-
 # bkup_wiki: 
 # 	wget -nH -P wikibackup -r -np -R "index.php?*,Special:*,Template:*,User:*" -X "editor,attachments,skins" http://radr.wiki.com
 
 CHANGELOG: FORCE
-	$(SVN) log $(SVN_REPOS_ROOT) > CHANGELOG
-
-CHANGELOG_STABLE: FORCE
-	$(SVN) log > CHANGELOG_STABLE
+	git log --format=short > CHANGELOG
 
 source_dist: CHANGELOG
-	-rm radR[0-9]*[0-9]source.tgz 
-	export srcdir=radR_$(RADR_REVISION);\
-	mkdir $${srcdir};\
-	$(SVN) co `svn info | gawk '/^URL:/ {print $$2}'` $${srcdir};\
-	$(CP) CHANGELOG $${srcdir};\
-	$(TAR) -czvf radR$(RADR_REVISION)source.tgz --exclude=".svn*" --exclude="devel" --exclude="devel/*" $${srcdir};\
-	rm -rf $${srcdir}
+	git archive --format=tar --prefix=$(SRC_DIST_NAME)/ HEAD > $(SRC_DIST_FILE)
+	tar -rf$(SRC_DIST_FILE) CHANGELOG
+	gzip -f < $(SRC_DIST_FILE) > $(SRC_DIST_FILE_COMP)
+	rm -f $(SRC_DIST_FILE)
 
 upload: binary source_dist
-	$(SCP) radR$(RADR_REVISION)windows.zip radR$(RADR_REVISION)source.tgz $(SCP_UPLOAD_DEST)
+	$(SCP) $(RADR_SRC_DIST_REVISION)windows.zip radR$(RADR_REVISION)source.tgz $(SCP_UPLOAD_DEST)
 	rm -f *LATEST_VERSION_IS*
 	echo "Go back and click on the actual .tgz or .zip file..." > LATEST_VERSION_IS_$(RADR_REVISION)
 	$(SSH) $(SCP_UPLOAD_USER) /bin/rm -f $(SCP_UPLOAD_DIR)/LATEST_VERSION_IS*
