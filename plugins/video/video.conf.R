@@ -24,14 +24,10 @@ date.guess.format = "%Y-%m-%d %H-%M-%S"
 date.guess.regexp = "((19)|20)[0-9][0-9]-[0-9]?[0-9]-[0-9]?[0-9] [0-9]?[0-9]-[0-9]?[0-9]-[0-9]?[0-9]"
 
 ## regardless of the video's frame rate, at what rate do we grab frames for processing in radR?
-## this is defined by the number of seconds between frames:
-default.frame.interval = 0.10
+## this is in frames per second
+default.frame.rate = 10
 
 ## regardless of the video's actual resolution, we can specify the width
 ## and height in pixels for the frames we analyze:
 default.width = 320
 default.height = 200
-
-## video frames are extracted one at a time and saved in a temporary
-## file, whose path is here:
-tmp.frame.filename = "plugins/video/tmp_frame.png"
