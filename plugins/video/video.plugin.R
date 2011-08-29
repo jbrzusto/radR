@@ -1,5 +1,3 @@
-##  svn $Id: video.plugin.R 829 2011-08-26 14:30:08Z john $
-##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2011 John Brzustowski
 ##

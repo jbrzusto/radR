@@ -1,5 +1,3 @@
-## svn $Id: video.conf.R 794 2011-05-30 19:54:20Z john $
-##                                                        
 ##     VIDEO   PLUGIN   CONFIG
 ##                                                        
 ##  Read frames from video files.
