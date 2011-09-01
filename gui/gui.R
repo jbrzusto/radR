@@ -804,12 +804,18 @@ gui.select.file.for.port <- function(port, init.dir) {
   ## The newly-appended entry is invoked
 
   is.source <- port$is.source
-  type.ext <- port$file.ext
-  ## Note: we must paste space-separated pieces returned by tcl(tk_getOpenFile)
+  if (!is.list(port$file.ext)) {
+    default.ext <- port$file.ext
+    file.types <- '{"' %:% class(port)[1] %:% '" {.' %:% type.ext %:% '}} {"All files" {.*}}'
+  } else {
+    default.ext <- names(port$file.ext)[1]
+    file.types <- paste('{"', port$file.ext, '" {.', names(port$file.ext), '}}', sep="", collapse=" ") %:% ' {"All files" {.*}}'
+  }
+    ## Note: we must paste space-separated pieces returned by tcl(tk_getOpenFile)
   filename <- paste(tclchar(ifelse(is.source, "tk_getOpenFile", "tk_getSaveFile"),
-                        filetypes='{"' %:% class(port)[1] %:% '" {.' %:% type.ext %:% '}} {"All files" {.*}}',
-                        title="Choose a file for " %:% ifelse(is.source, "playback", "recording"), defaultextension="." %:% type.ext,
-                        initialdir=init.dir), collapse=" ")
+                            filetypes = file.types,
+                            title="Choose a file for " %:% ifelse(is.source, "playback", "recording"), defaultextension="." %:% default.ext,
+                            initialdir=init.dir), collapse=" ")
   tcl("focus", ".play")
   if (length(filename) > 0 && nchar(filename[1]) > 0) {
     rss.set.port(port, filename=filename)
