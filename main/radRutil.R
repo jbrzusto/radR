@@ -1964,14 +1964,20 @@ rss.convert.scan <- function(reconv,
 
     ## call the pre scan convert hook
     rss.call.hooks(RSS$PRE_SCAN_CONVERT_HOOK)
-    
+
+    ## if rectangular coordinates, allow an offset
+    if (isTRUE(RSS$scan.info$is.rectangular)) {
+      plot.origin <- GUI$plot.origin  + RSS$scan.info$origin * gui.pps() * c(1, -1)
+    } else {
+      plot.origin <- GUI$plot.origin
+    }
     ## convert the scan
     if(!is.null(scan.converter <- .Call("radR_convert_scan",
                                         scan.mat,
                                         RSS$pix.mat,
                                         class.mat,
                                         RSS$palette.mat,
-                                        GUI$plot.origin,
+                                        plot.origin,
                                         gui.pps(),
                                         GUI$north.angle + RSS$scan.info$bearing + RSS$scan.info$bearing.offset,
                                         as.integer(rss.plot.data.source.bit.shift()),
