@@ -39,9 +39,10 @@ get.ports = function() {
                         is.live = FALSE,
                         is.file = TRUE,
                         is.seekable = TRUE,
-                        file.ext = "wmv",
+                        file.ext = video.extensions,
                         can.specify.start.time = TRUE,
-                        config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height),
+                        config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height,
+                          origin = default.origin, scale = default.scale),
                         has.toc = TRUE,
                         cur.run = 0,
                         cur.scan = 0,
@@ -58,7 +59,7 @@ get.ports = function() {
   rv <- list()
 
   ##                    name    id  source  sink
-  rv[[1]] <- make.port("Reader", 1,  TRUE, FALSE)
+  rv[[1]] <- my.port <<- make.port("Reader", 1,  TRUE, FALSE)
   rv
 }
 
@@ -79,7 +80,8 @@ get.menus = function() {
            )
          ),
        plugin = list (
-##         "Save start time and sweep duration for this archive in _metafile.R" = save.metafile,
+##         "Save geometry and frame rate parameters for this video in XXX.metadata.R..." = save.metafile,
+##         "Load geometry and frame rate parameters for this video from another video's metdata.R file..." = load.metafile,
 ##         "---",
          list ("datetime",
                label = "date and time at start of first video frame",
@@ -89,16 +91,17 @@ get.menus = function() {
                  default.start.time <<- t
                  if (inherits(RSS$source, MYCLASS))
                    RSS$source$start.time <- t
-               }
+               },
+               set.or.get = "gui.video.start.time"
                ),
          list ("gauge",
                label = "desired frame rate, in frames per seconds" ,
                range = c(0.001, 1000),
                increment = 1,
                value = default.frame.rate,
-               on.set = function(x) { default.frame.rate <<- x;
-                                    if (inherits(RSS$source, MYCLASS))
-                                      config(RSS$source, frame.rate=x)
+               on.set = function(x) { default.frame.rate <<- x
+                                      if (inherits(RSS$source, MYCLASS))
+                                        config(RSS$source, frame.rate=x)
                                     }
                ),
          list ("gauge",
@@ -106,9 +109,11 @@ get.menus = function() {
                range = c(100, 2000),
                increment = 10,
                value = default.width,
-               on.set = function(x) { default.width <<- x;
-                                      if (inherits(RSS$source, MYCLASS))
-                                      config(RSS$source, width=x)
+               on.set = function(x) { default.width <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, width=x)
+                                        update()
+                                      }
                                     }
                ),
          list ("gauge",
@@ -117,10 +122,49 @@ get.menus = function() {
                increment = 10,
                value = default.height,
                on.set = function(x) { default.height <<- x;
-                                      if (inherits(RSS$source, MYCLASS))
+                                      if (inherits(RSS$source, MYCLASS)) {
                                         config(RSS$source, height=x)
+                                        update()
+                                      }
+                                    }
+               ),
+         list ("gauge",
+               label = "image centre x coordinate offset, in image pixels",
+               range = c(-10000, 10000),
+               increment = 1,
+               value = default.origin[1],
+               on.set = function(x) { default.origin[1] <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, origin=default.origin)
+                                        update()
+                                      }
+                                    }
+               ),
+         list ("gauge",
+               label = "image centre y coordinate offset, in image pixels",
+               range = c(-10000, 10000),
+               increment = 1,
+               value = default.origin[2],
+               on.set = function(x) { default.origin[2] <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, origin=default.origin) 
+                                        update()
+                                      }
+                                    }
+               ),
+         list ("gauge",
+               label = "scale of image, in metres per pixel",
+               range = c(0, 10000),
+               increment = 0.1,
+               value = default.scale,
+               on.set = function(x) { default.scale <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, scale=default.scale)
+                                        update()
+                                      }
                                     }
                )
+         
          )
        )
 }
@@ -128,12 +172,12 @@ get.menus = function() {
 globals = list (
   
   as.character.video = function(x, ...) {
-sprintf("radR interface port: %s: %s: %s",
-        MYCLASS,
-        x$name,
-        if (is.null(x$config$filename)) "(no file)" else x$config$filename
-        )
-},
+    sprintf("radR interface port: %s: %s: %s",
+            MYCLASS,
+            x$name,
+            if (is.null(x$config$filename)) "(no file)" else x$config$filename
+            )
+  },
   
   print.video = function(x, ...) {
     ## print a description of this port
@@ -159,6 +203,12 @@ sprintf("radR interface port: %s: %s: %s",
                frame.rate = {
                  port$config$frame.rate <- opts[[opt]]
                },
+               scale = {
+                 port$config$scale <- opts[[opt]]
+               },
+               origin = {
+                 port$config$origin <- opts[[opt]]
+               },
                {
                  rss.plugin.error("video: unknown configuration option for port: " %:% opt)
                  return(NULL)
@@ -168,11 +218,11 @@ sprintf("radR interface port: %s: %s: %s",
     }
     return(port$config)
   },
-
+  
   get.contents.video = function(port, ...) {
     return(port$contents)
   },
-
+  
   end.of.data.video = function(port, ...) {
     ## return TRUE if there is no data left to be read
     ## on this port (e.g. if the end of a tape run has been hit)
@@ -214,7 +264,7 @@ sprintf("radR interface port: %s: %s: %s",
                     ## In principal, each sample is a polyhedron extending to infinity,
                     ## or some kind of projective version of that.
 
-                    sample.dist = 1,
+                    sample.dist = port$config$scale,
                     
                     first.sample.dist = 0,
                     
@@ -222,7 +272,9 @@ sprintf("radR interface port: %s: %s: %s",
                     
                     orientation = +1,
 
-                    is.rectangular = TRUE
+                    is.rectangular = TRUE,
+
+                    origin = port$config$origin
                     
                     )
 
@@ -283,9 +335,15 @@ sprintf("radR interface port: %s: %s: %s",
     ## end.time:    timestamp of last scan
 
     port$duration <- get.video.duration(port$config$filename)
-    if (is.null(port$start.time))
-      port$start.time <- Sys.time()
-
+    if (is.null(port$start.time)) {
+      split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
+      if (split[1] != -1) {
+        port$start.time <- strptime(substring(port$config$filename, split), date.guess.format)
+      } else {
+        port$start.time <- file.info(port$config$filename)$ctime
+      }
+      gui.video.start.time(port$start.time)
+    }
     ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
     
     port$contents <- list (
@@ -356,6 +414,17 @@ open.video.at.cur.scan = function(port) {
   video.pipe <<- pipe(cmd, "rb")
 }
 
+update = function() {
+  if (RSS$play.state < RSS$PS$PLAYING) {
+    RSS$scan.info$sample.dist <- my.port$config$scale
+    RSS$scan.info$origin <- my.port$config$origin
+    rss.process.scan(put.scan = FALSE,
+                     calculate.scores = FALSE,
+                     convert.scan = TRUE,
+                     is.preview = TRUE)
+  }
+}
+
 ## save metadata for this archive
 
 ## save.metafile = function() {
@@ -370,7 +439,6 @@ open.video.at.cur.scan = function(port) {
 
 ## additional plugin variables
 
-
 ## what a video table of contents looks like, initially
 empty.TOC = list(
   start.time = structure(double(0), class = "POSIXct"),
@@ -378,8 +446,8 @@ empty.TOC = list(
   num.scans = integer(0)
   )
 
-## name of the tcl image object into which we read the png image frames
-tcl.image.name = "radR_video_plugin_frame"
-
 ## pipe connection from which we read raw video frames
 video.pipe = NULL
+
+## the one and only port
+my.port = NULL

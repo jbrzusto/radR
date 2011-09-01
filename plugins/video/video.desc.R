@@ -1,8 +1,8 @@
-### Read frames from video files
+### Read images from video files
 list(
-     version = "0.10",
+     version = "1.0",
      
-     label = "read frames from video files"
+     label = "Read images from a video file.  Any input format supported by ffmpeg"
 
      )
 
