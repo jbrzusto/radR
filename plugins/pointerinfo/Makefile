@@ -3,4 +3,6 @@
 
 $(eval $(AT_MAKEFILE_START))
 
+PLUGIN_EXTRA_R_FILES = pointerinfo.windows.conf.R pointerinfo.unix.conf.R
+
 $(eval $(AT_MAKEFILE_END))

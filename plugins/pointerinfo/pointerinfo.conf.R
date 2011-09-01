@@ -58,7 +58,7 @@ auto.clipboard = FALSE
 
 formatter = list ( 
   range.bearing = function (rb) {
-    sprintf("range: true=%7.3f km, ground=%7.3f km\nbearing=%5.1f◦  elev. angle=%4.1f◦", rb[2]/1000, rb[1]/1000, rb[3], RSS$scan.info$antenna.angle[1])
+    sprintf(range.bearing.format.string, rb[2]/1000, rb[1]/1000, rb[3], RSS$scan.info$antenna.angle[1])
   },
 
   spatial = function (xyz, t) {
