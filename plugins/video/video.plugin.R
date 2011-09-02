@@ -336,6 +336,7 @@ globals = list (
 
     old.plot.title.date.format <<- GUI$plot.title.date.format
     GUI$plot.title.date.format <- plot.title.date.format
+    gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial)
     port$duration <- get.video.duration(port$config$filename)
     if (is.null(port$start.time)) {
       split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
@@ -366,6 +367,8 @@ globals = list (
     ## closing files, etc.
 
     GUI$plot.title.date.format <- old.plot.title.date.format
+    ## restore old coord tx
+    gui.set.coord.tx()
     ## drop the current file data
     port$start.time <- NULL
     port$scan.data <- NULL
@@ -426,6 +429,52 @@ update = function() {
                      convert.scan = TRUE,
                      is.preview = TRUE)
   }
+}
+
+## coordinate transform functions for rectangular video coordinates
+
+tx.plot.to.matrix <- function(coords) {
+  ## convert xy coordinates in the plot window
+  ## to row/column coordinates in the raw data
+  ## in origin 1
+  ## coords: an n x 2 matrix (or a vector of length 2)
+  ## returns: an n x 2 matrix (or a vector of length 2)
+
+  if (is.matrix(coords))
+    offsets <- t(t(coords) - GUI$plot.origin)
+  else
+    offsets <- t(coords - GUI$plot.origin)
+  sample <- 1 + trunc(RSS$scan.info$samples.per.pulse / 2 + offsets[,1] / gui.pps() - RSS$scan.info$origin[1])
+  pulse <-  1 + trunc(RSS$scan.info$pulses / 2 + offsets[,2] / gui.pps() + RSS$scan.info$origin[2])
+  rv <- cbind(ifelse(sample >= 1 & sample <= RSS$scan.info$samples.per.pulse, sample, NA), ifelse(pulse >= 1 & pulse <= RSS$scan.info$pulses, pulse, NA))
+  return (if (is.matrix(coords)) rv else c(rv))
+}
+
+tx.plot.to.spatial <- function(coords) {
+  ## Basically the same as for radar data, but drop z coordinate and use constant time
+
+  ## given plot coordinates coords (pixels in the x and y directions)
+  ## return a two element list:
+  ## rv$rb: a ground range, axial range, bearing vector (metres, metres, degrees)
+  ## rv$xyz: cartesian coordinates, in metres
+  ## rv$t:   time, the time corresponding to the location's pulse
+  ##         if there is no sample data, the time returned is NA
+  ## range is planar; range per sample is measured along the antenna axis,
+  ## so we must adjust range according to the antenna angle
+  offsets <- coords - GUI$plot.origin
+  x <- offsets[c(TRUE, FALSE)] * GUI$mpp  ## in planar metres
+  y <- - offsets[c(FALSE, TRUE)] * GUI$mpp
+  ground.range <- sqrt(x^2+y^2)
+  z <- 0
+  axial.range <- ground.range
+  bearing <- (atan2(offsets[c(TRUE, FALSE)], -offsets[c(FALSE, TRUE)]) * 180 / pi - GUI$north.angle) %% 360
+  theta <- (90 - bearing) * pi / 180
+  if (RSS$have.valid$scan.data) {
+    time <- as.numeric(RSS$scan.info$timestamp)
+  } else {
+    time <- NA
+  }
+  return(list(rb=c(ground.range, axial.range, bearing), xyz=c(ground.range * cos(theta), ground.range * sin(theta), z), t=time))
 }
 
 ## save metadata for this archive
