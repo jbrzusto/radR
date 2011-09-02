@@ -806,7 +806,7 @@ gui.select.file.for.port <- function(port, init.dir) {
   is.source <- port$is.source
   if (!is.list(port$file.ext)) {
     default.ext <- port$file.ext
-    file.types <- '{"' %:% class(port)[1] %:% '" {.' %:% type.ext %:% '}} {"All files" {.*}}'
+    file.types <- '{"' %:% class(port)[1] %:% '" {.' %:% default.ext %:% '}} {"All files" {.*}}'
   } else {
     default.ext <- names(port$file.ext)[1]
     file.types <- paste('{"', port$file.ext, '" {.', names(port$file.ext), '}}', sep="", collapse=" ") %:% ' {"All files" {.*}}'
