@@ -1172,10 +1172,10 @@ pf_filter_by_stats_rectangular(t_cell_run *r)
   col_span = col_hi - col_lo + 1;
 
   // record this patch's stats:
-  ((double *) ps_x->ptr)     [num_patch_stats] =  x = xsum / weight_sum;  // Note: these don't take into account any rotation
+  ((double *) ps_x->ptr)     [num_patch_stats] =  x = xsum / weight_sum;  // Note: these are in matrix coords
   ((double *) ps_y->ptr)     [num_patch_stats] =  y = ysum / weight_sum;
   ((double *) ps_z->ptr)     [num_patch_stats] = 0;
-  ((double *) ps_range->ptr) [num_patch_stats] = sqrt(x*x + y*y) * scan_range_per_sample;
+  ((double *) ps_range->ptr) [num_patch_stats] = -1; // will be calculated at R level after x, y are corrected
   // time is the time at the centroid
   ((double *) ps_t->ptr)     [num_patch_stats] = scan_timestamp;
   ((int *)    ps_ns->ptr)    [num_patch_stats] = ns;
@@ -1319,7 +1319,8 @@ SEXP
 radR_find_patches( SEXP classsxp, 
 		   SEXP usediagsxp,
 		   SEXP patchessxp,
-		   SEXP skipsxp)
+		   SEXP skipsxp,
+		   SEXP wrapsxp)
 {
   // find patches of contiguous hot samples in the class buffer
   //
@@ -1328,6 +1329,8 @@ radR_find_patches( SEXP classsxp,
   // usediags - logical: are diagonals adjacencies used in building patches
   // patchessxp - the patch buffer image structure (an EXTPTR)
   // skipsxp - the number of samples to skip at the start of each pulse
+  // wrapsxp - logical scalar - if TRUE, wrap the matrix to make the first and last rows
+  //           adjacent, so that patches can straddle this cut.
 
   // returns the number of hot samples and the patches found
   // 
@@ -1350,7 +1353,7 @@ radR_find_patches( SEXP classsxp,
   image->run_info.num_rows = class->rows;
   image->run_info.num_cols = class->cols;
   image->use_diags = LOGICAL(usediagsxp)[0];
-  image->vertical_wrap = TRUE;
+  image->vertical_wrap = LOGICAL(AS_LOGICAL(wrapsxp))[0];
   image->drop_singletons = TRUE;
   image->fgd = CLASS_HOT;
   if (!patchify_buffer(class_buff, image, (unsigned) max(0, INTEGER(AS_INTEGER(skipsxp))[0])))
@@ -1441,8 +1444,13 @@ radR_process_patches(SEXP filtersxp,
   t_image image;
   int not_needed;
 
+  int i;
+
   // in case the PATCH_STATS hook returns a different vector than we pass to it
   SEXP new_patch_filter = NULL;
+
+  // row names attribute for the RSS$patches dataframe
+  SEXP row_names;
 
   // other scan parameters
   scan_timestamp   	   = REAL(scaninfo)[0];
@@ -1562,6 +1570,14 @@ radR_process_patches(SEXP filtersxp,
 
   enumerate_patches(image, LOGICAL(AS_LOGICAL(rectangular))[0] ? & pf_filter_by_stats_rectangular : & pf_filter_by_stats);
 
+  /* set the rownames attribute of statssxp so that the data frame is consistent */
+  PROTECT(row_names = allocVector(INTSXP, num_patches));
+  for (i = 0; i < num_patches; ++i)
+    INTEGER(row_names)[i] = i + 1;
+
+  setAttrib(statssxp, R_RowNamesSymbol, row_names);
+  UNPROTECT(1);
+  
   if (patch_stats_hook_active) {
     /* call the patch_stats hooks with the current status
        (active/inactive) vector; note that each hook function receives
@@ -2324,7 +2340,7 @@ R_CallMethodDef radR_call_methods[]  = {
   MKREF(radR_calculate_scores		, 4),
   MKREF(radR_classify_samples		, 4),
   MKREF(radR_convert_scan		, 13),
-  MKREF(radR_find_patches		, 4),
+  MKREF(radR_find_patches		, 5),
   MKREF(radR_filter_noise               , 2),
   MKREF(get_active_runbuf               , 1),
   MKREF(get_runbuf_info                 , 1),

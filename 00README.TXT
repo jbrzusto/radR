@@ -1,11 +1,11 @@
 02 Sep 2011
 New numbering of radR releases:
 
-  e.g. radR_BRANCH_DATETIME_PLATFORM.EXT
+  e.g. radR-BRANCH-DATETIME-PLATFORM.zip  (binary)
+       radR-BRANCH-DATETIME-src.tar.gz  (source)
   BRANCH is e.g. "video", "stable"
   DATETIME is YYYYMMDDHHMMSS of most recent change to code
   PLATFORM is windows or unix
-  EXT is zip for binary release, .tar.gz for source
 
 video branch:
 - added rectangular coordinate handling for video plugin,

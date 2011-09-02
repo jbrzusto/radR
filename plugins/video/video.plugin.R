@@ -354,7 +354,7 @@ globals = list (
     old.plot.title.date.format <<- GUI$plot.title.date.format
     GUI$plot.title.date.format <- plot.title.date.format
     gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial, matrix.to.spatial = tx.matrix.to.spatial)
-    rss.enable.hook("ANTENNA_CONFIG", MYCLASS)
+    rss.enable.hook("PATCH_STATS", MYCLASS)
     port$duration <- get.video.duration(port$config$filename)
     if (is.null(port$start.time)) {
       split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
@@ -383,7 +383,7 @@ globals = list (
     ## resource consumption by this port
     ## eg. stopping digitization and playback,
     ## closing files, etc.
-    rss.disable.hook("ANTENNA_CONFIG", MYCLASS)
+    rss.disable.hook("PATCH_STATS", MYCLASS)
 
     GUI$plot.title.date.format <- old.plot.title.date.format
     ## restore old coord tx
@@ -406,10 +406,21 @@ globals = list (
   )  ## end of globals
 
 hooks = list (
-  ANTENNA_CONFIG = list (enabled = FALSE, read.only = TRUE,
-    f = function() {
-      GUI$north.angle <- - RSS$source$config$rotation
-      gui.update.plot.window()
+  PATCH_STATS = list (enabled = FALSE, read.only = 2,
+    f = function(keep) {
+      ## adjust patch coordinates to take into account image rotation
+      ## and origin offset; the patch coordinates have been calculated
+      ## simply as matrix coordinates, so we convert them to spatial
+      ## This hook function must be called before any other hook function
+      ## that might use the x, y, and range patch properties, so we
+      ## kludge this with read.only=2 to force this hook first.
+      if (length(keep) > 0) {
+        new.coords <- tx.matrix.to.spatial(cbind(RSS$patches$x[], RSS$patches$y[]))
+        RSS$patches$x[]<- new.coords[,1]
+        RSS$patches$y[]<- new.coords[,2]
+        RSS$patches$range[] <- sqrt(RSS$patches$x[]^2 + RSS$patches$y[]^2)
+      }
+      return(keep)
     }
     )
   )

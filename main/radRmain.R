@@ -842,8 +842,8 @@ rss.find.patches <- function()
     if (rss.hook.is.active(RSS$FIND_PATCHES_HOOK))
       rss.call.hooks(RSS$FIND_PATCHES_HOOK, RSS$class.mat, RSS$blip.use.diags, RSS$patch.buffer, skip.samples)
     else
-      ## otherwise, use the builtin patch finder
-      .Call("radR_find_patches",RSS$class.mat, RSS$blip.use.diags, RSS$patch.buffer, skip.samples, PACKAGE="radR")
+      ## otherwise, use the builtin patch finder; don't wrap when data are in rectangular coords
+      .Call("radR_find_patches",RSS$class.mat, RSS$blip.use.diags, RSS$patch.buffer, skip.samples, ! isTRUE(RSS$scan.info$is.rectangular), PACKAGE="radR")
   }
 }
 
@@ -877,18 +877,7 @@ rss.process.patches <- function()
               RSS$pulses,
               is.rect,
               PACKAGE="radR")
-  ## set the row names for the patches data frame
-  attr(RSS$patches, "row.names") <- seq(length=length(RSS$patch.ns))
-
-  ## in case of rectangular coordinates, adjust patch coordinates to take
-  ## into account GUI rotation and origin offset; these have been calculated
-  ## simply as matrix coordinates, so we convert them to spatial
-
-  if (is.rect && nrow(RSS$patches) > 0) {
-    new.coords <- GUI$tx.matrix.to.spatial(cbind(RSS$patches$x[], RSS$patches$y[]))
-    RSS$patches$x[]<- new.coords[,1]
-    RSS$patches$y[]<- new.coords[,2]
-  }
+ 
   return(length(RSS$blips))
 }
 
