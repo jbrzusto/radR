@@ -44,6 +44,12 @@ default.origin = c(0, 0)
 
 default.scale = 5
 
+## default rotation of the coordinate system, in degrees clockwise.
+## Normally, y increases bottom to top, and x increases left to right, but
+## any rotation can be specified here.
+
+default.rotation = 0
+
 ## list of video extensions (and descriptions) that we're interested
 ## in and able to read (via ffmpeg). The first one listed will be the
 ## default choice in "open file" dialgoues, and the rest will be in

@@ -745,6 +745,21 @@ gui.tx.xy.to.plot <- function(xy) {
   return(cbind(GUI$plot.origin[1] + planar.range * cos(theta), GUI$plot.origin[2] - planar.range * sin(theta)))
 }
 
+gui.tx.matrix.to.spatial <- function(coords) {
+
+  ## coords: an n x 2 matrix of data coordinates (sample, pulse)
+  ##         (need not be integers)
+  ##
+  ## Value: an n x 3 matrix of spatial coordinates given the
+  ## current transformation of radar data.
+  ## e.g. c(0, 0) -> (0, 0, 0)
+
+  r <- coords[,1] * RSS$scan.info$sample.dist + RSS$scan.info$first.sample.dist
+  th <- pi/2 - 2 * pi * (RSS$scan.info$orientation * coords[,2] / RSS$scan.info$pulses + (RSS$scan.info$bearing + RSS$scan.info$bearing.offset) / 360)
+  phi <- rss.antenna.angle()
+  return (cbind(r * cos(phi) * cos(th), r * cos(phi) * sin(th), r * sin(phi) + rss.origin.elev()))
+}
+  
 gui.pps <- function() {
   ## return the number of pixels per sample
   rss.planar.rps() / GUI$mpp
@@ -1511,7 +1526,7 @@ gui.state.has.key <- function(s, k) {
   return(as.logical(intToBits(as.integer(s))[GUI$motion.state.key.bits[[k]]]))
 }
   
-gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.to.plot = NULL, xyz.to.plot = NULL) {
+gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.to.plot = NULL, xyz.to.plot = NULL, matrix.to.spatial = NULL) {
   ## set the coordinate transforms; this might be called by the start.up and shut.down
   ## methods of a data source in order to implement a different coordinate system
   ## A NULL value for any parameter means to use the built-in default
@@ -1520,5 +1535,6 @@ gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.t
   GUI$tx.plot.to.spatial <- if (is.null(plot.to.spatial)) gui.tx.plot.to.spatial else plot.to.spatial
   GUI$tx.xy.to.plot <- if (is.null(xy.to.plot)) gui.tx.xy.to.plot else xy.to.plot
   GUI$tx.xyz.to.plot <- if (is.null(xyz.to.plot)) gui.tx.xyz.to.plot else xyz.to.plot
+  GUI$tx.matrix.to.spatial <- if (is.null(matrix.to.spatial)) gui.tx.matrix.to.spatial else matrix.to.spatial
 }
 

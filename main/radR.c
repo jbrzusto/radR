@@ -1080,6 +1080,139 @@ pf_filter_by_stats(t_cell_run *r)
 }
 
 t_pf_rv
+pf_filter_by_stats_rectangular(t_cell_run *r)
+{
+  // a patch function to compute patch stats including centroid, and to
+  // filter the patch using limits on stats, for data in rectangular coordinates
+  // - number of samples
+  // - area
+  // - angular span (meaning y span)
+  // - radial span (meaning x span)
+  // - perimeter
+
+  // if do_filtering is TRUE, we filter patches based on whether their
+  // stats fall within the ranges given in global variable blip_parms
+  // we save the stats for any non-filtered patch in an array, and
+  // record in the vector patch_filter TRUE for patches to keep, and false
+  // for those filtered.
+
+  // regardless of do_filtering, we compute the maximum patch size
+  // (in number of samples) which is needed by the patch and blip hooks
+
+  register int i, j;
+  register short row;
+  int ns = 0;
+  double area = 0.0;
+  int perim = 0;
+  unsigned short row_lo = ~0; // big unsigned number
+  unsigned short row_hi = 0;
+  short row_span;
+  short col_span;
+  unsigned short col_lo = ~0; // big unsigned number
+  unsigned short col_hi = 0;
+  unsigned short *col_row = (unsigned short *) (em_col_row.ptr);
+  double xsum=0, ysum=0;
+  int weight;
+  long long weight_sum = 0;
+  int intsum = 0;
+  t_sample max_sample = 0;
+  double x, y;
+  t_sample *scan_ptr;
+  t_cell_run *first_run = r;
+  t_pf_rv rv = KEEP; // is this patch retained?
+  // col_row will hold 1 plus the scan row in which each column (i.e. range cell)
+  // was last seen in this patch. -1 means not seen yet.
+  memset(col_row, 0xff, scan_cols * sizeof(unsigned short));
+  // calculate the stats for this patch
+  do {
+    row = r->row;
+
+    // add number of samples
+    ns += r->length;
+
+    // add edges from all 4 sides of run to the perimeter (we correct for internal edges below)
+    perim += 2 * r->length + 2;
+
+    // process each sample in this run to accumulate centroid sums,
+    // and correct radial perimeter by subtracting twice the overlap
+    // between this run and any in the previous column
+
+    // for calculating patch intensity, and possibly weighting by sample
+    // intensity, we need access to sample data for this run
+    scan_ptr = scan_buff + row * scan_cols + r->col;
+
+    for (i = r->col, j = r->col + r->length; i < j; ++i) {
+      if (col_row[i] == row)
+	perim -= 2;  // subtract two previously-counted "perimeter" edges which
+                      // are actually interior
+      col_row[i] = row + 1;
+
+      // in updating centroid sums, weight is 1 for area
+      // weighting, and sample value for intensity weighting
+
+      weight = do_area_weighting ? 1 : *scan_ptr;
+      if (max_sample < *scan_ptr)
+	max_sample = *scan_ptr;
+      intsum += *scan_ptr++;
+      xsum += i * weight;
+      ysum += row * weight;
+      weight_sum += weight;
+    }
+
+    area += r->length;
+
+    row_hi = max(row_hi, r->row);
+    row_lo = min(row_lo, r->row);
+    col_hi = max(col_hi, r->col + r->length - 1);
+    col_lo = min(col_lo, r->col);
+    r += r->next_run_offset;
+  } while (r != first_run);
+
+  row_span = row_hi - row_lo + 1;
+  col_span = col_hi - col_lo + 1;
+
+  // record this patch's stats:
+  ((double *) ps_x->ptr)     [num_patch_stats] =  x = xsum / weight_sum;  // Note: these don't take into account any rotation
+  ((double *) ps_y->ptr)     [num_patch_stats] =  y = ysum / weight_sum;
+  ((double *) ps_z->ptr)     [num_patch_stats] = 0;
+  ((double *) ps_range->ptr) [num_patch_stats] = sqrt(x*x + y*y) * scan_range_per_sample;
+  // time is the time at the centroid
+  ((double *) ps_t->ptr)     [num_patch_stats] = scan_timestamp;
+  ((int *)    ps_ns->ptr)    [num_patch_stats] = ns;
+  ((double *) ps_area->ptr)  [num_patch_stats] = (area *= scan_range_per_sample * scan_range_per_sample);
+  ((double *) ps_int->ptr)   [num_patch_stats] = intsum / (double)(ns * scan_max_sample_value);
+  ((double *) ps_max->ptr)   [num_patch_stats] = max_sample / (double) scan_max_sample_value;
+  ((double *) ps_perim->ptr) [num_patch_stats] = perim * scan_range_per_sample;
+  ((short *)  ps_aspan->ptr) [num_patch_stats] = row_span;
+  ((short *)  ps_rspan->ptr) [num_patch_stats] = col_span;
+
+  if (do_filtering
+      & (ns < blip_parms.ns_lo
+	 || (blip_parms.ns_hi >= 0 && ns > blip_parms.ns_hi)
+	 || area < blip_parms.area_lo
+	 || (blip_parms.area_hi >= 0 && area > blip_parms.area_hi)
+	 || row_span < blip_parms.ang_lo
+	 || (blip_parms.ang_hi >= 0 && row_span > blip_parms.ang_hi)
+	 || col_span < blip_parms.rad_lo
+	 || (blip_parms.rad_hi >= 0 && col_span > blip_parms.rad_hi)
+	 ))
+    {
+      // disable this patch
+      rv = DROP;
+      LOGICAL(patch_filter)[num_patch_stats] = 0;
+    } else {
+      // adjust the maximum patch size, if necessary
+      max_patch_size = max(max_patch_size, ns);
+      LOGICAL(patch_filter)[num_patch_stats] = 1;
+      // record this as a blip
+      INTEGER(blip_index)[num_blips++] = num_patch_stats + 1;
+    }
+  ++num_patch_stats;
+  return rv;
+}
+
+
+t_pf_rv
 pf_filter_by_logical_vector (t_cell_run *run)
 {
   // a patch function to activate precisely those patches corresponding to TRUE
@@ -1242,7 +1375,8 @@ radR_process_patches(SEXP filtersxp,
 		     SEXP rps_elev,
 		     SEXP areaweighting,
 		     SEXP scaninfo,
-		     SEXP pulses
+		     SEXP pulses,
+		     SEXP rectangular
 		     ) {
   
   // process patches from the image structure
@@ -1300,6 +1434,7 @@ radR_process_patches(SEXP filtersxp,
   //      [[3]] beam axis elevation for each pulse (degrees above horizontal)          
   //      [[4]] azimuth of long waveguide axis for each pulse (degrees CW from N)      
   //      [[5]] elevation of long waveguide axis for each pulse (degrees above horizontal)
+  // rectangular - logical scalar: is the data matrix rectangular (e.g. for camera video)?
   
   // returns the integer index vector of blips among patches
   t_extmat *scan;
@@ -1425,7 +1560,7 @@ radR_process_patches(SEXP filtersxp,
 
   PROTECT(patch_filter = allocVector(LGLSXP, num_patches));
 
-  enumerate_patches(image, & pf_filter_by_stats);
+  enumerate_patches(image, LOGICAL(AS_LOGICAL(rectangular))[0] ? & pf_filter_by_stats_rectangular : & pf_filter_by_stats);
 
   if (patch_stats_hook_active) {
     /* call the patch_stats hooks with the current status
@@ -2205,7 +2340,7 @@ R_CallMethodDef radR_call_methods[]  = {
   MKREF(radR_get_error_msg		, 0),
   MKREF(radR_get_pulse_metadata		, 9),
   MKREF(radR_patch_at_sp		, 2),
-  MKREF(radR_process_patches		, 14),
+  MKREF(radR_process_patches		, 15),
   MKREF(radR_process_UI_events		, 0),
   MKREF(radR_sleep			, 1),
   MKREF(radR_unfilter_patches		, 2),

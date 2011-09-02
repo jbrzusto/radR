@@ -2132,6 +2132,7 @@ GUI.init <- function() {
                      tx.plot.to.matrix             = NULL,
                      tx.xy.to.plot                 = NULL,
                      tx.xyz.to.plot                = NULL,
+                     tx.matrix.to.spatial          = NULL,
                      plot.dim                      = NULL,
                      plot.image.name               = "::img::plot",  ## name of image for tk plot
                      prev.plot.geom                = list(),  ## for saving plot geometry when switching between tk and native modes

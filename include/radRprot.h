@@ -41,7 +41,7 @@ t_pf_rv pf_filter_by_logical_vector(t_cell_run *run);
 t_pf_rv pf_patch_and_blip_hooks(t_cell_run *r);
 t_pf_rv pf_paint_blip(t_cell_run *r);
 SEXP radR_find_patches(SEXP classsxp, SEXP usediagsxp, SEXP patchessxp, SEXP skipsxp);
-SEXP radR_process_patches(SEXP filtersxp, SEXP scansxp, SEXP scoresxp, SEXP classsxp, SEXP patchbuff, SEXP statssxp, SEXP sampnumrange, SEXP arearange, SEXP angularrange, SEXP radialrange, SEXP rangeelevpersample, SEXP areaweighting, SEXP scaninfo, SEXP pulses);
+SEXP radR_process_patches(SEXP filtersxp, SEXP scansxp, SEXP scoresxp, SEXP classsxp, SEXP patchbuff, SEXP statssxp, SEXP sampnumrange, SEXP arearange, SEXP angularrange, SEXP radialrange, SEXP rangeelevpersample, SEXP areaweighting, SEXP scaninfo, SEXP pulses, SEXP rectangular);
 SEXP radR_unfilter_patches(SEXP classsxp, SEXP patchbuff);
 SEXP radR_get_patch_image(void);
 SEXP radR_patch_at_sp(SEXP sp, SEXP patchbuff);

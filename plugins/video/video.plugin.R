@@ -42,7 +42,7 @@ get.ports = function() {
                         file.ext = video.extensions,
                         can.specify.start.time = TRUE,
                         config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height,
-                          origin = default.origin, scale = default.scale),
+                          origin = default.origin, scale = default.scale, rotation = default.rotation),
                         has.toc = TRUE,
                         cur.run = 0,
                         cur.scan = 0,
@@ -163,7 +163,21 @@ get.menus = function() {
                                         update()
                                       }
                                     }
+               ),
+         list ("gauge",
+               label = "rotation of coordinates, in degrees clockwise",
+               range = c(-360, 360),
+               increment = 0.1,
+               value = default.rotation,
+               on.set = function(x) { default.rotation <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, rotation=default.rotation)
+                                        GUI$north.angle <- -default.rotation
+                                        update()
+                                      }
+                                    }
                )
+         
          
          )
        )
@@ -208,6 +222,9 @@ globals = list (
                },
                origin = {
                  port$config$origin <- opts[[opt]]
+               },
+               rotation = {
+                 port$config$rotation <- opts[[opt]]
                },
                {
                  rss.plugin.error("video: unknown configuration option for port: " %:% opt)
@@ -336,7 +353,8 @@ globals = list (
 
     old.plot.title.date.format <<- GUI$plot.title.date.format
     GUI$plot.title.date.format <- plot.title.date.format
-    gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial)
+    gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial, matrix.to.spatial = tx.matrix.to.spatial)
+    rss.enable.hook("ANTENNA_CONFIG", MYCLASS)
     port$duration <- get.video.duration(port$config$filename)
     if (is.null(port$start.time)) {
       split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
@@ -365,6 +383,7 @@ globals = list (
     ## resource consumption by this port
     ## eg. stopping digitization and playback,
     ## closing files, etc.
+    rss.disable.hook("ANTENNA_CONFIG", MYCLASS)
 
     GUI$plot.title.date.format <- old.plot.title.date.format
     ## restore old coord tx
@@ -385,6 +404,15 @@ globals = list (
   }
   
   )  ## end of globals
+
+hooks = list (
+  ANTENNA_CONFIG = list (enabled = FALSE, read.only = TRUE,
+    f = function() {
+      GUI$north.angle <- - RSS$source$config$rotation
+      gui.update.plot.window()
+    }
+    )
+  )
 
 ## return a suitable metafile name for an archive specified by the name of a data file
 ## get.metafile.name = function(datafilename) {
@@ -467,7 +495,7 @@ tx.plot.to.spatial <- function(coords) {
   ground.range <- sqrt(x^2+y^2)
   z <- 0
   axial.range <- ground.range
-  bearing <- (atan2(offsets[c(TRUE, FALSE)], -offsets[c(FALSE, TRUE)]) * 180 / pi - GUI$north.angle) %% 360
+  bearing <- (atan2(offsets[c(TRUE, FALSE)], -offsets[c(FALSE, TRUE)]) * 180 / pi + RSS$source$config$rotation) %% 360
   theta <- (90 - bearing) * pi / 180
   if (RSS$have.valid$scan.data) {
     time <- as.numeric(RSS$scan.info$timestamp)
@@ -475,6 +503,21 @@ tx.plot.to.spatial <- function(coords) {
     time <- NA
   }
   return(list(rb=c(ground.range, axial.range, bearing), xyz=c(ground.range * cos(theta), ground.range * sin(theta), z), t=time))
+}
+
+tx.matrix.to.spatial <- function(coords) {
+
+  ## coords: an n x 2 matrix of data coordinates (sample, pulse)
+  ##         (need not be integers)
+  ##
+  ## Value: an n x 3 matrix of spatial coordinates given the
+  ## current origin, scale, and bearing offset
+
+  x <- (coords[,1] - RSS$scan.info$samples.per.pulse / 2 + RSS$scan.info$origin[1]) * RSS$scan.info$sample.dist
+  y <- (RSS$scan.info$pulses / 2 - coords[,2] + RSS$scan.info$origin[2]) * RSS$scan.info$sample.dist
+  r <- sqrt(x^2+y^2)
+  th <- atan2(y, x) - RSS$source$config$rotation * pi/180
+  return (cbind(r * cos(th), r * sin(th), 0))
 }
 
 ## save metadata for this archive
