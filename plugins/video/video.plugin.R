@@ -334,6 +334,8 @@ globals = list (
     ## start.time:  timestamp first scan
     ## end.time:    timestamp of last scan
 
+    old.plot.title.date.format <<- GUI$plot.title.date.format
+    GUI$plot.title.date.format <- plot.title.date.format
     port$duration <- get.video.duration(port$config$filename)
     if (is.null(port$start.time)) {
       split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
@@ -363,6 +365,7 @@ globals = list (
     ## eg. stopping digitization and playback,
     ## closing files, etc.
 
+    GUI$plot.title.date.format <- old.plot.title.date.format
     ## drop the current file data
     port$start.time <- NULL
     port$scan.data <- NULL
@@ -451,3 +454,7 @@ video.pipe = NULL
 
 ## the one and only port
 my.port = NULL
+
+## a place to store the default (old) plot title date format,
+## which we replace with our own
+old.plot.title.date.format = NULL

@@ -57,3 +57,6 @@ video.extensions = list(
   mpg = 'MPEG',
   avi = 'AVI video'
   )
+
+## the plot window date format:
+plot.title.date.format           = "%Y %b %d %H:%M:%OS3"
