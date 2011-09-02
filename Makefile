@@ -366,7 +366,7 @@ source_dist: CHANGELOG
 	rm -f $(SRC_DIST_FILE)
 
 upload: binary source_dist
-	$(SCP) $(RADR_SRC_DIST_REVISION)windows.zip radR$(RADR_REVISION)source.tgz $(SCP_UPLOAD_DEST)
+	$(SCP) $(SRC_DIST_FILE_COMP) $(BIN_DIST_FILE) $(SCP_UPLOAD_DEST)
 	rm -f *LATEST_VERSION_IS*
 	echo "Go back and click on the actual .tgz or .zip file..." > LATEST_VERSION_IS_$(RADR_REVISION)
 	$(SSH) $(SCP_UPLOAD_USER) /bin/rm -f $(SCP_UPLOAD_DIR)/LATEST_VERSION_IS*
