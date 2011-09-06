@@ -83,7 +83,7 @@ list (
         ## we're interested in things either brighter or darker than the
         ## background, so we'd use something like -2.5 for the low threshold.
         
-        blip.score.threshold = c(2.5, -128)
+        blip.score.threshold = c(2.5, -128),
 
         ## should blip samples be excluded from updating their stats cell?
         ## This should be TRUE to avoid biasing estimates of background
