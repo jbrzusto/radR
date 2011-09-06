@@ -4,6 +4,7 @@
 *.dll
 *.exe
 CHANGELOG
+LATEST_VERSION_IS*
 plugins/usrp/usrp_radR_plugin.h
 plugins/xir3000/CANRib_names.txt
 plugins/xir3000/CANSTAR.H
