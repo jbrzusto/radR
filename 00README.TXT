@@ -1,3 +1,16 @@
+06 Sep 2011
+all branches:
+- (IMPORTANT) sample classification has changed:  a sample is hot if its
+score is either above the high hot score threshold (as before)
+*or* if the score is below the low hot score threshold (NEW!)  
+This means unusually dark areas of the sample matrix can be blips too.
+For radar data, you probably don't want "cold" blips, so the low hot score
+threshold should be set to a big negative integer (e.g. -128).
+This is the default, which mimics the earlier functionality.  
+For video (camera) data, targets can be darker or lighter than background
+in grayscale, so the low hot score threshold might be set to something
+less extreme (e.g. -5).
+
 02 Sep 2011
 New numbering of radR releases:
 

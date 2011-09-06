@@ -73,10 +73,16 @@ list (
 
         cell.dims = c(4, 4),
 
-        ## What score is required for a sample to be treated as hot?
-        ## (The second score is obsolete, and should be the same as the first)
-
-        blip.score.threshold = c(2.5, 2.5),
+        ## These parameters set the high and low score thresholds.  If a
+        ## sample has a score higher than the first value, or lower than the
+        ## second value, it is considered "hot".  For the default radar
+        ## scenario, we set the low threshold at its maximum negative value,
+        ## which means we're effectively not using it, so that only higher
+        ## than normal reflectivity is treated as "hot".  For grayscale video,
+        ## we're interested in things either brighter or darker than the
+        ## background, so we'd use something like -2.5 for the low threshold.
+        
+        blip.score.threshold = c(2.5, -128)
 
         ## should blip samples be excluded from updating their stats cell?
         ## This should be TRUE to avoid biasing estimates of background
