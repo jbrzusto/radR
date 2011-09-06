@@ -30,7 +30,8 @@
 ## This file is in "R" syntax.  Each item definition except for the last in a list
 ## must be followed by a comma.
 
-## There are five sections:  blip filtering, tracking generic, tracking model, antenna, zonefile.
+## There are six sections:  blip filtering, tracking generic, tracking model, antenna,
+## declutter, zonefile.
 ## Each section and each parameter is optional; those not specified here are 
 ## taken from the corresponding .conf.R files in your radR folders.
 ## Exception: the zonefile just specifies the name of a file with zone information.
@@ -268,6 +269,31 @@ list (
         bearing.offset = 0
 
         ),
+
+################################################################################
+###
+###  declutter config (from plugins/declutter/declutter.conf.R)
+###
+################################################################################
+      declutter = list (
+
+        ## minimum mean sample occupancy at which blip is treated as clutter.
+        ## For example, blip.cutoff = 0.01 means any blip having a mean sample
+        ## occupancy (across all its samples) greater than 1% is filtered out.
+
+        cutoff = 0.0030,
+
+        ## the default file from which to load a clutter map
+        ## If this is NULL, the declutter plugin is disabled.
+        ## If this is not NULL, it should be a pathname in quotes
+        ## e.g. clutter.filename = "/radR/cluttermaps/my_site.clutter.Rdata"
+        ## and the declutter plugin will be enabled. (This won't force it
+        ## to be loaded, however, so make sure your radR installation is
+        ## set to load the declutter plugin by default.)
+
+        clutter.filename = NULL
+      ),
+
 
 ################################################################################
 ###

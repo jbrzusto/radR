@@ -210,6 +210,24 @@ if (read.parms) {
       ANTENNA$parms[[p]] <- e[[p]]                 
   }
 
+  if (length(x$declutter) > 0) {
+    do.overrides("declutter",
+                 DECLUTTER,
+                 x$declutter,
+                 function(n) {
+                   ## if user specifies a non-NULL clutter file, load it
+                   if (n == "clutter.filename") {
+                     if (!is.null(DECLUTTER$clutter.filename)) {
+                       DECLUTTER$load.clutter.file()
+                       rss.enable.plugin("declutter")
+                     } else {
+                       ## if user specifies NULL clutter filename, disable the plugin
+                       rss.disable.plugin("declutter")
+                     }
+                   }
+                 })
+  }
+
   ## read in any zone file specifed
   
   if (is.character(x$zonefile)) {
