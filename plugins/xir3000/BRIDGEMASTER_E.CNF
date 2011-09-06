@@ -1,0 +1,39 @@
+_Decca_BridgeMaster_E______!
+Beam.width.(horiz.)..[Degrees/100]   0100
+Antenna..HDL-offset...[Degrees/10]   0000
+Antenna..cable.length.........[cm]   0000
+BPs.per.rotation..................   4096
+Warm-up.time...................[s]   0001
+Pulse.group.0.................[ns]   0050 00 1800
+Pulse.group.1.................[ns]   0250 01 1800
+Pulse.group.2.................[ns]   0750 02 0785
+Pulse.group.3.................[ns]   0750 03 0785
+Pulse.width...(range.=...0.125.nm)   0 0
+Pulse.width...(range.=...0.250.nm)   0 0
+Pulse.width...(range.=...0.500.nm)   0 1
+Pulse.width...(range.=...0.750.nm)   0 1
+Pulse.width...(range.=...1.500.nm)   0 1
+Pulse.width...(range.=...3.000.nm)   0 2
+Pulse.width...(range.=...6.000.nm)   1 2
+Pulse.width...(range.=..12.000.nm)   1 2
+Pulse.width...(range.=..24.000.nm)   1 2
+Pulse.width...(range.=..48.000.nm)   2 2
+Pulse.width...(range.=..96.000.nm)   2 2
+Pulse.width...(range.=...0.000.nm)   0 0
+Pulse.width...(range.=...0.000.nm)   0 0
+Performance.monitor...............   1 0
+Transceiver.fault.level......[0/1]   0 0
+Transceiver.ready.level......[0/1]   1 1
+Video.Reference...........[0..255]   080
+Video.Threshold...........[0..255]   000
+TUNE.default...............[0..63]   033
+TUNE.preset...............[0..255]   135
+GAIN.default...............[0..63]   034
+GAIN.preset...............[0..255]   000
+SEA.default................[0..63]   000
+SEA.preset................[0..255]   000
+RAIN.default...............[0..63]   000
+PC.hardware.interrupt.............   015
+PC.base.port.................[hex]   100
+Antenna.Identification.No.........   001
+Master=2,Slave=0..................   000
