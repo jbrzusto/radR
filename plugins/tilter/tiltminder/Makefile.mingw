@@ -79,6 +79,8 @@ minderutil.o: minderutil.cc
 
 tiltserv1.1s.exe: tiltserv1.1.cc tilter1.1.cc minderutil.cc minder.cc
 	$(GCC) -static -static-libgcc $(GCC_OPTS) $(INC)  $^ -o $@  $(SERVER_LIBS)
+	-strip $@
+
 
 ## do this to greatly reduce file sizes, at the expense of debugging information
 

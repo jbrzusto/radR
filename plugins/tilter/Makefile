@@ -13,7 +13,6 @@ ifeq ("$(TARGET_PLATFORM)", "windows")
 else
 	$(MYMAKE) tiltminder -f $(TILTMINDER_DIR)/Makefile
 endif
-	$(STRIP) $(TILTMINDER_DIR)/tiltserv1.1s$(EXE_SUFFIX)
 
 PLUGIN_EXTRA_TARGETS = notes.txt 
 PLUGIN_EXTRA_R_FILES = tilter.windows.conf.R tilter.unix.conf.R blipvolplot.R coldvolplot.R
