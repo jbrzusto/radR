@@ -235,7 +235,7 @@ hooks = list(
       if (!length(is.blip) || current.mode != "filtering" || num.scans.learned == 0)
         return(is.blip)
 
-      bc <- rss.get.all.blips(blip.nums = TRUE, linear.coords = TRUE, collapse = FALSE)
+      bc <- rss.get.all.blips(blip.nums = TRUE, linear.coords = TRUE, collapse = FALSE, which.patches = is.blip)
 
       occ.score <- tapply(hits[bc[,2]], bc[,1], mean)
 

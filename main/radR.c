@@ -1442,7 +1442,6 @@ radR_process_patches(SEXP filtersxp,
   // returns the integer index vector of blips among patches
   t_extmat *scan;
   t_image image;
-  int not_needed;
 
   int i;
 
@@ -1597,7 +1596,7 @@ radR_process_patches(SEXP filtersxp,
       }
 
       max_patch_size = num_blips = patch_index = 0;
-      enumerate_all_patches(image, & pf_filter_by_logical_vector, &not_needed);
+      enumerate_all_patches(image, & pf_filter_by_logical_vector, 0, 0);
     }
   }
 
@@ -1729,7 +1728,6 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
   int ns;
   int *rp, *cp;
   int row, col;
-  int junk;
 
   t_cell_run *first_run, *r;
   t_image image;
@@ -1775,7 +1773,7 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
   blip_number = patch_number = 0;
   // get the actual blip number for this patch in blip_number
   patch_id = index;
-  r = enumerate_all_patches(image, & pf_get_blip_index, &junk);
+  r = enumerate_all_patches(image, & pf_get_blip_index, 0, 0);
 
   // if the last active patch found is not the one we sought, set the blip_number to 0
   if (r->patch_id != index)
@@ -1790,7 +1788,7 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
   return(rv);
 }
 
-// static vars for use by radR_get_all_blips, pf_get_blip_coords
+// static vars for use by radR_get_all_blips, pf_get_blip_coords, pf_count_samples
 
 static SEXP all_blips;
 static int sample_number;
@@ -1846,14 +1844,28 @@ pf_get_blip_coords (t_cell_run *r)
     r += r->next_run_offset;
   } while (r != first_run);
   ++ blip_number;
-  return KEEP;
+  return SAME;
+}
+
+t_pf_rv
+pf_count_samples (t_cell_run *r)
+{
+  t_cell_run *first_run = r;
+  do {
+    num_blip_samples += r->length;
+    r += r->next_run_offset;
+  } while (r != first_run);
+  return SAME;
 }
 
 SEXP
-radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp) {
+radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichsxp) {
 
-  // return the coordinates of all samples in all active patches.
-  // the format is determined by linearsxp and blipnumsxp
+  // return the coordinates of all samples in all active patches (if
+  // whichsxp is R_NilValue) or in the patches specified by the
+  // logical vector whichsxp
+  //
+  // the output format is determined by linearsxp and blipnumsxp
   //
   //   linearsxp == TRUE, blipnumsxp == TRUE
   //      an n x 2 matrix with columns:
@@ -1868,22 +1880,44 @@ radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp) {
   //
   // In both cases, if blipnumsxp == FALSE, the first column is omitted.
   // 
+  // Note that the returned patch numbers are in the range 1..num_selected_patches
+  // where num_selected_patches is the number of blips, if whichsxp is R_NilValue,
+  // otherwise, it is the number of TRUE values in whichsxp.  i.e. "selected"
+  // patches are numbered sequentially
+  //
   // All coordinates returned are in origin 1
 
   t_image image;
   image = (t_image) EXTPTR_PTR(patchbuff);
   do_linear = LOGICAL(linearsxp)[0];
   do_blipnum = LOGICAL(blipnumsxp)[0];
-  
+
+  int patches_specified = (whichsxp != R_NilValue);
+
+  // if user specified which patches to return coords for, then we
+  // must count how many samples are in those patches
+  if (patches_specified) {
+    if (TYPEOF(whichsxp) != LGLSXP || LENGTH(whichsxp) != image->run_info.num_patches)
+      error ("radR_get_all_blips:  which.patches must be NULL or a logical vector with one item per patch");
+    num_blip_samples = 0;
+    enumerate_all_patches (image, &pf_count_samples, 0, LOGICAL(whichsxp));
+  } else {
+    // otherwise, the number of samples is already known
+    num_blip_samples = image->run_info.num_active_cells;
+  }
   // set up static vars for the patch filter
-  num_blip_samples = image->run_info.num_active_cells;
+
   all_blips = allocMatrix(INTSXP, num_blip_samples, 2 + (do_blipnum ? 1 : 0) - (do_linear ? 1 : 0));
   blip_number = 0;
   sample_number = 0;
   num_cols = image->run_info.num_cols;
 
   // get all blip coordinates
-  enumerate_patches (image, &pf_get_blip_coords);
+  if (patches_specified) {
+    enumerate_all_patches (image, &pf_get_blip_coords, 0, LOGICAL(whichsxp));
+  } else {
+    enumerate_patches (image, &pf_get_blip_coords);
+  }
 
   return(all_blips);
 }
@@ -2350,7 +2384,7 @@ R_CallMethodDef radR_call_methods[]  = {
   MKREF(index_extmat_by_runbuf          , 2),
   MKREF(radR_estimate_from_approx       , 3),
   MKREF(radR_free_patch_image		, 1),
-  MKREF(radR_get_all_blips		, 3),
+  MKREF(radR_get_all_blips		, 4),
   MKREF(radR_get_and_set		, 3),
   MKREF(radR_get_error			, 0),
   MKREF(radR_get_error_msg		, 0),

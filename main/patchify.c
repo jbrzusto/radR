@@ -705,7 +705,7 @@ enumerate_patches(t_image image, patch_function f)
 }
   
 t_cell_run *
-enumerate_all_patches(t_image image, patch_function f, int *npat) 
+enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_selector) 
 {
   // enumerate all patches, whether active or inactive, and set their
   // active/inactive status according to the value returned by f.
@@ -727,11 +727,15 @@ enumerate_all_patches(t_image image, patch_function f, int *npat)
   // Returns: pointer to the first run of the last active patch seen (which might
   // not be the last active patch if f(...) & RADR_PF_QUIT is true for some patch.
 
-  // The number of patches is returned in npat.
+  // The number of patches is returned in npat, if it is not NULL.
 
   t_cell_run *run, *prev_apatch, *next_apatch, *last_run, *run2;
   int is_active;
   t_pf_rv rv;
+  int unused;
+
+  if (!npat)
+    npat = &unused;
 
   *npat = 0;
   if (!image->run_info.num_runs || !image->run_info.num_patches)
@@ -748,51 +752,53 @@ enumerate_all_patches(t_image image, patch_function f, int *npat)
       next_apatch = run->next_patch_offset ? run + run->next_patch_offset : NULL;
     if (is_active || run->patch_id < 0) {
       ++*npat;
-      rv = (*f)(run);
-      // we need to relink/delink the patch and update counters if 
-      // f(...) wants its state changed
-      if (! (rv & RADR_PF_SAME)) {
-	if (is_active && (rv & RADR_PF_DROP)) {
-	  // the patch is being deactivated
-	  // unlink it from the active list
-	  prev_apatch->next_patch_offset = next_apatch ? next_apatch - prev_apatch : 0;
-	  // reduce the count of active patches
-	  -- image->run_info.num_active_patches;
-	  // mark its first run with a negative ID
-	  run->patch_id = - run->patch_id;
-	  // remove its count of runs and cells from counters
-	  run2 = run;
-	  do {
-	    image->run_info.num_active_cells -= run2->length;
-	    -- image->run_info.num_active_runs;
-	    run2 += run2->next_run_offset;
-	  } while (run2 != run);
-	} else if (!is_active && !(rv & RADR_PF_DROP)) {
-	  // the patch is being activated
-	  // insert it into the active list, preserving a pointer to what used
-	  // to be the next active patch
-	  run->next_patch_offset = next_apatch ? next_apatch - run : 0;
-	  prev_apatch->next_patch_offset = run - prev_apatch;
-	  // increase the count of active patches
-	  ++ image->run_info.num_active_patches;
-	  // mark its first run with a positive ID
-	  run->patch_id = - run->patch_id;
-	  // add its count of runs and cells from counters
-	  run2 = run;
-	  do {
-	    image->run_info.num_active_cells += run2->length;
-	    ++ image->run_info.num_active_runs;
-	    run2 += run2->next_run_offset;
-	  } while (run2 != run);
+      if (!patch_selector || patch_selector[*npat - 1]) {
+	rv = (*f)(run);
+	// we need to relink/delink the patch and update counters if 
+	// f(...) wants its state changed
+	if (! (rv & RADR_PF_SAME)) {
+	  if (is_active && (rv & RADR_PF_DROP)) {
+	    // the patch is being deactivated
+	    // unlink it from the active list
+	    prev_apatch->next_patch_offset = next_apatch ? next_apatch - prev_apatch : 0;
+	    // reduce the count of active patches
+	    -- image->run_info.num_active_patches;
+	    // mark its first run with a negative ID
+	    run->patch_id = - run->patch_id;
+	    // remove its count of runs and cells from counters
+	    run2 = run;
+	    do {
+	      image->run_info.num_active_cells -= run2->length;
+	      -- image->run_info.num_active_runs;
+	      run2 += run2->next_run_offset;
+	    } while (run2 != run);
+	  } else if (!is_active && !(rv & RADR_PF_DROP)) {
+	    // the patch is being activated
+	    // insert it into the active list, preserving a pointer to what used
+	    // to be the next active patch
+	    run->next_patch_offset = next_apatch ? next_apatch - run : 0;
+	    prev_apatch->next_patch_offset = run - prev_apatch;
+	    // increase the count of active patches
+	    ++ image->run_info.num_active_patches;
+	    // mark its first run with a positive ID
+	    run->patch_id = - run->patch_id;
+	    // add its count of runs and cells from counters
+	    run2 = run;
+	    do {
+	      image->run_info.num_active_cells += run2->length;
+	      ++ image->run_info.num_active_runs;
+	      run2 += run2->next_run_offset;
+	    } while (run2 != run);
+	  }
 	}
-      }
-      // if the patch is active (newly or originally), update the prev_apatch pointer
-      if (run->patch_id > 0)
-	prev_apatch = run;
+	// if the patch is active (newly or originally), update the prev_apatch pointer
+	if (run->patch_id > 0)
+	  prev_apatch = run;
 
-      // if f(...) wants a quit, do so
-      if (rv & RADR_PF_QUIT)
-	break;
+	// if f(...) wants a quit, do so
+	if (rv & RADR_PF_QUIT)
+	  break;
+      }
     }    
     ++run;
   }
@@ -820,7 +826,7 @@ reactivate_all_patches(t_image image)
   if (!image->run_info.num_runs || !image->run_info.num_patches)
     return;
 
-  enumerate_all_patches(image, pf_reactivate_all, &npat);
+  enumerate_all_patches(image, pf_reactivate_all, &npat, NULL);
 
   image->run_info.num_active_patches = npat;
   image->run_info.num_active_runs = image->run_info.num_runs - (image->drop_singletons ? image->run_info.num_singletons : 0);

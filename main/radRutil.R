@@ -1771,12 +1771,12 @@ rss.blip.perim <- function(blip, spatial=TRUE, num.pulses = RSS$scan.info$pulses
   return(all.sample.perim - 2 * int.edge.perim)
 }
 
-rss.get.all.blips <- function(blip.nums=TRUE, linear.coords=FALSE, collapse=TRUE) {
-  ## return an integer matrix with coordinates of all blips
+rss.get.all.blips <- function(blip.nums=TRUE, linear.coords=FALSE, collapse=TRUE, which.patches=NULL) {
+  ## return an integer matrix with coordinates of all blips, or specified patches
   ## this will have dimensions
   ##    n x (2 + blip.nums - linear.coords)
   ## where n is the total number of hot samples in all
-  ## blips.
+  ## blips or specified patches.
   ## If blip.nums==TRUE, the first column is blip number.
   ## If linear.coords==TRUE, the last (and possibly only) column
   ## holds the linear coordinates of each sample in each blip.
@@ -1784,8 +1784,19 @@ rss.get.all.blips <- function(blip.nums=TRUE, linear.coords=FALSE, collapse=TRUE
   ## columns hold the sample# and pulse# of each sample in each blip.
   ## If blip.nums == FALSE and linear.coords == TRUE, the n x 1
   ## matrix is collapsed to a vector
-  if (RSS$have.valid$patches && RSS$num.blips > 0)
-    rv <- .Call("radR_get_all_blips", RSS$patch.buffer, as.logical(blip.nums), as.logical(linear.coords))
+  ## If which.patches = NULL, those patches currently accepted as blips
+  ## (in RSS$patch.buffer) are retreived.
+  ## Otherwise, which.patches represents the indices of patches to retrieve,
+  ## either as a logical vector with length nrow(RSS$patches), or as an integer vector
+  ## all of whose elements are in 1..nrow(RSS$patches).
+
+  if (is.integer(which.patches)) {
+    tmp <- rep(FALSE, nrow(RSS$patches))
+    tmp[which.patches] <- TRUE
+    which.patches <- tmp
+  }
+  if (RSS$have.valid$patches && (RSS$num.blips > 0 || sum(which.patches) > 0))
+    rv <- .Call("radR_get_all_blips", RSS$patch.buffer, as.logical(blip.nums), as.logical(linear.coords), which.patches)
   else
     rv <- matrix(integer(0), 0, 2 + blip.nums - linear.coords)
   if (collapse && linear.coords && ! blip.nums )

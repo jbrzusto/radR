@@ -14,7 +14,7 @@ void link_patches(t_image image);
 int patchify_buffer(t_class *buf, t_image image, unsigned skip);
 void shut_down_patchify(t_image image);
 void enumerate_patches(t_image image, patch_function f);
-t_cell_run *enumerate_all_patches(t_image image, patch_function f, int *npat);
+t_cell_run *enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_selector);
 t_pf_rv pf_reactivate_all(t_cell_run *run);
 void reactivate_all_patches(t_image image);
 SEXP get_active_runbuf(SEXP patchessxp);
@@ -45,7 +45,7 @@ SEXP radR_process_patches(SEXP filtersxp, SEXP scansxp, SEXP scoresxp, SEXP clas
 SEXP radR_unfilter_patches(SEXP classsxp, SEXP patchbuff);
 SEXP radR_get_patch_image(void);
 SEXP radR_patch_at_sp(SEXP sp, SEXP patchbuff);
-SEXP radR_get_all_blips(SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp);
+SEXP radR_get_all_blips(SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichsxp);
 void radR_fix_readline_problem(void);
 SEXP radR_install_handler(SEXP handler_function_name);
 SEXP radR_remove_handler(void);
