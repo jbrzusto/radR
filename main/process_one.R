@@ -131,6 +131,11 @@ rss.set.port(p)
 ## seek to the start of the first scan in the first run
 seek.scan(p, 1, 1)
 
+if (!exists("TRACKER")) {
+  rss.load.plugin("tracker")
+  warning("The tracker plugin was not loaded by default, so I loaded it.")
+}
+
 ## set up tracker output filenames
 TRACKER$track.filename <- paste(filename, "_tracks", sep="")
 TRACKER$csv.filename <- paste(TRACKER$track.filename, ".csv", sep="")
@@ -211,6 +216,8 @@ if (read.parms) {
   }
 
   if (length(x$declutter) > 0) {
+    if (! exists("DECLUTTER"))
+      warning("I'm ignoring parameters specified for the declutter plugin which is not being loaded by default.")
     do.overrides("declutter",
                  DECLUTTER,
                  x$declutter,
@@ -246,7 +253,7 @@ rss.add.hook("ONPAUSE", function(){
   if (show.progress) {
     s <- Sys.time()
     elap <- difftime(s, rbatch.stime)
-    cat(sprintf(rbatch.summary, format(round(tc$start.time[1], 1)), format(round(RSS$scan.info$timestamp, 1)), format(round(elap, 1))))
+    cat(sprintf(rbatch.summary, format(round(tc$start.time[1], 1)), format(structure(round(RSS$scan.info$timestamp, 1), class="POSIXct")), format(round(elap, 1))))
   }   
   q()
 })
@@ -259,7 +266,7 @@ if (show.progress) {
     s <- Sys.time()
     elap <- difftime(s, rbatch.stime)
     eta <- difftime(rbatch.stime + as.numeric(difftime(s, rbatch.stime, units="secs")) * rbatch.n / rbatch.i, s)
-    cat(sprintf(rbatch.prog, format(round(RSS$scan.info$timestamp, 1)), format(round(elap, 1)), format(round(eta))))
+    cat(sprintf(rbatch.prog, format(structure(round(RSS$scan.info$timestamp,1), class="POSIXct")), format(round(elap)), format(round(eta))))
   })
 }
                                 
