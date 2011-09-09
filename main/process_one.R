@@ -216,8 +216,10 @@ if (read.parms) {
   }
 
   if (length(x$declutter) > 0) {
-    if (! exists("DECLUTTER"))
-      warning("I'm ignoring parameters specified for the declutter plugin which is not being loaded by default.")
+    if (! exists("DECLUTTER")) {
+      warning("Since you specified parameters for declutter, I'm loading that plugin.\n(your radR installation does not load it by default)\n")
+      rss.load.plugin("declutter")
+    }
     do.overrides("declutter",
                  DECLUTTER,
                  x$declutter,
