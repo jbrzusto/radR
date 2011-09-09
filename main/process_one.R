@@ -1,7 +1,5 @@
-##  svn $Id: process_one.R 682 2010-11-22 16:31:45Z john $
-##
 ##  radR : an R-based platform for acquisition and analysis of radar data
-##  Copyright (C) 2006, 2007, 2008 John Brzustowski        
+##  Copyright (C) 2006-2011 John Brzustowski
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -59,7 +57,7 @@ do.overrides <- function(what, where, over, then.do=function(...){}, valid=names
     then.do(n)
   }
 }
-  
+
 ## does the user want a progress indicator?
 
 show.progress <- !is.na(match("--show-progress", commandArgs()))
@@ -124,7 +122,7 @@ rbatch.n <- tc$num.scans[1]
 ## set up a progress reporting string
 rbatch.prog <- "Scan: %-21s  Elapsed: %-11s  Left: %-11s\r"
 rbatch.summary <- "Did from %-21s to %-21s in %-20s\n"
-                            
+
 ## set the port as the source for further processing
 rss.set.port(p)
 
@@ -156,7 +154,7 @@ if (!is.na(i)) {
     f <- ARGV[i+1]
     if (!file.exists(f))
       bail("Cannot read parameter file ",  f)
-    read.parms <- TRUE  
+    read.parms <- TRUE
 }
 
 if (read.parms) {
@@ -175,13 +173,18 @@ if (read.parms) {
                    )
                  )
 
+  if (inherits(p, "blipmovie") && ! RSS$blip.finding) {
+    warning("You are reading from a blipmovie so I'm setting blip.finding = TRUE.")
+    RSS$blip.finding <- TRUE
+  }
+
   if (length(x$blip) > 0)
     do.overrides("blip filtering",
                  RSS,
                  x$blip,
                  valid=c(ls(RSS, pattern="^blip\\."), "use.blip.filter.expr")
                  )
-  
+
   if (length(x$tracker) > 0)
     do.overrides("tracker plugin",
                  TRACKER,
@@ -191,7 +194,7 @@ if (read.parms) {
                      ## set the environment for any function parameters to the tracker plugin environment
                      environment(TRACKER[[n]]) <- TRACKER
                  })
-  
+
   if (length(x$mfc) > 0)
     do.overrides("MFC tracker model",
                  TRACKER$models$multiframecorr,
@@ -201,7 +204,7 @@ if (read.parms) {
                      ## set the environment for any function parameters to the model's environment
                      environment(TRACKER$models$multiframecorr[[n]]) <- TRACKER$models$multiframecorr
                  })
-           
+
   if (length(x$antenna) > 0) {
     e <- as.strictenv(ANTENNA$parms)
     do.overrides("antenna",
@@ -209,16 +212,20 @@ if (read.parms) {
                  x$antenna,
                  function(n) {
                    ## mark that we're overriding source antenna info for this parameter
-                   ANTENNA$override[match(n, names(ANTENNA$parms))] <- TRUE                 
+                   ANTENNA$override[match(n, names(ANTENNA$parms))] <- TRUE
                  })
-    for (p in names(e)) 
-      ANTENNA$parms[[p]] <- e[[p]]                 
+    for (p in names(e))
+      ANTENNA$parms[[p]] <- e[[p]]
   }
 
   if (length(x$declutter) > 0) {
     if (! exists("DECLUTTER")) {
-      warning("Since you specified parameters for declutter, I'm loading that plugin.\n(your radR installation does not load it by default)\n")
+      warning("You specified parameters for declutter, so I'm loading that plugin.\n(your radR installation does not load it by default)\n")
       rss.load.plugin("declutter")
+    }
+    if (! RSS$blip.filtering) {
+      warning("You specified parameters for declutter, so I'm setting blip.filtering to TRUE.\n")
+      RSS$blip.filtering <- TRUE
     }
     do.overrides("declutter",
                  DECLUTTER,
@@ -238,7 +245,7 @@ if (read.parms) {
   }
 
   ## read in any zone file specifed
-  
+
   if (is.character(x$zonefile)) {
     f <- x$zonefile[1]
     if (nchar(f) > 0) {
@@ -256,7 +263,7 @@ rss.add.hook("ONPAUSE", function(){
     s <- Sys.time()
     elap <- difftime(s, rbatch.stime)
     cat(sprintf(rbatch.summary, format(round(tc$start.time[1], 1)), format(structure(round(RSS$scan.info$timestamp, 1), class="POSIXct")), format(round(elap, 1))))
-  }   
+  }
   q()
 })
 
@@ -271,7 +278,7 @@ if (show.progress) {
     cat(sprintf(rbatch.prog, format(structure(round(RSS$scan.info$timestamp,1), class="POSIXct")), format(round(elap)), format(round(eta))))
   })
 }
-                                
+
 ## enable the tracker plugin
 rss.enable.plugin("tracker")
 
@@ -281,7 +288,7 @@ rbatch.stime <- Sys.time()
 ## pretend we hit play
 RSS$new.play.state <- RSS$PS$PLAYING
 
-## start the event loop 
+## start the event loop
 go()
 
 ## we never get here, since the ONPAUSE handler quits
