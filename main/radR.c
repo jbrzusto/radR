@@ -1055,7 +1055,7 @@ pf_filter_by_stats(t_cell_run *r)
   ((short *)  ps_rspan->ptr) [num_patch_stats] = col_span;
 
   if (do_filtering
-      & (ns < blip_parms.ns_lo 
+      && (ns < blip_parms.ns_lo 
 	 || (blip_parms.ns_hi >= 0 && ns > blip_parms.ns_hi)
 	 || area < blip_parms.area_lo
 	 || (blip_parms.area_hi >= 0 && area > blip_parms.area_hi)
