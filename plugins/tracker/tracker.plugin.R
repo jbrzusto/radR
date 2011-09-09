@@ -712,7 +712,7 @@ gui.track.started = function(track, tid = track$index, state=track$state) {
   ## return the gui id of the new canvas item, or NULL if it is not created
   ## we transpose and c() to get coordinates in X1, Y1, X2, Y2, ... order
 
-  blip.coords <- c(t(GUI$tx..xy.to.plot(as.matrix(all.blips[track$points, COL.X:COL.Y]))))
+  blip.coords <- c(t(GUI$tx.xy.to.plot(as.matrix(all.blips[track$points, COL.X:COL.Y]))))
 
   ## if this is a nascent track, replace coords with the nascent track symbol
 
