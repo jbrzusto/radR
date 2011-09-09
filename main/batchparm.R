@@ -51,7 +51,8 @@ list (
 
         noise.cutoff = 0,
         
-        ## Are we finding blips?  FALSE for blipmovies; TRUE for raw archives
+        ## Are we finding blips?  Counter-intuitively, this should be TRUE for both
+        ## blipmovies and raw archives.
 
         blip.finding = TRUE,
 
