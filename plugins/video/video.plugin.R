@@ -432,7 +432,7 @@ hooks = list (
 
 ## get the video duration in seconds
 get.video.duration = function(f) {
-  as.numeric(as.difftime(strsplit(grep("Duration", readLines(pipe(paste(ffmpeg.path, "-i", f, "-vframes 0 2>&1"))), value=TRUE), ",")[[1]][1], format="  Duration: %H:%M:%OS", units="secs"))
+  as.numeric(as.difftime(strsplit(grep("Duration", readLines(pipe(paste(ffmpeg.path, "-i", paste("\"", f, "\"", sep=""), "-vframes 0 2>&1"))), value=TRUE), ",")[[1]][1], format="  Duration: %H:%M:%OS", units="secs"))
 }
 
 open.video.at.cur.scan = function(port) {
