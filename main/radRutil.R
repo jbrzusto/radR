@@ -1,5 +1,3 @@
-##  svn $Id: radRutil.R 804 2011-06-19 00:43:41Z john $
-##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006-2009 John Brzustowski
 ##
@@ -765,13 +763,14 @@ rss.call.hooks.accum <- function(which, par) {
   ## is passed the return value of the first, and so on.
   ## A function can cheaply leave the passed parameter
   ## unchanged by returning NULL.
-  ## The return value is that of the last hook function,
-  ## regardless of whether it was NULL.
-
+  ## Returns a vector corresponding to the last non-NULL
+  ## value returned by an enabled hook function, or par
+  ## of there are none.
+  
   for (hook in RSS$hooks[[which]])
     if (hook$enabled && !is.null(hook$f) && !is.null(par2<-hook$f(par)))
       par <- par2
-  return(par2)
+  return(par)
 }
 
 ###
