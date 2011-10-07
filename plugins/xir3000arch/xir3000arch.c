@@ -48,6 +48,7 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
     if (rec_type >= REC_TYPE_RLC_4) {
       t_RLC_4_header *p4 = GET_ITEM(t_RLC_4_header);
       np            = p4->ext_pulses;
+      //      printf("Sweep time: 0x%x  0x%x\n", p4->sweep_time.dwLowDateTime, p4->sweep_time.dwHighDateTime);
       utc_sweeptime = FILETIME_TO_UTC(p4->sweep_time);
       first_pulse_ticks = p4->ticks;
     } else {
