@@ -30,7 +30,7 @@ $(eval $(AT_MAKEFILE_START))
 
 PLUGIN_LIB_EXTRA_DEPS=$(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.dll  $(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.h $(shell $(FIND) . -type f -regex "^.*\\.antenna\\.R$$" -printf '%p\n')
 PLUGIN_LIB_EXTRA_OPTIONS= -I$(USRP_RADR_PLUGIN_DIR) -I$(USRP_INCLUDE_PATH) $(USRP_RADR_PLUGIN_DIR)/usrp_radR_plugin.dll
-PLUGIN_EXTRA_DIRS=antenna_db rev4 windows_drivers
+PLUGIN_EXTRA_DIRS=antenna_db rev4 windows_drivers windows_drivers/amd64 windows_drivers/ia64 windows_drivers/license/libusb-win32/installer_license.txt windows_drivers/x86
 ## FIXME: can't we statically link these:  need to change make_usrp_radR_plugin_mingw;
 ## these are listed in the order they should be dynamically loaded in
 
