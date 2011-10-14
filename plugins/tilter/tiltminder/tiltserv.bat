@@ -17,7 +17,7 @@ rem            .\tiltserv com9 12345 log.txt
 
 if /i "%2"=="" goto usage
 
-mode %1 baud=4800 parity=n data=8 xon=off odsr=off octs=off dtr=off rts=off
+mode %1 baud=4800 parity=n data=8 stop=1 xon=off odsr=off octs=off dtr=off rts=off idsr=off
 
 rem Start the tilt server with a minimized window that can be
 rem closed to kill the server.
