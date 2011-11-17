@@ -55,10 +55,16 @@ NON_INSTALLED_TARGETS_unix = $(PROTOS)
 ## R file dependencies (due to ###.include statements)
 .radRutil.R.stripped: layers.R pulses.R
 
-$(R_BATCH_FILES): radR.bat radRcommon.bat
+## Note: we create a file called simply "rbatch.bat" which is for the last version in SUPPORTED_R_VERSIONS
+
+$(R_BATCH_FILES): radR.bat rbatch.bat radRcommon.bat
 	for v in $(SUPPORTED_R_VERSIONS); do\
 	  $(SED) -b -e "s/__RVERSION__/$$v/g" radR.bat > $(RADR_INSTALL_DIR)/radR$$v.bat; \
 	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/radR$$v.bat; \
+	  $(SED) -b -e "s/__RVERSION__/$$v/g" rbatch.bat > $(RADR_INSTALL_DIR)/rbatch$$v.bat; \
+	  $(SED) -b -e "s/__RVERSION__/$$v/g" rbatch.bat > $(RADR_INSTALL_DIR)/rbatch.bat; \
+	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/rbatch.bat; \
+	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/rbatch$vv.bat; \
 	done
 	$(CP) -f radRcommon.bat $(RADR_INSTALL_DIR)/radRcommon.bat
 	$(CHMOD) oug+x $(RADR_INSTALL_DIR)/radRcommon.bat; \

@@ -1,8 +1,7 @@
-@rem #  svn $Id$
 @echo off
 rem #
 rem #  radR : an R-based platform for acquisition and analysis of radar data
-rem #  Copyright (C) 2006, 2007, 2008 John Brzustowski        
+rem #  Copyright (C) 2006-2011 John Brzustowski        
 rem #
 rem #  This program is free software; you can redistribute it and/or modify
 rem #  it under the terms of the GNU General Public License as published by
@@ -31,8 +30,8 @@ rem
 rem  NOTE: this file must be executed in a Windows CMD shell window from the top
 rem        level radR directory; you might need to do "cd c:\path\to\radR" first.
 
-set PATH=%PATH%;./libs;/Program Files/R/R-2.5.1/bin;/Program Files/R/R-2.5.1/Tcl/bin
-
+rem __RVERSION__ in following line is replaced by e.g. 2.5.1 at build time
+set RVERSION=__RVERSION__
 set PROGRESS=--show-progress
 
 if /i (%1) EQU (--help) goto showhelp
@@ -80,7 +79,6 @@ goto noparms
   set RADR_PARMS=""
 
 :done
-  set RHOME=c:\Program Files\R\R-2.5.1
   call radRcommon.bat
 
   echo ===== radR batch processor =====
