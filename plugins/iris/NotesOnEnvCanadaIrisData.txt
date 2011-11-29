@@ -68,7 +68,7 @@ the case in Environment Canada files.
 
 Rays have 8 bits per bin for both CONVOL and DOPVOL files.
 
-Reflectivity is (x-64) / 2.
+Reflectivity in dbZ is (x-64) / 2, where x is the 8-bit value.
 
 
 

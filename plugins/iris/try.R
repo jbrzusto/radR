@@ -1,5 +1,5 @@
 ## ## load the C-level SWIG interface
-dyn.load("iris.so")
+dyn.load("iris")
 
 ## ## if necessary, source() the R-level SWIG interface
 
@@ -10,7 +10,7 @@ if (!file.exists("iris.Rdata") || diff(file.info(c("iris.R", "iris.Rdata"))$mtim
   load("iris.Rdata")
 }
 
-dyn.load("iris_radR.so")
+dyn.load("iris_radR")
 library(rgl)
 
 source("swig.R")
@@ -37,7 +37,7 @@ plot.sweep.3d <- function(dat, i, i0=1, di=1, va=5, lim=c(-230,230)) {
   th <- attr(dat[[i[1]]], "az_lo")[which]
   x <- (1:(dim(d)[1])) %o% (sin(th) * sf)
   y <- (1:(dim(d)[1])) %o% (cos(th) * sf)
-  z <- (1:(dim(d)[1])) %o% sin(attr(d, "el_lo")[which])
+  z <- (1:(dim(d)[1])) %o% sin(attr(dat[[i[[1]]]], "el_lo")[which])
   use <- x >= lim[1] & x <= lim[2] & y >= lim[1] & y <= lim[2]
   rgl.points(c(x)[use], c(z)[use], c(y)[use], col=pal[1+c(d[, which])][use])
 }
@@ -52,7 +52,7 @@ plotraw <- function(z, i0 = 1, di = 1) {
     dev.off()
   x11()
    for(i in seq(along = dat)) {
-     plot.sweep(dat, i, i0, di)
+     plot.sweep(dat, c(i, 1), i0, di)
      par(new = TRUE)
   }
   par(new = FALSE)
@@ -68,7 +68,7 @@ plotraw.3d <- function(z, i0 = 1, di = 1) {
     rgl.close()
   rgl.open()
   for(i in seq(along = dat)) {
-    plot.sweep.3d(dat, i, i0, di)
+    plot.sweep.3d(dat, c(i, 1), i0, di)
   }
 }
 
@@ -83,7 +83,8 @@ plotraw.3d <- function(z, i0 = 1, di = 1) {
 
 RECSIZE <- 6144
 RECNO <- 1
-f <- "/usr/data/radar/weather/Iris/WVY/expanded/DOPVOL1_A:20030714123135"
+f<-"d:/home/toshi/data/weather/iris/XFT/200802050610..CONVOL.URP.XFT.RADAR.IRIS"
+#f <- "/usr/data/radar/weather/Iris/WVY/expanded/DOPVOL1_A:20030714123135"
 #f <- "/usr/data/radar/weather/Iris/WVY/expanded/CONVOL:20030714124023"
 z <- readBin(f, "raw", file.info(f)$size)
 NREC <- length(z) / RECSIZE
