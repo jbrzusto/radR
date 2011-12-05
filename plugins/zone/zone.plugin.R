@@ -620,7 +620,8 @@ enable = function(enab) {
   for (h in c("GET_SCAN_INFO", "CLASSIFY", "PRE_SCAN_CONVERT", "PLOT_CURSOR_MOVED"))
     rss.enable.hook(h, MYCLASS, enab)
   rss.enable.hook("FULL_SCAN", MYCLASS, enab && zero.exclusion)
-  do.update()
+  if (RSS$have.valid$scan.data) 
+    do.update()
   if (enab) {
     show.zones(zones %$0% visible)
   } else {
