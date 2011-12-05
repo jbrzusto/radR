@@ -365,7 +365,9 @@ open.csv.file = function(no.gui.update = FALSE) {
   ## open a .csv file for writing tracks
   close.csv.file()
   if (!is.null(csv.filename)) {
-    csv.file <<- file(csv.filename, "wt")
+    tryCatch (
+              csv.file <<- file(csv.filename, "wt"),
+              error = function(e) csv.file <<- NULL )
     if (!is.null(csv.file)) {
       save.to.csv <<- TRUE
       if (!no.gui.update)
