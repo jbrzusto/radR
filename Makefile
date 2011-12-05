@@ -357,7 +357,7 @@ $(SUBDIRS_CLEAN):
 # 	wget -nH -P wikibackup -r -np -R "index.php?*,Special:*,Template:*,User:*" -X "editor,attachments,skins" http://radr.wiki.com
 
 CHANGELOG: FORCE
-	git log --format=medium > CHANGELOG
+	git log --name-status --format=medium > CHANGELOG
 
 source_dist: CHANGELOG
 	git archive --format=tar --prefix=$(SRC_DIST_NAME)/ HEAD > $(SRC_DIST_FILE)
