@@ -1,3 +1,7 @@
+05 Dec 2011
+- various bug fixes
+- new decluttering plugin
+
 06 Sep 2011
 all branches:
 - (IMPORTANT) sample classification has changed:  a sample is hot if its
