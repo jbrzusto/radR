@@ -1,6 +1,8 @@
 05 Dec 2011
 - various bug fixes
 - new decluttering plugin
+- for tilter plugin users: please see a serious FIXME note here:
+  http://radr-project.org/03_-_Current_Features_and_Plug-ins/The_tilter_plugin
 
 06 Sep 2011
 all branches:
