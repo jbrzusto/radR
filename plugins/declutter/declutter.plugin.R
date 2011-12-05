@@ -129,7 +129,7 @@ get.menus = function() {
 }
 
 update = function() {
-  if (RSS$play.state < RSS$PS$PLAYING)
+  if (RSS$play.state < RSS$PS$PLAYING && RSS$have.valid$scan.data)
     rss.process.scan(put.scan = FALSE,
                      calculate.scores = FALSE, classify.samples = FALSE,
                      convert.scan = TRUE, is.preview = TRUE)
