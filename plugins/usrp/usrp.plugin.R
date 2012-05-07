@@ -488,6 +488,7 @@ usrp.param.names = c (
   "all_pulses",
   "own_thread",
   "bbprx_mode",
+  "signal_sources",
   "n_bufs"
   )
 
