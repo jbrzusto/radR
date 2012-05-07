@@ -34,7 +34,7 @@ PLUGIN_EXTRA_DIRS=antenna_db rev4 windows_drivers windows_drivers/amd64 windows_
 ## FIXME: can't we statically link these:  need to change make_usrp_radR_plugin_mingw;
 ## these are listed in the order they should be dynamically loaded in
 
-PLUGIN_EXTRA_TARGETS=libgcc_s_dw2-1.dll libstdc++-6.dll libboost_thread-mgw45-mt-1_46_1.dll libusrp-3-3-0-0.dll usrp_radR_plugin.dll
+PLUGIN_EXTRA_TARGETS=libgcc_s_dw2-1.dll libstdc++-6.dll libboost_thread-mgw45-mt-1_46_1.dll libboost_program_options-mgw45-mt-1_46_1.dll libusrp-3-3-0-0.dll usrp_radR_plugin.dll test_usrp_bbprx.exe test_usrp_pulse_buffer.exe
 
 $(eval $(AT_MAKEFILE_END))
 endif
