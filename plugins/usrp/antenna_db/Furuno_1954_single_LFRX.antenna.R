@@ -32,7 +32,7 @@ acp_latency        = 6400
 acps_per_sweep     = 450
 rpm                = 24
 
-## for this USRP model, video and trigger are analog inputs to the LFRX
+## for the single LFRX USRP model, video and trigger are analog inputs to the LFRX
 ## while ARP and ACP are digital inputs to the auxiliary IO inputs
 
 signal_sources = 66820 ## vid = LFRX_A_A, trig = LFRX_B_A, arp = RX_IO_A_1, acp = RX_IO_A_0
