@@ -1,7 +1,14 @@
                               -*- mode: text; mode: auto-fill -*-
 TODO
 ====
-- (2010/03/30) When updating radR version: add new script to copy over
+
+- (2012/06/01) Make the seascan .BIN file generator deal correctly
+  with radars for which there is more than one pulse length per PRF,
+  such as the FAR2127.  For now, radR will still require that PLEN
+  will be inferred from the measured PRF, so only one PLEN will be
+  allowed per PRF.
+
+  - (2010/03/30) When updating radR version: add new script to copy over
   config information from a previous radR installation.  Allow user to
   choose which plugins/parameters this happens for.  Allow plugins to
   specify extra files that should be (optionally) copied over; e.g.
