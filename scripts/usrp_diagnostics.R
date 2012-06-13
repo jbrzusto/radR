@@ -2,7 +2,7 @@
 ##
 ## Requires the "test_usrp_pulse_buffer" program in the plugins/usrp folder.
 ##
-prog <- "plugins/usrp/test_usrp_bbprx"
+prog <- "plugins/usrp/test_usrp_pulse_buffer"
 temp <- "tmp.dat"
 
 ok <- rss.gui("POPUP_DIALOG", "USRP Diagnostics",
@@ -41,18 +41,16 @@ get.data <- function(channel.name, time, samples, extra="", datfile="temp_usrp.d
 
   np <- ceiling(samples / 256) ## number of USB packets needed
   
-  cmd <- paste(prog,
-               "-q",           # run quietly - don't dump data to stdout, which is slow
-               "-m ", channel, # which raw mode
-               "-d ", decim,   # decimation rate
-               "-P ", np,      # number of "pulses" (really, USB packets)
-               "-n ", 256,     # number of samples in a USB packet
-               "-s ", config(USRP$port)$signal_sources,   # standard signal sources: dual LFRX=66051; signle LFRX with aux_io for ARP/ACP = 66820
-               extra,          # extra options from caller
-               datfile,        # name of data file
-               sep = " ")
-  gui.print.cons(paste("usrp_diagnostics trying:\n   ", cmd, "\n"));
-  res <- system(cmd, intern = FALSE)
+  res <- system(paste(prog,
+                      "-m ", channel, # which raw mode
+                      "-d ", decim,   # decimation rate
+                      "-P ", np,      # number of "pulses" (really, USB packets)
+                      "-n ", 256,     # number of samples in a USB packet
+                      "-H ", 1,       # get only one sweep
+                      extra,          # extra options from caller
+                      datfile,        # name of data file
+                      sep = " "),
+                intern = TRUE)
 
   rss.gui("DELETE_MESSAGEBOX", msg.id)
                      
@@ -63,29 +61,21 @@ get.data <- function(channel.name, time, samples, extra="", datfile="temp_usrp.d
 vid <- list()
 for (g in c(0, 10, 20)) {
   which <- paste("g", g, sep="")
-  vid[[which]] <- get.data("vid", 0.003, 3072, paste("--video-gain", g))
+  vid[[which]] <- get.data("vid", 0.003, 3072, paste("-g", g)) ## -g flag sets video gain
 }
 
 ## get 3 msec of trigger data at 3 gain levels
 trig <- list()
 for (g in c(0, 10, 20)) {
   which <- paste("g", g, sep="")
-  trig[[which]] <- get.data("trig", 0.003, 3072, paste("--trigger-gain", g))
+  trig[[which]] <- get.data("trig", 0.003, 3072, paste("-G", g)) ## -G flag sets trigger gain
 }
 
-## get 50 msec of azimuth data at 3 gain levels
-azi <- list()
-for (g in c(0, 10, 20)) {
-  which <- paste("g", g, sep="")
-  azi[[which]] <- get.data("azi", 0.050, 2048, paste("--ACP-gain", g))
-}
+## get 50 msec of azimuth data
+azi <- get.data("azi", 0.050, 2048)
 
 ## get 3 sec of heading data
-hdg <- list()
-for (g in c(0, 10, 20)) {
-  which <- paste("g", g, sep="")
-  hdg[[which]] <- get.data("hdg", 3, 3000, paste("--ARP-gain", g))
-}
+hdg <- get.data("hdg", 3, 3000)
 
 par(mfcol=c(2,2))
 
@@ -113,29 +103,23 @@ points(trig$g10, col="red", pch="+")
 points(trig$g20, col="blue", pch="+", cex=0.5)
 lines(trig$g0, col="black", lty=2)  ## redo lines at low gain
 
-plot(azi$g0,
+plot(azi,
      xlab="time (s)",
      ylab="azimuth / bearing pulse / ACP (integer units)",
-     ylim=c(0, 4095),
-     main=c("Azimuth / bearing pulse / ACP", "gains of 0 (black), 10 (red), 20dB (blue)"),
+     ylim=c(0, 1),
+     main=c("Azimuth / bearing pulse / ACP"),
      type="l",
      col="black"
      )
-points(azi$g10, col="red", pch="+")
-points(azi$g20, col="blue", pch="+", cex=0.5)
-lines(azi$g0, col="black", lty=2)  ## redo lines at low gain
 
-plot(hdg$g0,
+plot(hdg,
      xlab="time (s)",
      ylab="Heading / SHM / ARP (integer units)",
-     ylim=c(0, 4095),
-     main=c("Heading / SHM / ARP", "gains of 0 (black), 10 (red), 20dB (blue)"),
+     ylim=c(0, 1),
+     main=c("Heading / SHM / ARP"),
      type="l",
      col="black"
      )
-points(hdg$g10, col="red", pch="+")
-points(hdg$g20, col="blue", pch="+", cex=0.5)
-lines(hdg$g0, col="black", lty=2)  ## redo lines at low gain
 
 usrp.diag <<- list(vid=vid, trig=trig, azi=azi, hdg=hdg)
 save(list="usrp.diag", file="usrp_raw_data.RData")
