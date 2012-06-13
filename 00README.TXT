@@ -1,3 +1,9 @@
+14 Feb 2012
+
+ - xir3000: timestamp fix; was incorrectly treating components of
+   MS_FILETIME as signed, leading to timestamp inversions
+   (also fixed for xir3000arch plugin, almost a year ago!)
+
 05 Dec 2011
 - various bug fixes
 - new decluttering plugin

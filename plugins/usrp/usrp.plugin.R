@@ -122,6 +122,8 @@ get.menus = function() {
                    list(ant.menu="Choose an antenna",
                         c(list(option="choose.one",
                                on.set = function(n) {
+                                 antenna <<- allowed$antenna[n]
+                                 load.config.from.db()
                                  config(port, antenna = allowed$antenna[n])
                                }
                                ),
@@ -488,6 +490,7 @@ usrp.param.names = c (
   "all_pulses",
   "own_thread",
   "bbprx_mode",
+  "signal_sources",
   "n_bufs"
   )
 
