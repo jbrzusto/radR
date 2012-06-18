@@ -64,7 +64,7 @@ $(R_BATCH_FILES): radR.bat rbatch.bat radRcommon.bat
 	  $(SED) -b -e "s/__RVERSION__/$$v/g" rbatch.bat > $(RADR_INSTALL_DIR)/rbatch$$v.bat; \
 	  $(SED) -b -e "s/__RVERSION__/$$v/g" rbatch.bat > $(RADR_INSTALL_DIR)/rbatch.bat; \
 	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/rbatch.bat; \
-	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/rbatch$vv.bat; \
+	  $(CHMOD) oug+x $(RADR_INSTALL_DIR)/rbatch$$v.bat; \
 	done
 	$(CP) -f radRcommon.bat $(RADR_INSTALL_DIR)/radRcommon.bat
 	$(CHMOD) oug+x $(RADR_INSTALL_DIR)/radRcommon.bat; \
