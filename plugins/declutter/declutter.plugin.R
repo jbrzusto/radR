@@ -53,9 +53,9 @@
 
 about = function() {
   t1 <- "Filter out persistent fluctuating clutter using a simple occupancy threshold.\n\n"
-  if (num.scans.learned > 0) {
+  if (isTRUE(num.scans.learned[[angle.index]] > 0)) {
     t2 <- sprintf("Number of scans learned:%s\n",
-                  num.scans.learned
+                  num.scans.learned[[angle.index]]
                   )
   } else {
     t2 <- "No clutter learned.\n"
@@ -119,11 +119,7 @@ get.menus = function() {
                 set.occrate.plotting(v, enabled)
               }
               ),
-         "Forget learned clutter" = function() {
-           hits <<- NULL
-           occrate <<- NULL
-           num.scans.learned <<- num.scans.occrate <<- 0
-         }
+         "Forget learned clutter" = forget.clutter
          )
        )
 }
@@ -168,18 +164,22 @@ load = function() {
   set.occrate.plotting(plot.occrate)
 }
 
+forget.clutter = function() {
+  hits <<- occrate <<- num.scans.learned <<- num.scans.occrate <<- list()
+}
+
 ensure.matrices = function() {
   ## make sure trail storage matrices are of
   ## sufficient size
-  if (!identical(dim(hits), dim(RSS$class.mat))) {
-    if (num.scans.learned > 0)
+  if (!identical(dim(hits[[angle.index]]), dim(RSS$class.mat))) {
+    if (isTRUE(num.scans.learned[[angle.index]] > 0))
       rss.gui(POPUP_MESSAGEBOX,
               "Clutter map size mismatch",
             "The dimensions of the clutter map don't match those of the current data source.\nradR is discarding the clutter map.\n\n" %:%
-              sprintf ("   clutter map size: (%5d samples, %5d pulses) \n   data matrix size: (%5d samples, %5d pulses) \n", dim(hits)[1], dim(hits)[2], dim(RSS$class.mat)[1], dim(RSS$class.mat)[2]),
+              sprintf ("   clutter map size: (%5d samples, %5d pulses) \n   data matrix size: (%5d samples, %5d pulses) \n", dim(hits[[angle.index]])[1], dim(hits[[angle.index]])[2], dim(RSS$class.mat)[1], dim(RSS$class.mat)[2]),
             time.to.live=30)
-    num.scans.learned <<- num.scans.occrate <<- 0
-    hits <<- array(0L, dim=dim(RSS$class.mat))
+    num.scans.learned[[angle.index]] <<- num.scans.occrate[[angle.index]] <<- 0
+    hits[[angle.index]] <<- array(0L, dim=dim(RSS$class.mat))
   }
 }
 
@@ -194,7 +194,7 @@ load.clutter.file = function(f = clutter.filename) {
     return()
   }
   base::load(f, DECLUTTER)
-  num.scans.occrate <<- 0 ## force recomputation, if/when required
+  num.scans.occrate <<- NULL ## force recomputation, if/when required
   clutter.filename <<- f
   current.mode <<- "filtering"
   if (exists("gui.set.mode"))
@@ -208,15 +208,15 @@ save.clutter.file = function(f = clutter.filename) {
 
 paint.occrate <- function(yes) {
   if (yes) {
-    if (num.scans.occrate != num.scans.learned || !identical(dim(hits), dim(occrate))) {
+    if (isTRUE(num.scans.occrate[[angle.index]] != num.scans.learned[[angle.index]]) || !identical(dim(hits[[angle.index]]), dim(occrate[[angle.index]]))) {
       ## re-compute occupancy rate
-      occrate <<- extmat("sample occupancy rate", type=RSS$types$sample, dim=dim(hits))
-      occrate[] <- (hits * as.integer(2^RSS$scan.info$bits.per.sample - 1)) %/% as.integer(num.scans.learned)
-      num.scans.occrate <<- num.scans.learned
+      occrate[[angle.index]] <<- extmat("sample occupancy rate", type=RSS$types$sample, dim=dim(hits[[angle.index]]))
+      occrate[[angle.index]][] <- (hits[[angle.index]] * as.integer(2^RSS$scan.info$bits.per.sample - 1)) %/% as.integer(num.scans.learned[[angle.index]])
+      num.scans.occrate[[angle.index]] <<- num.scans.learned[[angle.index]]
     }
     i <- which(RSS$class.mat[] == RSS$CLASS.VAL$cold)
     RSS$class.mat[i] <- RSS$CLASS.VAL$other
-    RSS$scan.mat[i] <- occrate[i]
+    RSS$scan.mat[i] <- occrate[[angle.index]][i]
   } else {
     i <- which(RSS$class.mat[] == RSS$CLASS.VAL$other)
     RSS$class.mat[i] <- RSS$CLASS.VAL$cold
@@ -227,19 +227,24 @@ paint.occrate <- function(yes) {
 
 hooks = list(
 
+  SCAN_INFO = list (enabled=TRUE, read.only=TRUE,
+    f = function(si) {
+      angle.index <<- as.character(round(si$antenna.angle[1]))
+    }),
+
   PATCH_STATS = list( enabled = FALSE, read.only = FALSE,
     f= function(is.blip) {
       ## if we have learned and are in filter mode, filter out blips
       ## with excessive occupancy scores
       
-      if (!length(is.blip) || current.mode != "filtering" || num.scans.learned == 0)
+      if (!length(is.blip) || current.mode != "filtering" || is.null(num.scans.learned[[angle.index]]) || num.scans.learned[[angle.index]] == 0)
         return(is.blip)
 
       bc <- rss.get.all.blips(blip.nums = TRUE, linear.coords = TRUE, collapse = FALSE, which.patches = is.blip)
 
-      occ.score <- tapply(hits[bc[,2]], bc[,1], mean)
+      occ.score <- tapply(hits[[angle.index]][bc[,2]], bc[,1], mean)
 
-      is.blip[which(is.blip)[occ.score >= cutoff * num.scans.learned]] <- FALSE
+      is.blip[which(is.blip)[occ.score >= cutoff * num.scans.learned[[angle.index]]]] <- FALSE
       return(is.blip)
     }),
       
@@ -259,9 +264,9 @@ hooks = list(
 
       if (length(RSS$blips) > 0) {
         sc <- rss.get.all.blips(blip.nums = FALSE, linear.coords = TRUE)
-        hits[sc] <<- hits[sc] + 1L
+        hits[[angle.index]][sc] <<- hits[[angle.index]][sc] + 1L
       }
-      num.scans.learned <<- num.scans.learned + 1
+      num.scans.learned[[angle.index]] <<- num.scans.learned[[angle.index]] + 1
     }),
 
     
@@ -278,7 +283,7 @@ hooks = list(
       ## hot and blip pixels from the current scan can end up overlaying
       ## the image created here.
 
-      if (RSS$show.class$other && num.scans.learned > 0) {
+      if (RSS$show.class$other && isTRUE(num.scans.learned[[angle.index]] > 0)) {
         paint.occrate(TRUE)
       }
     }),
@@ -289,11 +294,11 @@ hooks = list(
     
     f = function(plot.coords, spatial.coords, sample.coords, cell.coords) {
       
-      if (enabled && !is.null(sample.coords) && !any(is.na(sample.coords)) && num.scans.learned > 0) {
-        occ.info <- sprintf("Sample slot occupancy rate: %8.6f", hits[sample.coords[1],sample.coords[2]] / num.scans.learned)
+      if (enabled && !is.null(sample.coords) && !any(is.na(sample.coords)) && isTRUE(num.scans.learned[[angle.index]] > 0)) {
+        occ.info <- sprintf("Sample slot occupancy rate: %8.6f", hits[[angle.index]][sample.coords[1],sample.coords[2]] / num.scans.learned[[angle.index]])
         patch.coords <<- rss.patch.at.sample.pulse(sample.coords)
         if (!is.null(patch.coords)) {
-          occ.info <- paste(occ.info, sprintf("  Patch mean occupancy rate: %8.6f", mean(hits[patch.coords]) / num.scans.learned), sep="")
+          occ.info <- paste(occ.info, sprintf("  Patch mean occupancy rate: %8.6f", mean(hits[[angle.index]][patch.coords]) / num.scans.learned[[angle.index]]), sep="")
         }
       } else {
         occ.info <- ""
@@ -306,11 +311,12 @@ hooks = list(
 ## state variables
 
 file.types.list = list(".clutter.Rdata" = "radR clutter map", ".*" = "All files")
-num.scans.learned = 0
-num.scans.occrate = 0
+num.scans.learned = list()
+num.scans.occrate = list()
 saved.show.other = NULL
 saved.other.palette = NULL
 saved.other.gamma = NULL
-hits = NULL
-occrate = NULL
+hits = list()
+occrate = list()
+angle.index = "0"
 
