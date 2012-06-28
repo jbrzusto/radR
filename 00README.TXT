@@ -1,3 +1,11 @@
+28 June 2012
+- declutter plugin now handles tilter
+- new scripts: 
+   - convert_REC_to_blipmovie.R (convert folders of xir3000 .REC files into blipmovies)
+   - usrp_diagnostics.R (acquire and plot raw signal from all four radar lines)
+- bug fixes
+
+
 05 Dec 2011
 - various bug fixes
 - new decluttering plugin
