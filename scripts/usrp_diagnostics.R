@@ -2,7 +2,7 @@
 ##
 ## Requires the "test_usrp_pulse_buffer" program in the plugins/usrp folder.
 ##
-prog <- "plugins/usrp/test_usrp_pulse_buffer"
+prog <- "plugins/usrp/test_usrp_bbprx"
 temp <- "tmp.dat"
 
 ok <- rss.gui("POPUP_DIALOG", "USRP Diagnostics",
@@ -46,7 +46,6 @@ get.data <- function(channel.name, time, samples, extra="", datfile="temp_usrp.d
                       "-d ", decim,   # decimation rate
                       "-P ", np,      # number of "pulses" (really, USB packets)
                       "-n ", 256,     # number of samples in a USB packet
-                      "-H ", 1,       # get only one sweep
                       extra,          # extra options from caller
                       datfile,        # name of data file
                       sep = " "),
