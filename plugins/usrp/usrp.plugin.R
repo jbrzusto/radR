@@ -488,7 +488,9 @@ usrp.param.names = c (
   "all_pulses",
   "own_thread",
   "bbprx_mode",
-  "n_bufs"
+  "n_bufs",
+  "acps_per_sweep",
+  "use_acp_for_sweeps"
   )
 
 ## additional configuration parameters that are not seen by the usrp
@@ -496,7 +498,6 @@ plugin.param.names = c(
   "antenna",
   "desc",
   "rpm",
-  "acps_per_sweep",
   "modes",
   "prf",
   "plen",
