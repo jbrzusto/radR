@@ -1,4 +1,6 @@
-/* xenexarch.h - definitions for reading files recorded by Russell Technologies' IntegRadar/WinHorizon */
+/* xir3000arch.h - definitions for reading files recorded by Russell Technologies' IntegRadar/WinHorizon */
+
+#include <stdint.h>
 
 // types of recorded data formats
 
@@ -78,8 +80,8 @@ typedef struct MS_STRUCT_PREFIX {
 
 typedef struct MS_STRUCT_PREFIX {
   t_sensor_valid valid;
-  long Longitude;
-  long Latitude;
+  int32_t Longitude;
+  int32_t Latitude;
   double Depth;
   double DistTransToWaterLine;
   double DistTransToKeel;
@@ -105,22 +107,22 @@ typedef struct MS_STRUCT_PREFIX {
   double GPSGeoidalSeparation;
   double GPSAgeOfDifferentialData;
 
-  int GPSNumberOfSatellites;
-  int GPSDifferentialReferenceStationID;
+  int32_t GPSNumberOfSatellites;
+  int32_t GPSDifferentialReferenceStationID;
 
-  int AntennaPulseLength;
-  int AntennaPowerInPort;
-  int AntennaPowerOutPort;
+  int32_t AntennaPulseLength;
+  int32_t AntennaPowerInPort;
+  int32_t AntennaPowerOutPort;
 
   // this is not documented; it brings the structure
   // up to the 240 byte length seen in actual files
 
-  int UnusedPadding; 
+  int32_t UnusedPadding; 
   
   double AntennaMagnetronCurrent;
   double AntennaRMonitor;
-  int AntennaState;
-  int AntennaAlarm;
+  int32_t AntennaState;
+  int32_t AntennaAlarm;
 
   double SpeedWind;
   double WindAngleRel;
@@ -129,7 +131,7 @@ typedef struct MS_STRUCT_PREFIX {
 } MS_STRUCT_POSTFIX t_sensor_data;
 
 typedef struct MS_STRUCT_PREFIX {
-  int signature;
+  int32_t signature;
   t_recording_type type;
 } MS_STRUCT_POSTFIX t_rec_header;
 
@@ -147,23 +149,23 @@ typedef struct MS_STRUCT_PREFIX {
 
 // the extra header for segment types RLC_3 and above
 typedef struct MS_STRUCT_PREFIX {
-  int freq; // sampling frequency in Hz
-  int spp;  // samples per pulse
-  int pulses; // pulses per sweep
+  int32_t freq; // sampling frequency in Hz
+  int32_t spp;  // samples per pulse
+  int32_t pulses; // pulses per sweep
 } MS_STRUCT_POSTFIX t_RLC_3_header;
 
 // the Microsoft filetime structure (as found in cygwin's winbase.h)
 typedef struct _FILETIME {
-        int dwLowDateTime;
-        int dwHighDateTime;
+        int32_t dwLowDateTime;
+        int32_t dwHighDateTime;
 } FILETIME,*PFILETIME,*LPFILETIME;
 
 // the extra header for segment types RLC_4 and above
 typedef struct MS_STRUCT_PREFIX {
-  int  __attribute__ ((packed)) ext_pulses; // number of pulses per sweep in extended mode
+  int32_t  __attribute__ ((packed)) ext_pulses; // number of pulses per sweep in extended mode
   FILETIME __attribute__ ((packed)) sweep_time; // time at start of sweep, in MS FILETIME format (see below)
-  unsigned int ticks; // tick count at start of sweep
-  unsigned int unused; // padding?
+  uint32_t ticks; // tick count at start of sweep
+  uint32_t unused; // padding?
 } MS_STRUCT_POSTFIX t_RLC_4_header;
 
 // the per-pulse header for segment types RLC_4 and above

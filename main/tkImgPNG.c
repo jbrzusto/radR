@@ -2008,7 +2008,7 @@ PNGDecode(Tcl_Interp* interp, PNGImage* pPNG, Tcl_Obj* format,
 	 * space for the image being parsed.
 	 */
 
-	Tk_PhotoExpand(imageHandle, destX + pPNG -> mWidth,
+	Tk_PhotoExpand(interp, imageHandle, destX + pPNG -> mWidth,
 		destY + pPNG -> mHeight);
 
 	/*
@@ -2150,7 +2150,7 @@ PNGDecode(Tcl_Interp* interp, PNGImage* pPNG, Tcl_Obj* format,
 		}
 	}
 
-	Tk_PhotoPutBlock(imageHandle, &pPNG -> mBlock, destX, destY,
+	Tk_PhotoPutBlock(interp, imageHandle, &pPNG -> mBlock, destX, destY,
 		pPNG -> mBlock.width, pPNG -> mBlock.height, TK_PHOTO_COMPOSITE_SET);
 
 	return TCL_OK;

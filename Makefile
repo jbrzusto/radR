@@ -172,11 +172,11 @@ RADR_LIB_DIR            = $(RADR_TOPLEVEL_DIR)/libs
 AT_MAKEFILE_START = include $(RADR_TOPLEVEL_DIR)/Makefile.inc
 CCOPTS_COMMON=-DBITS_PER_SAMPLE=$(BITS_PER_SAMPLE) -Wall
 CCOPTS_DEBUG=$(CCOPTS_COMMON) -g3 -DRADR_DEBUG
-CCOPTS_PRODUCTION=$(CCOPTS_COMMON) -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload -march=pentium4 -mfpmath=sse -msse2
+CCOPTS_PRODUCTION=$(CCOPTS_COMMON) -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload  -mfpmath=sse -msse2
 CCOPTS_BCHECK=$(CCOPTS_COMMON) -B/usr/src/gcc-3.4.4-bounds-checking/gcc/ -fbounds-checking /usr/src/gcc-3.4.4-bounds-checking/gcc/bounds/lib/libboundscheck.a
 CCOPTS_BCHECK_DEBUG= $(CCOPTS_BCHECK) $(CCOPTS_DEBUG)
 CCOPTS_BCHECK_PRODUCTION=$(CCOPTS_BCHECK) $(CCOPTS_PRODUCTION)
-CCOPTS_PROFILE=$(CCOPTS_COMMON) -g3 -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload -march=pentium4 -mfpmath=sse -msse2
+CCOPTS_PROFILE=$(CCOPTS_COMMON) -g3 -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload -mfpmath=sse -msse2
 LIBOPTS_BCHECK=-L/usr/src/gcc-3.4.4-bounds-checking/gcc/bounds/lib/ -lboundscheck
 LIBOPTS_BCHECK_DEBUG = $(LIBOPTS_BCHECK)
 LIBOPTS_BCHECK_PRODUCTION = $(LIBOPTS_BCHECK)

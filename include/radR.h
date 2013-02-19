@@ -190,15 +190,5 @@ SEXP make_R_vector(int sxp_type, int n, ...);
 #define dbgprintf(FMT, ...)
 #endif
 
-// as of R 2.5.1, this macro is not defined; delete the following
-// definition if it is already available in a later R version
-
-static inline SEXP lang5(SEXP s, SEXP t, SEXP u, SEXP v, SEXP w)
-{
-    PROTECT(s);
-    s = LCONS(s, list4(t, u, v, w));
-    UNPROTECT(1);
-    return s;
-}
 
 #endif /* _RADR_H */

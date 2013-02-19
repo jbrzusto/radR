@@ -23,9 +23,9 @@ function(filename, frame=NULL, header=NULL, cache.size=bigframe.default.cache.si
     if (rawToChar(hdr) != bigframe.header.string)
       stop(sprintf("%s is not a valid bigframe", filename))
     ## try to read the user header
-    ## BUGGY: load(file=file)
     readBin(file, "raw", 5)
-    .Internal(loadFromConn(file, environment()))
+    header = readRDS(file)$header  ## was BUGGY in pre-2013
+##    .Internal(loadFromConn(file, environment()))
 
     ## make sure the header is valid; ie. has at least the fields we require: row.bytes, signature
     if (length(header[c("row.bytes", "signature")]) < 2)

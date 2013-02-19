@@ -2379,11 +2379,13 @@ gui.setup.bindings <- function() {
       ## by code that wants to install its own handler)
       
       f <- rss.make.closure(function() {
-        args<-lapply(names(formals(GUI$event.list[[virt]])), function(..x..)get(..x..))
-        names(args)<-names(formals(GUI$event.list[[virt]]))
+        ff <- names(formals(GUI$event.list[[virt]]))
+        ff <- ff[!ff == "..."]
+        args<-lapply(ff, function(..x..)get(..x..))
+        names(args)<-ff
         do.call(GUI$event.list[[virt]], args)
       }, list(virt=virt))
-      formals(f) <- c(formals(GUI$event.list[[virt]]), `...`=NULL)
+      formals(f) <- formals(GUI$event.list[[virt]])
       tcl("bind", win, "<<" %:% virt %:% ">>", f)
       assign(paste("bind", win, "<<" %:% virt %:% ">>"), f, .GlobalEnv)
     }

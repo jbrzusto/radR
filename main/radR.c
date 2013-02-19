@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <time.h>
+#include <errno.h>
 #include <R.h>
 #include <Rinternals.h>
 #include <Rdefines.h>

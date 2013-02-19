@@ -2,6 +2,30 @@
 TODO
 ====
 
+- (2013/Feb/06) made some changes for building under recent 64-bit
+  linux for R 2.15; not all plugins tested yet. Finish this, so that
+  we can load existing blipmovie, seascanarch, and rawarch files.
+  It's mostly a matter of removing implicit assumptions about sizes
+  of C types, and working around changes in R internals and external
+  API.
+
+- (2013/Feb/06) the shaped extension for Tk8.5
+  http://www.cs.man.ac.uk/~fellowsd/tcl/shapeidx.html (v 0.4) works
+  nicely under Ubuntu 12.04 - we can easily make the plot window a
+  circle provided we have a circle drawn in an XBM file.  So make this
+  an option, and deal sensibly with moving the window, as well as
+  pan/zoom/resize.  Build and test on Windows.  This will let people
+  make better use of their screen real estate, since clicking in the
+  plot window won't obscure other windows in the dead region (portion
+  outside circular data).  The scan converter generator already limits
+  itself to those window pixels overlapping a sample cell, so there's
+  no gain there.  We could shape the window to that portion of a
+  rectangle for which there are data, so that data fills up the window
+  when zooming.  Worth doing at all?  Maybe
+  not, since our next version may have rather different GUI - HTML 5
+  canvas or (r)gl canvas (where we can scan-convert easily via 
+  mipmaps).  
+
 - (2012/06/01) Make the seascan .BIN file generator deal correctly
   with radars for which there is more than one pulse length per PRF,
   such as the FAR2127.  For now, radR will still require that PLEN
