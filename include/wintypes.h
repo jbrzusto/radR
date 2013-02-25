@@ -9,9 +9,6 @@
 #define MS_STRUCT_FILLER(X, A) 
 
 #else
-
-#include <stdint.h>
-
 // Define filler elements so the alignment of structs works correctly
 // on unix.
 // FIXME:  how does this work in MINGW?  Seems I've tried every possible
@@ -19,24 +16,24 @@
 
 #define MS_STRUCT __attribute__((packed))
 #define MS_STRUCT_FILLER(NAME, BYTES) char __filler__##NAME [BYTES]
-//#define MS_STRUCT_FILLER(NAME, BYTES)
+
 // typedefs needed for IDLCONST.H and IDLTYPES.H
 
-typedef int32_t LONG;
-typedef uint32_t ULONG;
-typedef uint16_t USHORT;
+typedef long LONG;
+typedef unsigned long ULONG;
+typedef unsigned short USHORT;
 typedef unsigned char BYTE;
-typedef int32_t BOOL;
-typedef int16_t SHORT;
-typedef uint16_t WORD;
+typedef int BOOL;
+typedef short SHORT;
+typedef unsigned short WORD;
 typedef unsigned char UCHAR;
 typedef char CHAR;
 typedef void * HANDLE;
-typedef int64_t LONGLONG;
-typedef uint64_t ULONGLONG;
+typedef long long LONGLONG;
+typedef unsigned long long ULONGLONG;
 typedef float FLOAT;
 typedef double DOUBLE;
-typedef uint32_t DWORD;
+typedef unsigned int DWORD;
 #define __stdcall 
 
 typedef union _LARGE_INTEGER {

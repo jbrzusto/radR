@@ -28,7 +28,7 @@ get.menus = function() {
          list(option="choose.any",
               on.set = function(n, s) {
                 show[[n]] <<- s
-                rss.gui(SET_PLOT_CURSOR, if (any(unlist(show))) "arrow" else "hand2")
+                rss.gui(SET_PLOT_CURSOR, if (any(show)) "arrow" else "hand2")
               },
               "Range, bearing, elevation angle"   = show$range.bearing,
               "Spatial coordinates" = show$spatial.coords,
@@ -65,7 +65,7 @@ hooks = list(
 
   PLOT_CURSOR_MOVED = list( enabled = FALSE, read.only = TRUE,
     f = function(plot.coords, spatial.coords, sample.coords, cell.coords) {
-      if (!any(unlist(show))) {
+      if (!any(show)) {
         return (NULL)
       }
       txt <- c()
