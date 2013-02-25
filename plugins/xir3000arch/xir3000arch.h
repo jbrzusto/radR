@@ -170,8 +170,9 @@ typedef struct MS_STRUCT_PREFIX {
 
 // the per-pulse header for segment types RLC_4 and above
 typedef struct MS_STRUCT_PREFIX {
-  unsigned index; // pulse number (from 0 to n-1)
-  unsigned ticks; // clock ticks since sweep start
+  uint16_t index; // pulse number (from 0 to n-1)
+  uint16_t ticks_high; // FIXME: is this correct?  or is this just filler
+  uint32_t ticks; // clock ticks since sweep start
 } MS_STRUCT_POSTFIX  t_RLC_4_pulse_header;
 
 // the run-length encoding structure
