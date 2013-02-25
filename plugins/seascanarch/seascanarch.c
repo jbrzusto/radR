@@ -375,7 +375,7 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
   if (me->scan_index >= me->segment_first_scan_index[me->segment_index + 1])
     return FALSE;
 
-  dbgprintf("Seeking to seascan archive scan_index = %d\n", me->scan_index);
+  //  dbgprintf("Seeking to seascan archive scan_index = %d\n", me->scan_index);
 
   if (! seek_archive_scan (me, me->scan_index, TRUE))
     return FALSE;
@@ -436,7 +436,7 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
   dh->State = 0;
 
 #ifdef RADR_DEBUG
-  printf ("%d,%d,%d,%d,%d,%d,%d,%ld,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
+  //  printf ("%d,%d,%d,%d,%d,%d,%d,%ld,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
 #endif
 
   /* if this is the last header block for this scan, then record its timestamp */

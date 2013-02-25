@@ -75,7 +75,7 @@ typedef struct _TIME_POS_INFO {
 typedef struct _DATA_HEADER { 
  // time and position information
   TIME_POS_INFO TimePosStamp; 
-  time_t   GPSTimeStamp;
+  ULONG  GPSTimeStamp;
   float Heading; // in degrees (0 to 360)
   float SpeedFromGPS; // in knots
   float CourseFromGPS; // in degrees (0 to 360)
@@ -93,8 +93,8 @@ typedef struct _DATA_HEADER {
   float AngleCoverage; // angular coverage of data, in degrees
   ULONG StartRange; // range of start of data, in meters
   ULONG RangeCoverage;  // range coverage of data, in meters
-  int originX; // screen center if scan converted
-  int originY; // screen center if scan converted
+  LONG originX; // screen center if scan converted
+  LONG originY; // screen center if scan converted
  // A/D information
   USHORT PRF;   // to nearest Hz, calculated from radar
   USHORT AntennaSpeed; // to nearest RPM, calculated from radar
@@ -129,11 +129,11 @@ typedef struct _MOTION_OFFSETS {
 
 
 typedef struct _TAPE_CONTENTS { 
-  int TotalImages; // total number of images on tape
-  int NumSegments; // number of data blocks
-  time_t StartTime[MAX_DATA_BLOCKS]; // time of first image in this block
-  time_t StopTime[MAX_DATA_BLOCKS]; // time of last image in this block
-  int NumImages[MAX_DATA_BLOCKS]; // number of images in this block
+  ULONG TotalImages; // total number of images on tape
+  ULONG NumSegments; // number of data blocks
+  ULONG StartTime[MAX_DATA_BLOCKS]; // time of first image in this block
+  ULONG StopTime[MAX_DATA_BLOCKS]; // time of last image in this block
+  ULONG NumImages[MAX_DATA_BLOCKS]; // number of images in this block
   char TapeLabel[80]; // current tape label
 } MS_STRUCT  TAPE_CONTENTS; 
 
@@ -149,7 +149,7 @@ typedef struct _TAPE_STATUS {
   USHORT startup_mode; // startup access mode
   USHORT data_mode; // current data mode
   USHORT overall_status; // overall status
-  int tape_remaining; // remaining tape, in bytes
+  ULONG tape_remaining; // remaining tape, in bytes
   char TapeLabel[80]; // current tape label
 } MS_STRUCT  TAPE_STATUS; 
 
@@ -176,9 +176,9 @@ typedef struct _GPS_STATUS {
 
 typedef struct _AGC_PARAMETERS {
   BOOL AutomaticMode; 
-  int NewGain;    // the new desired gain (approx for automatic mode)
-  int NewOffset; // the new desired offset (approx for automatic mode)
-  int Reserved[14]; 
+  LONG NewGain;    // the new desired gain (approx for automatic mode)
+  LONG NewOffset; // the new desired offset (approx for automatic mode)
+  LONG Reserved[14]; 
   UCHAR MaxDeltaGain; // the maximum variation from NewGain (auto mode)
   UCHAR MaxDeltaOffset; // the maximum variation from NewOffset (auto mode)
   UCHAR DynamicRange; // the maximum allowable dynamic range (auto mode)
@@ -194,8 +194,8 @@ typedef struct _AGC_PARAMETERS {
 typedef struct _AGC_STATUS { 
   BOOL Enabled; 
   BOOL Active; 
-  int CurrentGain; 
-  int CurrentOffset; 
+  LONG CurrentGain; 
+  LONG CurrentOffset; 
 } MS_STRUCT  AGC_STATUS; 
 
 
@@ -205,7 +205,7 @@ typedef struct _AGC_STATUS {
 typedef struct _EXTRACTION_STATUS {
   BOOL Enabled; 
   BOOL Active; 
-  int NumTargets; 
+  LONG NumTargets; 
 } MS_STRUCT  EXTRACTION_STATUS; 
 
 
@@ -221,7 +221,7 @@ typedef struct _EXTRACTION_PARAMETERS {
   SHORT CFAROffset; // offset for CFAR
   USHORT CFARRank; // rank value to use (from 0 to 100 percent)
   BOOL MaskingEnabled; 
-  int MaxNumOfPlots; 
+  LONG MaxNumOfPlots; 
 } MS_STRUCT  EXTRACTION_PARAMETERS; 
 
 typedef struct _PLOT_EXTRACTION_SETTINGS {
@@ -250,8 +250,8 @@ typedef struct _PLOT_HDR {
   BOOL ClutterMapUsed; 
   USHORT MaskMode;
   MS_STRUCT_FILLER(2, 2);
-  int CfarOffset;
-  int Reserved[2];
+  LONG CfarOffset;
+  LONG Reserved[2];
 } MS_STRUCT  PLOT_HDR; 
 
 typedef struct _PLOTS { 
@@ -265,8 +265,8 @@ typedef struct _PLOTS {
       BOOL ClutterMapUsed; 
       USHORT MaskMode;
   MS_STRUCT_FILLER(3, 2);
-      int CfarOffset;
-      int Reserved[2];
+      LONG CfarOffset;
+      LONG Reserved[2];
     }; 
   }; 
   PLOT PlotArray[MAX_PLOTS]; 
@@ -322,7 +322,7 @@ typedef struct _MASK_COORD
 
 typedef struct _TRACK 
 { 
-  unsigned TargetID; // target id
+  ULONG TargetID; // target id
   unsigned char OriginatorID; // zero indicates target was automatically acquired
   unsigned char ScansSinceConfirmed; // indicates scnas since last confirmation
   char TrackStatus; // target status.. see IDLCONST.H for possible values
@@ -347,7 +347,7 @@ typedef struct _TRACKS {
 } MS_STRUCT  TRACKS; 
 
 typedef struct _SRVTRACK_V2{ 
-  unsigned  TrackId; 
+  ULONG  TrackId; 
   float Range;     // range of center of intensity, in meters
   float Bearing; // bearing of center of intensity, in degrees
   BYTE MajorAxisRun; // 0 to 255
@@ -367,7 +367,7 @@ typedef struct SRVTRACKS_V2 {
 // The structure of the Extended Track is such that the first 32 bytes (up to minTCPA) are a TRACK and the 
 // remaining bytes are a SRVTRACK_V2. 
 typedef struct _EXTENDED_TRACK{ 
-  unsigned  TargetID; // target id
+  ULONG  TargetID; // target id
   unsigned char OriginatorID; // zero indicates target was automatically acquired
   unsigned char ScansSinceConfirmed; // indicates scans since last confirmation
   char TrackStatus; // target status
@@ -378,7 +378,7 @@ typedef struct _EXTENDED_TRACK{
   float knotsSpeed; // speed in knots
   float mCPA; // closest point of approach in meters
   float minTCPA; // time to closest point of approach in minutes
-  unsigned  reserved1; 
+  ULONG  reserved1; 
   float reserved2; 
   float reserved3; 
   BYTE MajorAxisRun; // 0 to 255
@@ -437,9 +437,9 @@ typedef struct _MessageHeader {
   ULONG size; // number of data bytes transmitted (header plus data)
   ULONG fullID; 
   ULONG returnValue; 
-  long arg1; 
-  long arg2; 
-  long arg3; 
+  LONG arg1; 
+  LONG arg2; 
+  LONG arg3; 
 } MS_STRUCT  MessageHeader; 
 
 typedef struct _DATA_RESPONSE { 
@@ -466,7 +466,7 @@ typedef struct _CLIENT_REQUEST {
   CLIENT_ID CurrentClient; 
   ULONG ProcessID; 
   char ComputerName[MAX_COMPUTER_NAME_LENGTH]; 
-  time_t  LastAccessTime; 
+  ULONG  LastAccessTime; 
   union { 
     BOOL RpcRequests; 
     struct { 
@@ -545,7 +545,7 @@ typedef struct _SEASCAN_TIME_FIX {
 } MS_STRUCT  SEASCAN_TIME_FIX; 
 
 typedef struct _TERMA_REPORT { 
-  time_t LastUpdate;   // time that this structure was last updated
+  ULONG LastUpdate;   // time that this structure was last updated
   int LinkGood; // 0 = error, 1 = OK
   int MainsOn; // 0 = OFF, 1 = ON (fn 1)
   int TxOn; // 0 = OFF, 1 = ON, 2 = WAIT (fn 2)
@@ -600,7 +600,7 @@ typedef struct _ADV_PLOT_SETTINGS {
   BOOL scanAveragingEnabled; 
   USHORT scansToAverage; // number of scans to average for the second mode (no longer just raw data) - August 12, 2004
   MS_STRUCT_FILLER(4, 2);
-  int reserved[4]; 
+  int32_t reserved[4]; 
 } MS_STRUCT  ADV_PLOT_SETTINGS; 
 
 // Disk format The default access block size of the disk archives is
@@ -613,7 +613,7 @@ typedef struct _ADV_PLOT_SETTINGS {
 
 typedef struct _ARCHIVE_LABEL { 
   char SystemName[80]; // set as Version 3 - MRI data tape, see below 
-  time_t TimeStamp;   // initial time stamp, used for recognition 
+  ULONG TimeStamp;   // initial time stamp, used for recognition 
   MS_STRUCT_FILLER(4b, 4);
   LARGE_INTEGER directoryPosition; // used for disk recording to locate directory 
 } MS_STRUCT  ARCHIVE_LABEL;  
@@ -679,7 +679,7 @@ typedef struct _BASE_RADAR_HDR {
   BOOL ScanConvert512x512; // TITAN only
   ULONG reserved[2]; 
   SYSTEMTIME PCTimeStamp; // PC time stamp
-  time_t TimeStamp; // GPS time stamp
+  ULONG TimeStamp; // GPS time stamp
   float Latitude;      // in degrees (45° 25' 15'' = 45.4208333)
   float Longitude; // in degrees
   IMAGE_OPTIONS current; 
@@ -690,7 +690,7 @@ typedef struct _BASE_RADAR_HDR {
 
 typedef union _RSI_LUT 
 { 
-  unsigned long AsULong; 
+  uint32_t AsULong; 
   struct { 
     unsigned long Gyro : 12; 
     unsigned long TickNibbleHi : 4;
@@ -701,7 +701,7 @@ typedef union _RSI_LUT
 
 typedef struct _DISK_DIRECTORY_ENTRY {
   LARGE_INTEGER Position; // queried from storage device
-  time_t TimeStamp;    // copied from DataHeader.Time in current image
+  ULONG TimeStamp;    // copied from DataHeader.Time in current image
   MS_STRUCT_FILLER(10, 4);
 } MS_STRUCT  DISK_DIRECTORY_ENTRY; 
 
