@@ -56,4 +56,8 @@ max.azimuth.err = 1.0
 
 skip.changeover.pulse = TRUE
 
+## Sometimes GPS timestamps appear to be broken, so we should just
+## use PC timestamps (recorded in the archive) instead
+
+use.pc.timestamp = FALSE
 

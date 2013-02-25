@@ -152,7 +152,8 @@ set_skip_changeover_pulse (SEXP portsxp, SEXP skipsxp) {
 }
 
 SEXP
-set_max_azimuth_err (SEXP portsxp, SEXP errsxp) {
+set_max_azimuth_err (SEXP portsxp, SEXP errsxp) 
+{
   t_ssa_port port = INTEGER(AS_INTEGER(portsxp))[0];
   t_ssa *me;
 
@@ -162,6 +163,21 @@ set_max_azimuth_err (SEXP portsxp, SEXP errsxp) {
   }
 
   me->max_azimuth_err = REAL(errsxp)[0];
+  return PASS_SEXP;
+}
+
+SEXP
+set_use_pc_timestamp (SEXP portsxp, SEXP usepcsxp) 
+{
+  t_ssa_port port = INTEGER(AS_INTEGER(portsxp))[0];
+  t_ssa *me;
+
+  if (!(me = ensure_port(port))) {
+    error_code = RADR_ERROR_NOMEM;
+    return FAIL_SEXP;
+  }
+
+  me->use_PCTimestamp = INTEGER(usepcsxp)[0];
   return PASS_SEXP;
 }
 
@@ -440,8 +456,13 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
 #endif
 
   /* if this is the last header block for this scan, then record its timestamp */
-  if (dh->StartBearing + dh->AngleCoverage == 360.0)
-    me->time_end_latest_block = make_timestamp (&dh->TimePosStamp.Time, 0);
+  if (dh->StartBearing + dh->AngleCoverage == 360.0) {
+    if (me->use_PCTimestamp) {
+      me->time_end_latest_block = make_timestamp (&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
+    } else {
+      me->time_end_latest_block = make_timestamp (&dh->TimePosStamp.Time, 0);
+    }
+  }
   return TRUE;
 }
 
@@ -633,7 +654,11 @@ cleanup_toc (t_ssa *me)
 
     // Adjust the first scan index upward to drop the incomplete scan
     me->segment_first_scan_index[i] += j;
-    toc->StartTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+    if (me->use_PCTimestamp) {
+      toc->StartTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
+    } else {
+      toc->StartTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+    }
 
     // Starting at the end of the segment, look for a 4th scan quadrant
     j = me->segment_first_scan_index[i + 1] - 1;
@@ -656,7 +681,11 @@ cleanup_toc (t_ssa *me)
 
       if (j > me->segment_first_scan_index[i]) {
 	is_valid[i] = TRUE;
-	toc->StopTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+        if (me->use_PCTimestamp) {
+          toc->StopTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
+        } else {
+          toc->StopTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+        }
 	toc->NumImages[i] = j - me->segment_first_scan_index[i] + 4;
       }
     }
@@ -756,7 +785,11 @@ get_scan_info(SEXP portsxp) {
   // the timestamp in this header corresponds to the time immediately after the last pulse in this
   // block (quadrant, typically)
 
-  time_end_this_block = make_timestamp(&dh->TimePosStamp.Time, 0);
+    if (me->use_PCTimestamp) {
+     time_end_this_block = make_timestamp (&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
+    } else {
+      time_end_this_block = make_timestamp (&dh->TimePosStamp.Time, 0);
+    }
 
   if (me->time_end_latest_block >= 0) {
     // If we have the timestamp for the end of the previous data block, then we use it as the start
@@ -773,7 +806,11 @@ get_scan_info(SEXP portsxp) {
     printf("Estimating start time and duration from rpm:%f", me->time_end_latest_block);
 #endif
     SET_VECTOR_ELT(rv, 4, ScalarInteger(floor(0.5 + 60000.0 / dh->AntennaSpeed))); // duration in ms; antenna speed is in rpm 
-    me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, - REAL(VECTOR_ELT(rv, 4))[0] * dh->AngleCoverage / 360.0);
+    if (me->use_PCTimestamp) {
+      me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
+    } else {
+      me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, - REAL(VECTOR_ELT(rv, 4))[0] * dh->AngleCoverage / 360.0);
+    }
     SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block));
   }
   SET_VECTOR_ELT(rv, 5, ScalarReal(dh->RangePerSample));  
@@ -828,13 +865,11 @@ end_of_data(SEXP portsxp) {
   // have we reached the end of data for this segment in the archive?
   int port = INTEGER(AS_INTEGER(portsxp))[0];
   t_ssa *me = ports[port];
-  DATA_HEADER *dh;
   TAPE_CONTENTS *toc;
 
   if (!me)
     return FAIL_SEXP;
 
-  dh = &me->dh;
   toc = &me->toc;
 
   if (me->is_gated)
@@ -1183,6 +1218,7 @@ R_CallMethodDef seascanarch_call_methods[]  = {
   MKREF(set_desired_azimuths, 2),
   MKREF(set_max_azimuth_err, 2),
   MKREF(set_skip_changeover_pulse, 2),
+  MKREF(set_use_pc_timestamp, 2),
   MKREF(seek_time, 2),
   MKREF(seek_scan, 3), 
   MKREF(start_up, 1),

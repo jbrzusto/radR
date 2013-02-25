@@ -61,6 +61,7 @@ typedef struct {
   double time_end_latest_block;                          /* timestamp of end of most recently read data block; estimated if it doesn't exist */
   double time_start_this_block;                          /* timestamp of start of this data block */
   int32_t is_gated;			                 /* is the underlying data archive gated? */
+  int32_t use_PCTimestamp;                               /* if non-zero, use the PCTimestamp, rather than GPS timestamp */
 
   // fields used only for ungated data: ----------------------------------------
 
