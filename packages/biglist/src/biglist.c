@@ -170,8 +170,7 @@ blc_read_back (t_biglist * bl, t_biglist_index key,
       /* seek to the start of the item */
       seek_connection (bl->con_sexp, buff[0], R_SEEK_START, R_SEEK_READ_POS);
       /* grab the item */
-      SEXP call = lang2(findVar(install("unserialize"), R_GlobalEnv), bl->con_sexp);
-      PROTECT(item = eval(call, R_GlobalEnv));
+      PROTECT(item = R_unserialize (bl->con_sexp, R_NilValue));
       SET_VECTOR_ELT (bl->cache, INDEX_IN_CACHE (bl, entry), item);
       UNPROTECT(1);
     }
@@ -196,8 +195,8 @@ blc_write_back (t_biglist * bl, t_biglist_cache_entry * entry)
     REAL (seek_connection
 	  (bl->con_sexp, NA_REAL, R_SEEK_START, R_SEEK_WRITE_POS))[0];
   /* output the item */
-  SEXP call = lang3(findVar(install("serialize"), R_GlobalEnv), VECTOR_ELT (bl->cache, INDEX_IN_CACHE (bl, entry)), bl->con_sexp);
-  eval(call, R_GlobalEnv);
+  R_serialize (VECTOR_ELT (bl->cache, INDEX_IN_CACHE (bl, entry)),
+	       bl->con_sexp, FALSE_SEXP, R_NilValue);
   /* calculate the item's file size by subtracting the new end of file offset from the old */
   buff[1] =
     REAL (seek_connection

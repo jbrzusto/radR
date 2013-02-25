@@ -20,17 +20,17 @@ CP = /bin/cp
 HEAD = /bin/head
 ## version of R you are building against
 R_MAJOR_VERSION = 2
-R_MINOR_VERSION = 15
-R_MINOR_SUBVERSION = 2
+R_MINOR_VERSION = 5
+R_MINOR_SUBVERSION = 1
 R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
-R = /usr/bin/R
+R = /usr/bin/R-$(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 RCMD = $(R) CMD
 BUILD_PLATFORM_LIBOPTS = 
 LOCAL_INSTALL_DIR=~/Desktop/radR
-RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
+RINC =-I/usr/src/R-$(R_VERSION)/include -I/usr/src/R-$(R_VERSION)/src/include
 
-BUILD_PLATFORM_CCOPTS = -fPIC
+BUILD_PLATFORM_CCOPTS = -march=k8
 BUILD_PLATFORM_DEP = 
 TARGET_PLATFORM_CONF_FILES = radR.unix.conf.R gui.unix.conf.R
 TARGET_PLATFORM_RADR_FILES = radR.xbm startup.unix.R
@@ -39,13 +39,13 @@ ifeq ($(TARGET_PLATFORM),windows)
 TARGET_PLATFORM_CCOPTS=-I$(GUI_DIR)/tcltk -DWin32
 TARGET_PLATFORM_LIBOPTS=
 TCLTK_LIB = $(R_WINDOWS_HOME)/Tcl/bin/tcl84.dll $(R_WINDOWS_HOME)/Tcl/bin/tk84.dll $(R_WINDOWS_HOME)/Tcl/bin/tcl84.dll $(R_WINDOWS_HOME)/Tcl/bin/tk84.dll
-TCLTK_INC = -I/home/src/tk8.4.15/generic -I/home/src/tk8.4.15/win -I /home/src/tcl8.4.15/generic -I /home/src/tcl8.4.15/win
+TCLTK_INC = -I/usr/src/tk8.4.15/generic -I/usr/src/tk8.4.15/win -I /usr/src/tcl8.4.15/generic -I /usr/src/tcl8.4.15/win
 RLIB = $(R_WINDOWS_HOME)/bin/R.dll
 NM = /usr/bin/i586-mingw32msvc-nm 
 else
-TCLTK_LIB = -L/usr/lib -ltcl8.5 -ltk8.5
-TCLTK_INC = -I/usr/include/tcl8.5 -I/usr/include/tcl8.5/tk-private/generic  -I/usr/include/tcl8.5/tcl-private/generic
-RLIB = -L/home/src/R-$(R_VERSION)/lib -lR
+TCLTK_LIB = -L/usr/lib -ltcl8.4 -ltk8.4
+TCLTK_INC = -I/usr/include/tcl8.4 -I/usr/include/tcl8.4/tk-private/generic  -I/usr/include/tcl8.4/tcl-private/generic
+RLIB = -L/usr/src/R-$(R_VERSION)/lib -lR
 NM = /usr/bin/nm
 LIBZ_LIB = -L/usr/lib -lz -Wl,-rpath=/usr/lib
 endif

@@ -22,7 +22,6 @@ extern "C" {
 #include <math.h>
 #include <signal.h>
 #include <sys/types.h>
-#include <stdint.h>
 #include <unistd.h>
 #include "R.h"
 #include "Rinternals.h"

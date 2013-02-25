@@ -126,7 +126,7 @@ bigframe_create (SEXP filename, SEXP data_offset, SEXP row_bytes, SEXP num_rows,
   // allocate space for column sizes
   bf->col_types = Calloc(bf->num_cols, unsigned char);
   // allocate space for cumulative column sizes
-  bf->cum_col_size = Calloc(bf->num_cols, uint32_t);
+  bf->cum_col_size = Calloc(bf->num_cols, int);
   // allocate space for buffer and cache rows
   bf->row_buff = Calloc((csize + 2) * bf->row_bytes, char);
   // allocate the cache management entries
@@ -147,8 +147,8 @@ bigframe_create (SEXP filename, SEXP data_offset, SEXP row_bytes, SEXP num_rows,
     case INTSXP:
     case LGLSXP:
       // integer or logical
-      *(int32_t *)p = NA_INTEGER;
-      p += sizeof(int32_t);
+      *(int *)p = NA_INTEGER;
+      p += sizeof(int);
       break;
     case REALSXP:
       // double
@@ -234,7 +234,7 @@ bigframe_get_data (SEXP bfs, SEXP rowind, SEXP colind)
       case INTSXP:
       case LGLSXP:
 	// integer or logical
-	INTEGER(VECTOR_ELT(rv, j))[i] = *(int32_t *)p;
+	INTEGER(VECTOR_ELT(rv, j))[i] = *(int *)p;
 	break;
       case REALSXP:
 	// double
@@ -354,7 +354,7 @@ bigframe_put_data (SEXP bfs, SEXP rowind, SEXP colind, SEXP dataframe)
       case INTSXP:
       case LGLSXP:
 	// integer or logical
-	*(int32_t *)p = INTEGER(VECTOR_ELT(coerced_RHS, j))[ii];
+	*(int *)p = INTEGER(VECTOR_ELT(coerced_RHS, j))[ii];
 	break;
       case REALSXP:
 	// double

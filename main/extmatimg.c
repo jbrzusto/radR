@@ -81,7 +81,7 @@ radR_attach_image_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp) {
   // attach tcl's 32bpp RGB image pixel storage to an existing extmat
   //
   // name:      character vector, tcl name of the image
-  // tclinterp: extptr:  pointer to the tcl interpreter
+  // tclinterp: integer vector, pointer to the tcl interpreter
   //            as returned by get_tcl_interp
   // matsxp:    an extmat, e.g. as returned by R function extmat()
   //
@@ -91,7 +91,7 @@ radR_attach_image_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp) {
   
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
-  Tcl_Interp *my_tcl = (Tcl_Interp*) EXTPTR_PTR(tclinterp);
+  Tcl_Interp *my_tcl = (Tcl_Interp*) INTEGER(tclinterp)[0];
   t_extmat *m = SEXP_TO_EXTMAT(matsxp);
 
   ph = Tk_FindPhoto(my_tcl, CHAR(STRING_ELT(name, 0)));
@@ -120,7 +120,7 @@ copy_image_channel_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp, SEXP chans
   // low order 8 bits of each word, in row major order
   //
   // name:      character vector, tcl name of the image
-  // tclinterp: EXTPTR: pointer to the tcl interpreter
+  // tclinterp: integer vector, pointer to the tcl interpreter
   //            as returned by get_tcl_interp
   // matsxp:    an extmat, e.g. as returned by R function extmat()
   // chansxp:   an integer representing channel: red=0, green=1, blue=2, alpha=3 (on a little-endian machine)
@@ -130,7 +130,7 @@ copy_image_channel_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp, SEXP chans
   
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
-  Tcl_Interp *my_tcl = (Tcl_Interp*) EXTPTR_PTR(tclinterp);
+  Tcl_Interp *my_tcl = (Tcl_Interp*) INTEGER(tclinterp)[0];
   t_extmat *m = SEXP_TO_EXTMAT(matsxp);
   unsigned int i;
   unsigned int n;

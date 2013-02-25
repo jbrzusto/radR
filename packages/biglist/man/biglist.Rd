@@ -57,7 +57,7 @@ drop.items(x, i)
 \item{i}{positive integer vector of list indexes}
 \item{value}{an integer (for \code{length<-}) or an arbitrary R object}
 (for \code{[[<-})
-\item{...}{additional arguments to the print method}
+\item{...} {additional arguments to the print method}
 }
 \details{
   A biglist is meant to store a large list of R objects on disk.  Only a small

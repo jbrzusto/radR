@@ -44,7 +44,7 @@ ifeq (unix,$(TARGET_PLATFORM))
 	$(RCMD) check $(addsuffix $(SOURCE_PACKAGE_SUFFIX),$(1))
 	$(RM) -rf $(1).Rcheck
 endif
-	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) INSTALL -l $(RADR_PACKAGE_INSTALL_DIR)/ --build $(1)
+	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) build --binary $(1)
 
 $(1)_clean:
 	$(RM) -rf $(1).Rcheck $(addprefix $(RADR_PACKAGE_DIR)/,$(addsuffix $(BINARY_PACKAGE_SUFFIX), $(1))) \

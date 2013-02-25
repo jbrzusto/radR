@@ -18,7 +18,8 @@ init_tk_img_png(SEXP interpsxp)
   
   // returns NULL
 
-  void * p = EXTPTR_PTR(interpsxp);
+  //  void * p = EXTPTR_PTR(interpsxp);  FIXME: when get_tcl_interp returns an EXTPTR, uncomment this
+  void *p = (void *)(INTEGER(interpsxp)[0]);
   if (TCL_ERROR == Tkpng_Init (p)) {
     error("Couldn't load tkImgPNG.\n");
   }
