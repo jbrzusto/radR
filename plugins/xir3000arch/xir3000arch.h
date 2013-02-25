@@ -1,5 +1,7 @@
 /* xenexarch.h - definitions for reading files recorded by Russell Technologies' IntegRadar/WinHorizon */
 
+#include <stdint.h>
+
 // types of recorded data formats
 
 typedef enum {
