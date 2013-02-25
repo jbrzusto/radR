@@ -74,7 +74,7 @@ do_start_up(int port)
     return PASS_SEXP;
 
   me->have_archive_dir = FALSE;
-
+  me->use_PCTimestamp = 0;
   if (! (me->file = bigfopen(me->filename, port == SSA_READER ? "rb": "wb"))) {
     strncpy(extra_error_info, me->filename, EXTRA_ERROR_INFO_SIZE);
     *me->filename = '\0';
@@ -373,6 +373,7 @@ double make_timestamp (SEASCAN_REALTIME *t, int milliseconds) {
   tm.tm_mday = t->Day;
   tm.tm_mon = t->Month - 1;
   tm.tm_year = t->Year - 1900;
+  tm.tm_isdst = 0;
 
   return mktime(&tm) + (t->Milliseconds + milliseconds) / 1000.0;
 }
@@ -451,9 +452,7 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
   dh->FTCNdx = me->brh.current.FTC;
   dh->State = 0;
 
-#ifdef RADR_DEBUG
-  printf ("%d,%d,%d,%d,%d,%d,%d,%ld,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
-#endif
+  dbgprintf ("%d,%d,%d,%d,%d,%d,%d,%ld,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
 
   /* if this is the last header block for this scan, then record its timestamp */
   if (dh->StartBearing + dh->AngleCoverage == 360.0) {
@@ -794,17 +793,13 @@ get_scan_info(SEXP portsxp) {
   if (me->time_end_latest_block >= 0) {
     // If we have the timestamp for the end of the previous data block, then we use it as the start
     // time for this block, and estimate a duration.
-#ifdef RADR_DEBUG
-    printf("Estimating start time and duration from time_end_latest_block=%.3f\n", me->time_end_latest_block);
-#endif
+    dbgprintf("Estimating start time and duration from time_end_latest_block=%.3f\n", me->time_end_latest_block);
     SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block = me->time_end_latest_block));
     SET_VECTOR_ELT(rv, 4, ScalarInteger((time_end_this_block - me->time_end_latest_block) * 1000 * (360 / dh->AngleCoverage)));
   } else {
     // we don't have the time for the end of the previous block, so we approximate it using
     // the antenna rotation speed and fraction of the scan covered by this block
-#ifdef RADR_DEBUG
-    printf("Estimating start time and duration from rpm:%f", me->time_end_latest_block);
-#endif
+    dbgprintf("Estimating start time and duration from rpm:%f", me->time_end_latest_block);
     SET_VECTOR_ELT(rv, 4, ScalarInteger(floor(0.5 + 60000.0 / dh->AntennaSpeed))); // duration in ms; antenna speed is in rpm 
     if (me->use_PCTimestamp) {
       me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
