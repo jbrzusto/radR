@@ -1,3 +1,10 @@
+25 Feb. 2013
+- seascanarch: allow user to specify use of timestamp from recording PC rather than
+  GPS (in some cases, GPS timestamp appears to be broken)
+
+- xir3000arch: quietly drop trailing bad .REC files from the end of a folder
+  (messages indicating this appear if user types "warnings()" at console)
+
 28 June 2012
 - declutter plugin now handles tilter
 - new scripts: 
