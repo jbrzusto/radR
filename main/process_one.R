@@ -253,6 +253,11 @@ if (read.parms) {
         bail("The zone file ", f, " does not exist.")
       ZONE$load.zones(f)
     }
+  } else {
+    if (exists("ZONE") && ZONE$enabled) {
+      warning("You specified a NULL zonefile, but the zone plugin is enabled - I'm disabling it")
+      rss.disable.plugin("zone")
+    }
   }
 }
 
