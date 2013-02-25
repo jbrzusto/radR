@@ -338,6 +338,8 @@ globals = list (
     port$default.duration <- 60 / antenna.rpm * 1000
     si.first <- get.scan.info(port)
 
+    bad = 0
+
     if (! is.timestamp.ok(si.first$timestamp)) {
       ## there are no (valid) timestamps in these files, we try to guess one from the file basename
       ## except that if we've already recorded this info in a "metadata.R" file, we use that
@@ -361,13 +363,31 @@ globals = list (
       if (ns > 1) {
         seek.scan(port, 1, 2)
         si.2nd <- get.scan.info(port)
-        port$default.duration <- as.numeric(si.2nd$timestamp - si.first$timestamp) * 1000
-        seek.scan(port, 1, ns)
-        si.last <- get.scan.info(port)
+        if (is.null(si.2nd)) {
+          si.last = si.first
+        } else {
+          port$default.duration <- as.numeric(si.2nd$timestamp - si.first$timestamp) * 1000
+          repeat {
+            seek.scan(port, 1, ns)
+            si.last <- get.scan.info(port)
+            if (! is.null(si.last))
+              break;
+            ns = ns - 1
+            bad = bad + 1
+            if (ns == 1) {
+              si.last = si.first
+              break;
+            }
+          };
+        }
       } else {
         si.last <- si.first
       }
     }
+    if (bad > 0)
+      warning(sprintf("The last %d .REC files in this folder are invalid; I'm ignoring them\n", bad))
+    
+    port$seqnos = port$seqnos[1:ns]
     ## workaround R bug: as.POSIXct leaves "POSIXt" as part of the class.
     port$contents <- list (
                           num.scans = ns,
