@@ -1,6 +1,10 @@
-25 Feb. 2013
-- seascanarch: allow user to specify use of timestamp from recording PC rather than
-  GPS (in some cases, GPS timestamp appears to be broken)
+26 Feb. 2013
+- seascanarch:
+    - allow user to specify use of timestamp from recording PC rather than
+      GPS (in some cases, GPS timestamp appears to be broken)
+    - fix issues with recent ungated archives; this removes some workaround
+      code that may have been necessary with some old archives - please
+      contact the author if this breaks anything of yours
 
 - xir3000arch: quietly drop trailing bad .REC files from the end of a folder
   (messages indicating this appear if user types "warnings()" at console)
