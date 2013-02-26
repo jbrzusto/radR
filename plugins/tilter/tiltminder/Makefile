@@ -13,8 +13,8 @@ GPP := gfilt
 ## The GCC version:
 GCC_VERSION := 4.3.2
 
-GCC_OPTS_DEBUG := -Wall -g3
-GCC_OPTS_PRODUCTION := -Wall -O2
+GCC_OPTS_DEBUG := -Wall -g3 -fPIC
+GCC_OPTS_PRODUCTION := -Wall -O2 -fPIC
 GCC_OPTS := $(GCC_OPTS_$(VERSION))
 
 ## The Boost version:

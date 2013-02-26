@@ -16,8 +16,8 @@
 
 SHLIB_SUFFIX_unix = .so
 EXE_SUFFIX_unix = 
-CP = /bin/cp
-HEAD = /bin/head
+CP = $(shell which cp)
+HEAD = $(shell which head)
 ## version of R you are building against
 R_MAJOR_VERSION = 2
 R_MINOR_VERSION = 15

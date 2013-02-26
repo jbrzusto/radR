@@ -87,7 +87,7 @@ reassigned values.
   
   
   
-}
+
 \value{
   \code{biglist} returns an EXTPTR object of class "biglist" with these attributes
   \item{ndx} a bigframe object (the biglist index) opened with the name filename.ndx
@@ -103,7 +103,7 @@ reassigned values.
 \references{}
 \author{John Brzustowski  <jbrzusto@fastmail.fm>}
 \note{This package is part of the radR project http://radr.wik.is}
-}
+
 \seealso{\code{bigframe}}
 \examples{
 }

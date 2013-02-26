@@ -8,8 +8,8 @@ PLUGIN_EXTRA_R_FILES := usrp.windows.conf.R usrp.unix.conf.R
 
 ifeq ("$(TARGET_PLATFORM)", "unix")
 
-USRP_RADR_PLUGIN_DIR:=/usr/src/gnuradio/usrp/host/apps
-USRP_INCLUDE_PATH:=/usr/src/gnuradio/usrp/host/include
+USRP_RADR_PLUGIN_DIR:=/home/src/gnuradio/usrp/host/apps
+USRP_INCLUDE_PATH:=/home/src/gnuradio/usrp/host/include
 
 $(eval $(AT_MAKEFILE_START))
 
