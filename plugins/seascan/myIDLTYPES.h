@@ -692,10 +692,10 @@ typedef union _RSI_LUT
 { 
   uint32_t AsULong; 
   struct { 
-    unsigned long Gyro : 12; 
-    unsigned long TickNibbleHi : 4;
-    unsigned long Bearing : 12; 
-    unsigned long TickNibbleLo : 4;
+    uint32_t Gyro : 12;
+    uint32_t TickNibbleHi : 4;
+    uint32_t Bearing : 12;
+    uint32_t TickNibbleLo : 4;
   }; 
 } MS_STRUCT  RSI_LUT; 
 
