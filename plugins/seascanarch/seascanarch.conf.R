@@ -33,7 +33,7 @@ enabled = TRUE
 ## real pulse is used.  This may lead to replication or deletion
 ## of real pulses in generating the gated raw scan data.
 
-desired.azimuths = 1024 
+desired.azimuths = 4096
 
 ## For ungated data, there may be no real pulse very close to the
 ## desired azimuth if some data are lost.  This parameter will
@@ -54,7 +54,7 @@ max.azimuth.err = 1.0
 ## RSI_LUT field in the angle block of the raw archive.
 ## This flag causes such "pulses" to be ignored
 
-skip.changeover.pulse = TRUE
+skip.changeover.pulse = FALSE
 
 ## Sometimes GPS timestamps appear to be broken, so we should just
 ## use PC timestamps (recorded in the archive) instead

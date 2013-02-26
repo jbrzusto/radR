@@ -377,6 +377,22 @@ double make_timestamp (SEASCAN_REALTIME *t, int milliseconds) {
   return mktime(&tm) + (t->Milliseconds + milliseconds) / 1000.0;
 }
 
+double make_timestamp2 (SYSTEMTIME *t) {
+  // create a double GMT timestamp from a broken-down SYSTEMTIME timestamp
+
+  struct tm tm;
+
+  tm.tm_sec = t->wSecond;
+  tm.tm_min = t->wMinute;
+  tm.tm_hour = t->wHour;
+  tm.tm_mday = t->wDay;
+  tm.tm_mon = t->wMonth - 1;
+  tm.tm_year = t->wYear - 1900;
+
+  return mktime(&tm) + (t->wMilliseconds ) / 1000.0;
+}
+
+
 int
 read_archive_scan_hdr (t_ssa *me, int filldh) 
 {
@@ -965,14 +981,13 @@ static inline double
 ang_diff (double theta1, double theta2) {
   // return the (smaller) absolute angle difference between
   // theta1 degrees and theta2 degrees
-  double tmp;
 
-  if (theta2 > theta1) {
-    tmp = theta2; 
-    theta2 = theta1;
-    theta1 = tmp;
-  }
-  return (theta1 - theta2 < 180.0) ? theta1 - theta2 : 360 - (theta1 - theta2);
+  double tmp = theta2 - theta1;
+  if (tmp < -180.0)
+    tmp += 360.0;
+  else if (tmp > 180.0)
+    tmp = 360.0 - tmp;
+  return fabs(tmp);
 }
 
 int
@@ -999,7 +1014,9 @@ advance_to_next_ungated_block (t_ssa *me) {
   // copy next header to current header slot
   me->brh = me->brh2;
   // read next data block and skip its angles
-  if (! TRY_READ_DATA(me))
+  int needed =  ROUND_UP_TO(me->brh.yExtent * me->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE);
+  (*pensure_extmat)(& me->data_block, needed + me->brh.rAxisBytes, 1);
+  if (1 != fread(me->data_block.ptr + me->brh.rAxisBytes, needed, 1, me -> file))
     return FALSE;
 
   if (! TRY_READ_ANGLES(me))
@@ -1013,6 +1030,15 @@ advance_to_next_ungated_block (t_ssa *me) {
   // calculate new angle range and dtheta
   me->angle_range = ang_diff(me->brh2.StartAngle, me->brh.StartAngle);
   me->in_dtheta = me->angle_range / me->brh.AssociatedAzimuths;
+
+  //  if (me->brh2.StartAngle + me->brh2.Degrees >= 360.0) {
+    if (me->use_PCTimestamp) {
+      me->time_end_latest_block = make_timestamp2 (&me->brh2.PCTimeStamp);
+    } else {
+      me->time_end_latest_block = me->brh2.TimeStamp;
+    }
+    //  }
+
   return TRUE;
 }
 
@@ -1186,13 +1212,6 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
 	++anglep;
 	src += me->brh.rAxisBytes;
 	me->prev_pulse_theta = pulse_theta;
-	// <FIXME>: with the following code included, we get more correct pulses
-	// so just what is seascan's algorithm for decimating pulses from (e.g. 2.4 * 2100 to 4096)
-	memcpy(dst, src, me->brh.rAxisBytes);
-	dst += me->brh.rAxisBytes;
-	++j;
-	output_theta = j * 360.0 / me->desired_azimuths;
-	// </FIXME>
       }
     }
   }
