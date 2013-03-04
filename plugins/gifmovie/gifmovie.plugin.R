@@ -44,11 +44,18 @@ For gifsicle source code, see http://www.lcdf.org/gifsicle/" %:%
 }
 
 
+safe_system = function(...) {
+  tryCatch(
+           return (system(...)),
+           error = function(e) return (NULL)
+           );
+};
+
 load = function() {
   ## try to find the configured or system default versions of capture programs
   if (check.capture.progs) {
-    if (!identical(system(capture.progs[1] %:% " --version", intern=TRUE)[1], "LCDF Gifsicle 1.52")) {
-      if (!identical(system("gifsicle --version", intern=TRUE)[1], "LCDF Gifsicle 1.52")) {
+    if (!identical(safe_system(capture.progs[1] %:% " --version", intern=TRUE)[1], "LCDF Gifsicle 1.52")) {
+      if (!identical(safe_system("gifsicle --version", intern=TRUE)[1], "LCDF Gifsicle 1.52")) {
         enable(FALSE)
         rss.gui("POPUP_DIALOG", "gifsicle is missing", "The gifmovie plugin requires a patched version of gifsicle-1.52\nwhich is provided with radR.  It should be in the plugins/gifmovie directory.\n\nThis plugin will be disabled now.", buttons=c("Ok"))
       } else {
@@ -57,8 +64,8 @@ load = function() {
     }
 
     ## try to find the configured or system default version of win2rgb
-    if (!identical(system(capture.progs[2], intern=TRUE)[1], "Usage: wintorgb WINID -o outfile.rgb")) {
-      if (!identical(system("win2rgb", intern=TRUE)[1], "Usage: wintorgb WINID -o outfile.rgb")) {
+    if (!identical(safe_system(capture.progs[2], intern=TRUE)[1], "Usage: wintorgb WINID -o outfile.rgb")) {
+      if (!identical(safe_system("win2rgb", intern=TRUE)[1], "Usage: wintorgb WINID -o outfile.rgb")) {
         enable(FALSE)
         rss.gui("POPUP_DIALOG", "win2rgb is missing", "The gifmovie plugin requires win2rgb\nwhich is provided with radR.  It should be in the plugins/gifmovie directory.\n\nThis plugin will be disabled now.", buttons=c("Ok"))
       } else {
