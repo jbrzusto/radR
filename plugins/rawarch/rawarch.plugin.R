@@ -248,7 +248,9 @@ globals = list (
     ## data are in extmat
     port$cur.scan <- port$cur.scan + 1
     i <- port$cur.scan + port$first.scan[port$cur.run] - 1
-    port$bl[[2 * i]] <- port$si <- c(RSS$scan.info, compressed=compress)
+    port$si = RSS$scan.info
+    port$si$compressed = compress
+    port$bl[[2 * i]] <- port$si
     if (isTRUE(port$si$compressed)) {
       port$bl[[2 * i + 1]] <- .Call("zlib_compress", .Call("raw_pack", pointer(extmat),
                                                           as.integer(c(
