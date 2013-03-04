@@ -305,7 +305,7 @@ globals = list (
     ## make sure the archive is valid
     verify.rawarch(port)
     
-    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, names=c("pulses", "samples.per.pulse", "bits.per.sample", "timestamp", "time.msec", "duration", "sample.dist", "first.sample.dist", "bearing", "orientation", "latitude", "longitude"), cache.size=1, read.only=port$is.source)
+    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, names=c("pulses", "samples.per.pulse", "bits.per.sample", "timestamp", "time.msec", "duration", "sample.dist", "first.sample.dist", "bearing", "orientation", "latitude", "longitude"), read.only=port$is.source)
   },
 
   shut.down.rawarch = function(port, ...) {
