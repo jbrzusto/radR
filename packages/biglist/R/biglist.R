@@ -1,5 +1,5 @@
 "biglist" <-
-function(filename, overwrite=FALSE, names=NULL, header=NULL, cache.size=biglist.default.cache.size, read.only=FALSE) {
+function(filename, overwrite=FALSE, names=NULL, header=NULL, read.only=FALSE) {
   ## create a biglist object, or open an existing one.
   ##
   ## filename:  a filename in which to store the biglist
@@ -32,7 +32,9 @@ function(filename, overwrite=FALSE, names=NULL, header=NULL, cache.size=biglist.
       header <- list()
     header$names <- names
   }
-  
+  biglist.header.tag = "R biglist"
+  biglist.version = "v0.2"
+  biglist.header.string = sprintf("%-31s", paste(biglist.header.tag, biglist.version))
   if (overwrite || !file.exists(filename)) {
     ## create a new biglist file, write a plaintext header, and create the index file
     file <- file(filename, "w+b")
@@ -42,16 +44,19 @@ function(filename, overwrite=FALSE, names=NULL, header=NULL, cache.size=biglist.
   } else {
     ## open an existing file and verify that it is a biglist
     file <- file(filename, if(read.only) "rb" else "r+b")
-    hdr <- readBin(file, "raw", size=1, n=1 + nchar(biglist.header.string))
-    if (rawToChar(hdr) != biglist.header.string)
+    hdr <- rawToChar(readBin(file, "raw", size=1, n=1 + nchar(biglist.header.string)))
+    if (substr(hdr, 1, nchar(biglist.header.tag)) != biglist.header.tag)
       stop(sprintf("%s is not a valid biglist", filename))
+    biglist.version = substr(hdr, 11, 14)
     ndx <- bigframe(filename=paste(filename, biglist.indexfile.suffix, sep=""), read.only=read.only)
     names <- attr(ndx, "header")$names
   }
-  
-  ## create the biglist object in C code.
 
-  bl <- .Call("biglist_create", filename, file, ndx, vector("list", cache.size), names, dim(ndx)[1], read.only, PACKAGE="biglist")
+  ## an integer representing the version
+  numver = as.integer(round(as.numeric(substring(biglist.version, 2))*10))
+  
+  ## 
+  bl <- structure(list(numver=numver, filename=filename, file=file, ndx=ndx, names=names, length=dim(ndx)[1], read.only=read.only), class="biglist")
 
   return(bl)
 }

@@ -7,6 +7,6 @@ function(x) {
   ## Note that this is not the names of the
   ## items in the biglist, but rather, the names of
   ## the subitems in each item of the biglist.
-  attr(attr(x, "ndx"), "header")$names
+  x$names
 }
 

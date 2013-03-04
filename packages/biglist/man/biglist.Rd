@@ -1,13 +1,10 @@
 \name{biglist}
 \alias{biglist}
-\alias{biglist.default.cache.size}
-\alias{biglist.header.string}
+\alias{biglist.legacy.header}
 \alias{biglist.indexfile.suffix}
 \alias{c.biglist}
 \alias{close.biglist}
-\alias{drop.items}
 \alias{flush.biglist}
-\alias{length<-.biglist}
 \alias{length.biglist}
 \alias{names.biglist}
 \alias{print.biglist}
@@ -25,16 +22,13 @@ wasting disk space.
 }
 \usage{
 biglist(filename, overwrite = FALSE, names = NULL, header =
-NULL, cache.size = biglist.default.cache.size, read.only=FALSE)
-biglist.default.cache.size
-biglist.header.string
+NULL, read.only=FALSE)
+biglist.legacy.header
 biglist.indexfile.suffix
-drop.items(x, i)
 \method{c}{biglist}(x, ...)
 \method{close}{biglist}(con, ...)
 \method{flush}{biglist}(con)
 \method{length}{biglist}(x)
-\method{length}{biglist}(x)<-value
 \method{names}{biglist}(x)
 \method{print}{biglist}(x, ...)
 \method{[}{biglist}(x, i)
@@ -50,18 +44,16 @@ drop.items(x, i)
     default \code{names} attribute for those items.  Avoids repeatedly
     writing a shared \code{names}attribute.}
   \item{header}{an arbitrary R list associated with this biglist}
-  \item{cache.size}{maximum number of biglist items cached in memory}
   \item{read.only}{logical: should biglist be open biglist for read only?}
   \item{x}{a biglist}
   \item{con}{a biglist (parameter named to match generic method)}
 \item{i}{positive integer vector of list indexes}
-\item{value}{an integer (for \code{length<-}) or an arbitrary R object}
+\item{value}{an arbitrary R object}
 (for \code{[[<-})
 \item{...}{additional arguments to the print method}
 }
 \details{
-  A biglist is meant to store a large list of R objects on disk.  Only a small
-  sublist (the cache) is kept in memory at any time, but access to other
+  A biglist is meant to store a large list of R objects on disk. Access to
   items in the list requires only 1 or 2 file seeks.  Items in a biglist
   are retrieved or set by using the \code{[[} and \code{[} methods (and
   their corresponding replacement methods), as
@@ -80,7 +72,7 @@ drop.items(x, i)
   change, since storage is not usually reclaimed when slots are
 reassigned values.
 
-  To force cached data to be written to disk, use \code{flush(x)}.  To
+  To force data to be written to disk, use \code{flush(x)}.  To
   flush data and close the backing files, use \code{close(x)}, after
   which \code{x} is no longer usable.
 }  
@@ -90,15 +82,10 @@ reassigned values.
 
 \value{
   \code{biglist} returns an EXTPTR object of class "biglist" with these attributes
-  \item{ndx} a bigframe object (the biglist index) opened with the name filename.ndx
-  \item{filename} filename for this biglist
-  \item{file} an open binary R read/write file connection for the
-  biglist
-  
-  \code{names} returns the value of \code{names} with which the
-  biglist was created, and is NOT the names of the items in the
-  biglist, but the default names attributes of any biglist items which are
-  themselves lists.
+  \item{ndx}{a bigframe object (the biglist index) opened with the name filename.ndx}
+  \item{filename}{filename for this biglist}
+  \item{file}{an open binary R read/write file connection for the biglist}
+  \code{names} returns the value of \code{names} with which the biglist was created, and is NOT the names of the items in the biglist, but the default names attributes of any biglist items which are themselves lists.
 }
 \references{}
 \author{John Brzustowski  <jbrzusto@fastmail.fm>}

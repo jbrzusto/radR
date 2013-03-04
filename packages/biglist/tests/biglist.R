@@ -1,7 +1,7 @@
 ## testing biglist module
 library(biglist)
 
-bl <- biglist("mylistfile.dat", names=c("id", "numbers"), overwrite=TRUE, cache.size=5)
+bl <- biglist("mylistfile.dat", names=c("id", "numbers"), overwrite=TRUE)
 for (i in 20:1) {
   x <- seq(length=i)
   bl[[i]] <- list(id=paste("id", i, sep=""), numbers=x)
@@ -45,14 +45,3 @@ for (i in 105:106)
 flush(bl)
 print(sprintf("Size after writing elements 105,106: %d\n", file.info("mylistfile.dat")$size))
 rm(bl)
-bl <- biglist("mylistfile.dat", cache.size = 7)
-length(bl) <- 101
-flush(bl)
-print(sprintf("Size after resetting length to 101:  %d\n", file.info("mylistfile.dat")$size))
-bl[[99]] <- 1:1000
-flush(bl)
-print(sprintf("Size after rewriting elt 99:  %d\n", file.info("mylistfile.dat")$size))
-drop.items(bl, c(99, 101))
-flush(bl)
-print(sprintf("Size after dropping elt 99, 101:  %d\n", file.info("mylistfile.dat")$size))
-

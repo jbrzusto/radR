@@ -1,6 +1,6 @@
 "close.biglist" <-
 function(con, ...) {
-  .Call("biglist_close", con, PACKAGE="biglist")
-  close(attr(con, "ndx"))
+  close(con$file)
+  close(con$ndx)
   invisible(con)
 }
