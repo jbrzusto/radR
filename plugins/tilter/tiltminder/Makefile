@@ -21,7 +21,7 @@ GCC_OPTS := $(GCC_OPTS_$(VERSION))
 BOOST_VERSION := 1.41.0
 
 ## Path to Boost (this uses an uninstalled source tree)
-BOOST_PATH := /usr/src/boost_$(subst .,_,$(BOOST_VERSION))
+BOOST_PATH := /home/src/boost_$(subst .,_,$(BOOST_VERSION))
 BOOST_INC_PATH := $(BOOST_PATH)
 ##BOOST_LIB_PATH := $(BOOST_PATH)/bin.v2/libs/thread/build/gcc-$(GCC_VERSION)/release/threading-multi
 BOOST_LIB_PATH := $(BOOST_PATH)/stage/lib
