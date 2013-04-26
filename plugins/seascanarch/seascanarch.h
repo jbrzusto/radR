@@ -54,6 +54,7 @@ typedef struct {
   int32_t scan_index;                   		 /* index of next archive scan to be read, among all scans in the archive, not */
                                                          /* just the ones in the current segment zero-based */
   int32_t segment_first_scan_index[MAX_DATA_BLOCKS + 1]; /* extra one at the end to simplify code */
+  int32_t segment_num_scans[MAX_DATA_BLOCKS + 1];        /* apparent number of scans in each segment */
   int32_t have_archive_dir;		                 /* has the archive directory been read in? */
   int32_t have_toc;                                      /* is the table of contents in tc valid? */
   int32_t have_scan_data;                                /* is there data available for a call to get_scan_data */

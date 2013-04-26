@@ -86,7 +86,7 @@ do_start_up(int port)
   if (RADR_ERROR_NONE != read_archive_contents (me))  // sets an error code
     return FAIL_SEXP;
 
-  if (!me->is_gated) {
+  if (! me->is_gated) {
     // a char extmat to hold temporary raw data
     me->data_block  = CREATE_EXTMAT(EXTMAT_TYPE_CHAR, "ungated data block");
     // a char extmat to hold temporary angle data
@@ -240,7 +240,7 @@ read_archive_contents (t_ssa *me)
   // read the tape contents and scan directories of
   // the currently open archive
 
-  int i, tot;
+  int i, j, tot;
   TAPE_CONTENTS *toc;
 
   toc = &me->toc;
@@ -263,7 +263,7 @@ read_archive_contents (t_ssa *me)
   
   me->is_gated = me->brh.Gated;
 
-  if (me->is_gated) {
+  //  if (me->is_gated) {
     if (bigfseek(me->file, SEASCAN_DISK_CHUNK_SIZE + me->arlab.directoryPosition.QuadPart, SEEK_SET))
       return RADR_ERROR_INVALID_ARCHIVE;
 
@@ -275,13 +275,25 @@ read_archive_contents (t_ssa *me)
     if (1 != fread(me->dir_buff, sizeof(DISK_DIRECTORY_ENTRY) * toc->TotalImages, 1, me->file))
       return RADR_ERROR_INVALID_ARCHIVE;
 
+    // remove any empty segments
+    for (i = 0, j = 0; i < toc->NumSegments; ++i) {
+      if (toc->NumImages[i] > 0) {
+        toc->NumImages[j] = toc->NumImages[i];
+        toc->StartTime[j] = toc->StartTime[i];
+        toc->StopTime[j] = toc->StopTime[i];
+        ++j;
+      }
+    };
+
+    toc->NumSegments = j;
+
     // we add an extra bogus segment to simplify the seek code
     for (i=0, tot=0; i < toc->NumSegments + 1; tot += toc->NumImages[i++] )
       me->segment_first_scan_index[i] = tot;
     me->segment_index = 0;
     me->scan_index = 0;
     me->have_archive_dir = TRUE;
-  }
+    //  }
   return RADR_ERROR_NONE;
 }
 
@@ -319,12 +331,12 @@ seek_archive_time (t_ssa *me, time_t t)
   // see whether the about-to-be-read scan or 
   // any of its close neighbours (within +/- 2) 
   // encloses the requested timestamp
-
+  /*
   for (i=max(0, (me->scan_index - 2)); i < (min(me->toc.TotalImages, me->scan_index + 2)); ++i)
     if (t >= me->dir_buff[i].TimeStamp
 	&& (i == me->toc.TotalImages - 1 || t < me->dir_buff[i+1].TimeStamp))
       return seek_archive_scan (me, i, FALSE);
-  
+  */  
   // see whether the timestamp is outside of any segments
 
   {
@@ -358,7 +370,7 @@ seek_archive_time (t_ssa *me, time_t t)
 
      FALSE specifies that this is not necessarily in the current segment */
 
-  return seek_archive_scan (me, max(0, j-4), FALSE);
+  return seek_archive_scan (me, max(0, j - (me->is_gated ? 4 : 1)), FALSE);
 }
 
 double make_timestamp (SEASCAN_REALTIME *t, int milliseconds) {
@@ -636,6 +648,9 @@ read_archive_next_scan_full (t_ssa *me, char *buffer)
 void
 cleanup_toc (t_ssa *me)
 {
+
+  // for gated or ungated, remove empty segments from the TOC
+
   // for gated data, remove any partial scans from the start
   // and end of each run in the table of contents, and adjust
   // segment start times back 1/4 scan, based on antenna RPM
@@ -752,7 +767,12 @@ get_contents (SEXP portsxp) {
 
     PROTECT(rv = allocVector(INTSXP, toc->NumSegments * 3)); // WARNING:  Y2037K time_t != int issue?
     for (i = 0; i < toc->NumSegments; ++i) {
-      INTEGER(rv)[3*i] = toc->NumImages[i] / 4; /* convert number of quadrant scans to number of full scans */
+      if (me->is_gated) {
+        me->segment_num_scans[i] = INTEGER(rv)[3*i] = toc->NumImages[i] / 4; /* convert number of quadrant scans to number of full scans */
+        
+      } else {
+        me->segment_num_scans[i] = INTEGER(rv)[3*i] = (toc->StopTime[i] - toc->StartTime[i]) * 1000.0 / me->brh.BandwidthStatus.RotationTime;
+      }
       INTEGER(rv)[3*i+1] = toc->StartTime[i];
       INTEGER(rv)[3*i+2] = toc->StopTime[i];
     }
@@ -929,13 +949,24 @@ seek_scan(SEXP portsxp, SEXP runsxp, SEXP scansxp) {
   int port = INTEGER(AS_INTEGER(portsxp))[0];
   t_ssa *me = ports[port];
   int run = INTEGER(AS_INTEGER(runsxp))[0];
-  // notice the "4 *" to convert a radR 360-degree scan number to an internal scan (i.e. quadrant) number
-  int scan = 4 * INTEGER(AS_INTEGER(scansxp))[0];
+  int scan;
 
   if (run < 0)
     run = me->segment_index;
   else
     me->segment_index = run;
+
+  if (me->is_gated) {
+    // notice the "4 *" to convert a radR 360-degree scan number to an internal scan (i.e. quadrant) number
+    scan = 4 * INTEGER(AS_INTEGER(scansxp))[0];
+  } else {
+    time_t t = me->toc.StartTime[run] + (double) (INTEGER(AS_INTEGER(scansxp))[0]) / me->segment_num_scans[run] * (me->toc.StopTime[run] - me->toc.StartTime[run]);
+    me->have_data_block = FALSE;
+    if (!seek_archive_time(me, t)) 
+      return FAIL_SEXP;
+    return LOGICAL_SEXP(1);
+  };
+
 
   if (scan > 0)
     --scan;
@@ -998,6 +1029,10 @@ advance_to_next_ungated_block (t_ssa *me) {
   // have been skipped, the current brh2 has been copied
   // to brh; brh2 has the next header; me->in_dtheta and me->angle_range have been calculated
 
+  // sanity check - are we past the last data item ? 
+  if (ftell(me->file) > me->dir_buff[me->toc.NumImages[me->segment_index]-1].Position.QuadPart)
+    return FALSE;
+
   if (me->have_data_block) {
     // save the last pulse from the current block into the zeroth slot
     memcpy(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->brh.rAxisBytes, me->brh.rAxisBytes);
@@ -1008,18 +1043,27 @@ advance_to_next_ungated_block (t_ssa *me) {
     // mark that the current input pulse is in slot 0
     me->input_index = 0;
   } else {
+    if ( !TRY_READ_CHUNK(me, brh2))
+      return FALSE;
     // there is no data; we have just read in one header so far
     me->input_index = 1;
   }
   // copy next header to current header slot
   me->brh = me->brh2;
-  // read next data block and skip its angles
+  // read next data block and its angles
   int needed =  ROUND_UP_TO(me->brh.yExtent * me->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE);
+  if (needed > 10000000 || needed < 0) {
+    printf("Out of alignment: trying to read %d bytes from data chunk\nFile pointer is %ld\n", needed, ftell(me->file));
+    return FALSE;
+  }
   (*pensure_extmat)(& me->data_block, needed + me->brh.rAxisBytes, 1);
   if (1 != fread(me->data_block.ptr + me->brh.rAxisBytes, needed, 1, me -> file))
     return FALSE;
 
-  if (! TRY_READ_ANGLES(me))
+  // try to read an angle block
+  needed =  ROUND_UP_TO(me->brh.AssociatedAzimuths * sizeof(RSI_LUT),  SEASCAN_DISK_CHUNK_SIZE); 		  \
+  (*pensure_extmat)(& me->angle_block, needed + sizeof(RSI_LUT), 1); 						  \
+  if (1 != fread(me->angle_block.ptr + sizeof(RSI_LUT), needed, 1, me -> file))
     return FALSE;
 
   do {
