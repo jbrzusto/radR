@@ -73,6 +73,8 @@ do_start_up(int port)
   if (me->file)
     return PASS_SEXP;
 
+  me->last_seek_scan = -100;
+
   me->have_archive_dir = FALSE;
   me->use_PCTimestamp = 0;
   if (! (me->file = bigfopen(me->filename, port == SSA_READER ? "rb": "wb"))) {
@@ -181,6 +183,17 @@ set_use_pc_timestamp (SEXP portsxp, SEXP usepcsxp)
   return PASS_SEXP;
 }
 
+/* read data into a structure, then seek over the bytes remaining in the disk chunk 
+   allocated to that structure.  Seascan allocates disk storage for structures in 1024
+   byte chunks. */
+
+int try_read_chunk(t_ssa *ssa, char * ptr, int size) {
+  int read_ok = FALSE, seek_ok = FALSE;
+  read_ok = (1 == fread(ptr, size, 1, ssa->file));
+  if (read_ok)
+    seek_ok = ! bigfseek(ssa->file, ROUND_UP_TO(size, SEASCAN_DISK_CHUNK_SIZE) - size, SEEK_CUR);
+  return read_ok && seek_ok;
+};
 
 int
 seek_archive_scan (t_ssa *me, int i, int intraseg) 
@@ -770,7 +783,10 @@ get_contents (SEXP portsxp) {
         me->segment_num_scans[i] = INTEGER(rv)[3*i] = toc->NumImages[i] / 4; /* convert number of quadrant scans to number of full scans */
         
       } else {
-        me->segment_num_scans[i] = INTEGER(rv)[3*i] = (toc->StopTime[i] - toc->StartTime[i]) * 1000.0 / me->brh.BandwidthStatus.RotationTime;
+        // FIXME: bad hack to allow seeking in ungated archives; we estimate scan time by the rotation time of the first base radar header
+        // then look at the total elapsed time in the archive.  Ideally, we'd scan the whole archive and get the precise number here.
+        // The "-2" in the following is to discard possible partial scans at start and end of the segment.
+        me->segment_num_scans[i] = INTEGER(rv)[3*i] = (toc->StopTime[i] - toc->StartTime[i]) * 1000.0 / me->brh.BandwidthStatus.RotationTime - 2;
       }
       INTEGER(rv)[3*i+1] = toc->StartTime[i];
       INTEGER(rv)[3*i+2] = toc->StopTime[i];
@@ -955,7 +971,13 @@ seek_scan(SEXP portsxp, SEXP runsxp, SEXP scansxp) {
     // notice the "4 *" to convert a radR 360-degree scan number to an internal scan (i.e. quadrant) number
     scan = 4 * INTEGER(AS_INTEGER(scansxp))[0];
   } else {
-    time_t t = me->toc.StartTime[run] + (double) (INTEGER(AS_INTEGER(scansxp))[0]) / me->segment_num_scans[run] * (me->toc.StopTime[run] - me->toc.StartTime[run]);
+    scan = INTEGER(AS_INTEGER(scansxp))[0];
+    if (me->last_seek_scan + 1 == scan) {
+      me->last_seek_scan = scan;
+      return LOGICAL_SEXP(1);
+    }
+    me->last_seek_scan = scan;
+    time_t t = me->toc.StartTime[run] + (double) (scan) / me->segment_num_scans[run] * (me->toc.StopTime[run] - me->toc.StartTime[run]);
     me->have_data_block = FALSE;
     if (!seek_archive_time(me, t)) 
       return FAIL_SEXP;
@@ -1022,24 +1044,27 @@ advance_to_next_ungated_block (t_ssa *me) {
   // me->prev_brh has been read, but its data has not
   // on exit: the data block has been read, the angles
   // have been skipped, the current brh2 has been copied
-  // to brh; brh2 has the next header; me->in_dtheta and me->angle_range have been calculated
+  // to brh; brh2 has the next header
 
   // sanity check - are we past the last data item ? 
   if (ftell(me->file) > me->dir_buff[me->toc.NumImages[me->segment_index]-1].Position.QuadPart)
     return FALSE;
 
   if (me->have_data_block) {
+    dbgprintf("Have data block from previous scan; using first pulse.\n");
     // save the last pulse from the current block into the zeroth slot
     memcpy(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->brh.rAxisBytes, me->brh.rAxisBytes);
     // save the last RSI_LUT from the current angle block into the zeroth slot
     memcpy(me->angle_block.ptr, me->angle_block.ptr + me->brh.AssociatedAzimuths * sizeof(RSI_LUT), sizeof(RSI_LUT));
     // remember what angle this pulse corresponds to
-    me->prev_pulse_theta = me->brh.StartAngle +  (me->brh.AssociatedAzimuths - 1) * me->in_dtheta;
+    me->prev_pulse_theta = ((RSI_LUT*) me->angle_block.ptr)[me->brh.AssociatedAzimuths - 1].Bearing * 360.0/4096;
     // mark that the current input pulse is in slot 0
     me->input_index = 0;
+    me->have_data_block = FALSE;
   } else {
     if ( !TRY_READ_CHUNK(me, brh2))
       return FALSE;
+    printf("Read data header with StartAngle = %7.3f\n", me->brh2.StartAngle);
     // there is no data; we have just read in one header so far
     me->input_index = 1;
   }
@@ -1047,8 +1072,8 @@ advance_to_next_ungated_block (t_ssa *me) {
   me->brh = me->brh2;
   // read next data block and its angles
   int needed =  ROUND_UP_TO(me->brh.yExtent * me->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE);
-  if (needed > 10000000 || needed < 0) {
-    printf("Out of alignment: trying to read %d bytes from data chunk\nFile pointer is %ld\n", needed, ftell(me->file));
+  if (me->brh.BitsPerSample != 16 || me->brh.SourceId > 16 || me->brh.SourceId < 0 || needed > 10000000 || needed < 0) {
+    dbgprintf("Out of alignment: trying to read %d bytes from data chunk\nFile pointer is %ld\n", needed, ftell(me->file));
     return FALSE;
   }
   (*pensure_extmat)(& me->data_block, needed + me->brh.rAxisBytes, 1);
@@ -1060,15 +1085,68 @@ advance_to_next_ungated_block (t_ssa *me) {
   (*pensure_extmat)(& me->angle_block, needed + sizeof(RSI_LUT), 1); 						  \
   if (1 != fread(me->angle_block.ptr + sizeof(RSI_LUT), needed, 1, me -> file))
     return FALSE;
+  
+  printf("Read angle block starting at : %3d\n", ((RSI_LUT *)me->angle_block.ptr)[1].Bearing);
 
+  // increase precision of angles:
+  // The Bearing field is 12 bits, but strangely the values appear to range from 0 .. 360 inclusive,
+  // and so are repeated several times each, typically.  We rescale and interpolate angle values,
+  // so that they range from 0 .. 4095.
+
+  // 1: change 360 -> 0
+  // 2: for all but the first and last angle values, when there is a block of n consecutive
+  //    values of X, change X[i] to floor((X + i /n) * 4096/360)
+  // 3: for the first block of values, which might be partial, use the same n as for the
+  //    second block of consecutive values (which should be full)
+  // 4: for the last block of values, which might be partial, use the same n as for the
+  //    second-to-last block of consecutive values (which should be full)
+
+  {
+    // scoping block
+    int na = me->brh.AssociatedAzimuths;
+    RSI_LUT *ap = 1 + (RSI_LUT *) me->angle_block.ptr;
+    int i, ii; // iterate through individual entries
+    int j = 0; // block start
+    int k = 0; // count of blocks
+    double bs; // size of most recent block (double for precision later)
+    me->zero_angle_index = -1;
+    while(j < na) {
+      if (ap[j].Bearing == 360)
+        ap[j].Bearing = 0;
+      // find the start of the next block, given current block starts at j
+      for (i = j; i < na && ap[i].Bearing == ap[j].Bearing; ++i) 
+        /**/;
+
+      if (i < na) // if this is not the last (partial) block, set the block size
+        bs = i - j;
+
+      if (k > 0) { // rescale block, using bs from this block or previous one
+        for (ii = j; ii < i; ++ii) {
+          ap[ii].Bearing = floor((ap[ii].Bearing + (ii-j) / bs) * 4096/360.0);
+          if (ap[ii].Bearing == 0 && me->zero_angle_index == -1)
+            me->zero_angle_index = ii;
+        }
+      }
+      if (k == 1) { // this is the first full block; go back and rescale the first (partial) block using the same scale factor
+        for (ii = 0; ii < j; ++ii) {
+          ap[ii].Bearing = floor((ap[ii].Bearing + 1 - (j-ii) / bs) * 4096/360.0);
+          if (ap[ii].Bearing == 0 && me->zero_angle_index == -1)
+            me->zero_angle_index = ii;
+        }
+      }
+      j = i;
+      ++k;
+    };
+    //    printf("me->brh.StartAngle: %7.3f; me->angle_block[1]: %7.3f me->angle_block[%3d]: %7.3f\n", me->brh.StartAngle, ((RSI_LUT *) me->angle_block.ptr)[1].Bearing * 360.0 / 4096, me->brh.AssociatedAzimuths, ((RSI_LUT *) me->angle_block.ptr)[me->brh.AssociatedAzimuths].Bearing * 360.0 / 4096);
+    me->brh.Degrees = (((RSI_LUT *) me->angle_block.ptr)[me->brh.AssociatedAzimuths].Bearing - ((RSI_LUT *) me->angle_block.ptr)[1].Bearing) * 360.0 / 4096;
+  };
+  
   do {
     if ( !TRY_READ_CHUNK(me, brh2))
       return FALSE;
-  } while (me->brh2.TimeStamp == 0);
+  } while (me->brh2.TimeStamp == 0 && ! me->use_PCTimestamp);
+  printf("Read data header with StartAngle = %7.3f\n", me->brh2.StartAngle);
   me->have_data_block = TRUE;
-  // calculate new angle range and dtheta
-  me->angle_range = ang_diff(me->brh2.StartAngle, me->brh.StartAngle);
-  me->in_dtheta = me->angle_range / me->brh.AssociatedAzimuths;
 
   //  if (me->brh2.StartAngle + me->brh2.Degrees >= 360.0) {
     if (me->use_PCTimestamp) {
@@ -1086,7 +1164,6 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
 
   DATA_HEADER *dh = &me->dh;
   double block_time;
-  double next_block_time;
   double pulse_time;
 
   // ensure we have a current data block
@@ -1095,22 +1172,25 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
       return FALSE;
   }
 
+  int crossed_zero_cut = 0;
+
   // read until we get a header containing the start angle of zero
   for(;;) {
-    if (me->brh.StartAngle <= me->out_dtheta / 2) {
-      // the first pulse of the current data block is close enough to angle zero
-      me->input_index = 1; // data will be read in after the first row
-      me->prev_pulse_theta = me->brh.StartAngle;
-      break;
-    } else if (me->brh2.StartAngle <= me->out_dtheta / 2) {
-      // the first pulse of the next data block is close enough to angle zero
-      // do nothing, since the loop will handle this
-      ; /* do nothing */
-    } else if (me->brh2.StartAngle < me->brh.StartAngle) {
+    if (me->zero_angle_index >= 0) {
       // the pulse corresponding to angle zero is contained in the current data block
-      me->input_index = 1 + (int) ((360.0 - me->brh.StartAngle) / me->angle_range * me->brh.AssociatedAzimuths + 0.5);
-      // record its actual theta
-      me->prev_pulse_theta = fmod(me->brh.StartAngle + (me->input_index - 1) * me->angle_range / me->brh.AssociatedAzimuths, 360.0);
+      me->input_index = me->zero_angle_index + 1; // NB: adjust by 1 to skip over slot for last pulse of previous block
+      me->prev_pulse_theta = 0.0;
+      break;
+    } else if (me->brh2.StartAngle < me->brh.StartAngle) {
+      // the pulse at angle zero is either in the next block or not available due to selective digitization
+      crossed_zero_cut = 1;
+      // read next block
+    } else if (crossed_zero_cut) {
+      // we crossed the zero cut, but this block doesn't have
+      // the zero pulse, so use its first pulse
+      printf("Crossed zero cut.\n");
+      me->input_index = 1; // data will be read in after the first row
+      me->prev_pulse_theta = ((RSI_LUT *)me->angle_block.ptr)[0].Bearing * 360.0 / 4096;
       break;
     }
     // move to the next header
@@ -1118,9 +1198,16 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
       return FALSE;
   }
 
-  // loop post condition: me->brh is the header for data contained in me->data_block
-  // me->brh2 is the header for the next data block
-  // the file position is just before the next data block
+  // because we may have selective digitizing, there might not be
+  // data for the complete sweep.
+  
+  // we take the first angle we find to be the index angle, and accumulate
+  // a scan up to the next time we see that angle
+
+  // FIXME: the following is not true!
+  //    loop post condition: me->brh is the header for data contained in me->data_block
+  //    me->brh2 is the header for the next data block
+  //    the file position is just before the next data block
 
   // fill in the scan_info header on the assumption we will get an entire scan
   dh->TimePosStamp.Time.Year = me->brh.PCTimeStamp.wYear;
@@ -1131,12 +1218,11 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
   dh->TimePosStamp.Time.Minute = me->brh.PCTimeStamp.wMinute;
   dh->TimePosStamp.Time.Second = me->brh.PCTimeStamp.wSecond;
 
-  // The zero pulse is part way through the data block.  Estimate a
+  // The index angle is part way through the data block.  Estimate a
   // start time for it.
 
   block_time = me->brh.TimeStamp + me->brh.PCTimeStamp.wMilliseconds / 1000.0;
-  next_block_time = me->brh2.TimeStamp + me->brh2.PCTimeStamp.wMilliseconds / 1000.0;
-  pulse_time = me->brh.TimeStamp + (me->input_index - 1) * (next_block_time - block_time) / me->brh.AssociatedAzimuths;
+  pulse_time = block_time;
 
   dh->TimePosStamp.Latitude = me->brh.Latitude;
   dh->TimePosStamp.Longitude = me->brh.Longitude;
@@ -1146,7 +1232,7 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
   // FIXME: this currently only calculates the milliseconds part of the pulse time in dh->TimePosStamp.Time
   // but this is the only part radR uses
 
-  dh->TimePosStamp.Time.Milliseconds = (int) ((pulse_time - dh->GPSTimeStamp) * 1000 + 0.5);
+  //  dh->TimePosStamp.Time.Milliseconds = (int) ((pulse_time - dh->GPSTimeStamp) * 1000 + 0.5);
 
   dh->Heading = me->brh.Heading;
   dh->SamplesPerLine = me->brh.Samples;
@@ -1208,12 +1294,13 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
   char *dst = buffer;
 
   j = 0;
-  output_theta = 0;
+  output_theta = 0.0;
   while (j < me->desired_azimuths) {
     // the desired output angle
     if (me->input_index == me->brh.AssociatedAzimuths) {
       if(!advance_to_next_ungated_block(me))
 	return FALSE;
+      //      me->have_data_block = FALSE; // make sure next advance causes a real read
       // reset source pointer to zeroth pulse (i.e. the one from the previous scan)
       // NOTE: just in case the extmat me->data_block got reallocated to enlarge it,
       // we must update our copy of the me->data_block.ptr anyway.
@@ -1221,37 +1308,26 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
       src = me->data_block.ptr + me->input_index * me->brh.rAxisBytes;
       anglep = ((RSI_LUT *)me->angle_block.ptr) + me->input_index;
     }
-    if (me->skip_changeover_pulse && anglep->Bearing != (anglep + 1)->Bearing) {
-      // this is a changeover pulse and we are supposed to skip it
-      ++ me->input_index;
-      ++ anglep;
-      src += me->brh.rAxisBytes;
-      // <FIXME>: with the following code included, we get more correct pulses
-      // so is the whole changeover pulse issue bogus???
+
+    pulse_theta = anglep->Bearing * 360.0 / 4096;
+
+    if (ang_diff (pulse_theta, output_theta)
+        > ang_diff(me->prev_pulse_theta, output_theta)) {
+      // the angle of the current input pulse is closer to the desired angle than is that
+      // of the next input pulse
+      // copy the current source pulse to the output
+      //      printf("inp. ind: %4d, j: %4d, output_theta: %7.3f prev_pulse_theta: %7.3f pulse_theta: %7.3f\n", me->input_index, j, output_theta, me->prev_pulse_theta, pulse_theta);
       memcpy(dst, src, me->brh.rAxisBytes); 
       dst += me->brh.rAxisBytes;
       ++j;
-      output_theta = j * 360.0 / me->desired_azimuths;
-      // </FIXME>
+      output_theta = fmod (output_theta + 360.0 / me->desired_azimuths, 360.0);
     } else {
-      pulse_theta = fmod(me->brh.StartAngle + (me->input_index + 1) * me->in_dtheta, 360.0);
-      if (ang_diff (pulse_theta, output_theta)
-	  >= ang_diff(me->prev_pulse_theta, output_theta)) {
-	// the angle of the current input pulse is closer to the desired angle than is that
-	// of the next input pulse
-	// copy the current source pulse to the output
-	memcpy(dst, src, me->brh.rAxisBytes); 
-	dst += me->brh.rAxisBytes;
-	++j;
-	output_theta = j * 360.0 / me->desired_azimuths;
-      } else {
-	// the next pulse's angle is closer to what we need than
-	// this pulse's angle, so advance to the next pulse
-	++me->input_index;
-	++anglep;
-	src += me->brh.rAxisBytes;
-	me->prev_pulse_theta = pulse_theta;
-      }
+      // the next pulse's angle is closer to what we need than
+      // this pulse's angle, so advance to the next pulse
+      ++me->input_index;
+      ++anglep;
+      src += me->brh.rAxisBytes;
+      me->prev_pulse_theta = pulse_theta;
     }
   }
   // if we're reading packed 12-bit samples, unpack them into 16 bits

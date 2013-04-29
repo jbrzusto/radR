@@ -59,5 +59,5 @@ skip.changeover.pulse = FALSE
 ## Sometimes GPS timestamps appear to be broken, so we should just
 ## use PC timestamps (recorded in the archive) instead
 
-use.pc.timestamp = FALSE
+use.pc.timestamp = TRUE
 

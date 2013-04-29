@@ -34,6 +34,7 @@
 #define SEASCAN_DISK_CHUNK_SIZE 1024
 #define ARCHIVE_FILE_BUFF_SIZE (SEASCAN_DISK_CHUNK_SIZE * 1024) /* size (bytes) of the archive file buffer */
 #define MAX_BAD_SCAN_HEADERS 40 /* maximum number of bad scan headers allowed before we find a valid one 0-degree one in a segment */
+#define BOGUS_ANGLE -1000 /* represents no angle */
 
 typedef enum {
   SSA_NONE = -1,                /* no port */
@@ -74,27 +75,18 @@ typedef struct {
   int32_t have_data_block;                               /* has a data block been read in from this archive yet? */
   int32_t input_index;                                   /* input pulse to use for next output pulse */
   double out_dtheta;                                     /* angle change per pulse in desired gated output */
-  double in_dtheta;                                      /* angle change per pulse in current data block */
-  double angle_range;                                    /* angle range of data described by brh */
   double prev_pulse_theta;                               /* the angle corresponding to the last pulse of the previous data block */
   t_extmat data_block;                                   /* buffer for current data block */
   t_extmat angle_block;                                  /* buffer for current angle lookup table block */
   int32_t skip_changeover_pulse;                         /* if true, skip the last pulse at a given bearing, which might have bad data */
+  int last_seek_scan;                                    /* TERRIBLE KLUDGE: use to skip seeking when moving between consecutive scans */
+  double index_angle;                                    /* TERRIBLE KLUDGE: the index angle delimits sweeps; it would be 0, except that 0 is
+                                                            not always present (e.g. in selective digitization / sector blanking ) */
+  int zero_angle_index;                                  /* TERRIBLE KLUDGE: when a pulse at zero bearing is found, its non-negative angle is stored here */
 
   // end of fields only for ungated data ----------------------------------------
 } t_ssa;
 
-
-/* read data into a structure, then seek over the bytes remaining in the disk chunk 
-   allocated to that structure.  Seascan allocates disk storage for structures in 1024
-   byte chunks. */
-
-#define TRY_READ_CHUNK(SSA, OBJ) ({											  \
-  t_ssa * __SSA__ = (SSA); 												  \
-  typeof(SSA->OBJ) *__PTR__ = & __SSA__ -> OBJ; 									  \
-  (1 == fread(__PTR__, sizeof(* __PTR__), 1, __SSA__ -> file))  							  \
-  && ! (bigfseek(__SSA__ -> file, ROUND_UP_TO(sizeof(* __PTR__), SEASCAN_DISK_CHUNK_SIZE) - sizeof(* __PTR__), SEEK_CUR));\
-  })
 
 /* attempt to read the next data block, leaving an extra row at the beginning of the buffer */
 #define TRY_READ_DATA(SSA) ({ 												  \
@@ -130,3 +122,14 @@ typedef struct {
 int read_archive_contents (t_ssa *me);
 int read_archive_next_scan_hdr_ungated (t_ssa *me);
 int read_archive_next_scan_ungated (t_ssa *me, char *buffer);
+int try_read_chunk(t_ssa *ssa, char * ptr, int size);
+
+/* read data into a structure, then seek over the bytes remaining in the disk chunk 
+   allocated to that structure.  Seascan allocates disk storage for structures in 1024
+   byte chunks. */
+
+#define TRY_READ_CHUNK(SSA, OBJ) ({			     \
+  t_ssa * __SSA__ = (SSA); 				     \
+  char *__PTR__ = (char *) & __SSA__ -> OBJ;                 \
+  try_read_chunk(__SSA__, __PTR__, sizeof (__SSA__ -> OBJ)); \
+  })
