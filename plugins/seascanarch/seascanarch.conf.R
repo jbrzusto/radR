@@ -44,18 +44,6 @@ desired.azimuths = 4096
 
 max.azimuth.err = 1.0 
 
-## Set the following flag to true if your ungated data appears
-## to have black radial streaks when viewed in the plot window.
-##
-## When recording ungated data on a slower computer, Seascan
-## appears to sample some pulses at too late a time, missing the
-## bulk of the echo.  This appears to happen on the last pulse
-## for a given azimuth/bearing, according to the internal
-## RSI_LUT field in the angle block of the raw archive.
-## This flag causes such "pulses" to be ignored
-
-skip.changeover.pulse = FALSE
-
 ## Sometimes GPS timestamps appear to be broken, so we should just
 ## use PC timestamps (recorded in the archive) instead
 
