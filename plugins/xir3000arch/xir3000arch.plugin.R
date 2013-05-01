@@ -53,6 +53,7 @@ get.ports = function() {
                         start.time = NULL,                 # the start time of the first scan
                         start.time.midnight = NULL,        # midnight of the day of the first scan (since the UTC field is just HH:MM:SS)
                         seqnos = integer(0),               # the sequence numbers of all files in the archive
+                        seqno.digits = 8,                  # how many digits (including zero padding) when sequence numbers are embedded in file names?
                         si = NULL,                         # scan info
                         file.basename = "",                # path + file basename, to which XXXXXXXX.rec are appended
                         cur.file.data = NULL,              # raw vector of the contents of the REC file for the current scan
@@ -162,7 +163,9 @@ globals = list (
                  split <- regexpr("(?i)(?=[0-9]+\\.rec)", opts[[opt]], perl=TRUE)
                  port$file.basename <- substring(opts[[opt]], 1, split - 1)
                  ## grab the first sequence number
-                 port$seqnos <- as.integer(sub("(?i)\\.rec$", "", substring(opts[[opt]], split), perl=TRUE))
+                 seqno = sub("(?i)\\.rec$", "", substring(opts[[opt]], split), perl=TRUE)
+                 port$seqno.digits = nchar(seqno)
+                 port$seqnos <- as.integer(seqno)
                  port$contents <- empty.TOC  ## mark the table of contents as needing regeneration
                },
                {
@@ -195,7 +198,7 @@ globals = list (
     
     port$cur.scan <- port$cur.scan + 1
 
-    port$cur.file.data <- rss.read.file.as.raw(f <- sprintf("%s%08d.rec", port$file.basename, port$seqnos[port$cur.scan]))
+    port$cur.file.data <- rss.read.file.as.raw(f <- sprintf(paste("%s%0", port$seqno.digits, "d.rec", sep=""), port$file.basename, port$seqnos[port$cur.scan]))
 
     ## grab the file magic and recording type
     sig <- readBin(port$cur.file.data, "integer", 2)
