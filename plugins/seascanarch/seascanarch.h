@@ -52,9 +52,9 @@ typedef struct {
   BASE_RADAR_HDR brh;                                    /* archive data header for each quadrant  */
   TAPE_CONTENTS toc;                                     /* table of contents for the archive */
   int32_t segment_index;                 		 /* index of segment which includes next scan to be read */
-  int32_t scan_index;                   		 /* index of next archive scan to be read, among all scans in the archive, not */
+  int32_t chunk_index;                   		 /* index of next archive chunk to be read, among all chunks in the archive, not */
                                                          /* just the ones in the current segment zero-based */
-  int32_t segment_first_scan_index[MAX_DATA_BLOCKS + 1]; /* extra one at the end to simplify code */
+  int32_t segment_first_chunk_index[MAX_DATA_BLOCKS + 1]; /* extra one at the end to simplify code */
   int32_t segment_num_scans[MAX_DATA_BLOCKS + 1];        /* apparent number of scans in each segment */
   int32_t have_archive_dir;		                 /* has the archive directory been read in? */
   int32_t have_toc;                                      /* is the table of contents in tc valid? */
@@ -70,66 +70,20 @@ typedef struct {
   int32_t desired_azimuths;                              /* how many azimuths to be created for the gated data */
   double max_azimuth_err;                                /* how much can an output azimuth differ from the real azimuth used to */
                                                          /* provide its data?  1.0 means a single (output) azimuth and so on */
-  BASE_RADAR_HDR brh2;                                   /* a second archive header, for reading ungated data; this holds
-                                                           the header for the next (unread) data block */     
-  int32_t have_data_block;                               /* has a data block been read in from this archive yet? */
+  int32_t buffered_chunk_index;                          /* index of ungated chunk (header, data, angles) currently in buffers */
   int32_t input_index;                                   /* input pulse to use for next output pulse */
   double out_dtheta;                                     /* angle change per pulse in desired gated output */
-  double prev_pulse_theta;                               /* the angle corresponding to the last pulse of the previous data block */
   t_extmat data_block;                                   /* buffer for current data block */
   t_extmat angle_block;                                  /* buffer for current angle lookup table block */
-  int32_t skip_changeover_pulse;                         /* if true, skip the last pulse at a given bearing, which might have bad data */
-  int last_seek_scan;                                    /* TERRIBLE KLUDGE: use to skip seeking when moving between consecutive scans */
-  double index_angle;                                    /* TERRIBLE KLUDGE: the index angle delimits sweeps; it would be 0, except that 0 is
-                                                            not always present (e.g. in selective digitization / sector blanking ) */
   int zero_angle_index;                                  /* TERRIBLE KLUDGE: when a pulse at zero bearing is found, its non-negative angle is stored here */
-
+  int have_prev_chunk;                                   /* do we have the previous block's last pulse and angle stored ?*/
+  double prev_chunk_theta;                               /* the angle corresponding to the last pulse of the previous data block */
   // end of fields only for ungated data ----------------------------------------
 } t_ssa;
-
-
-/* attempt to read the next data block, leaving an extra row at the beginning of the buffer */
-#define TRY_READ_DATA(SSA) ({ 												  \
-  t_ssa * __SSA__ = (SSA); 												  \
-  int __NEED__ =  ROUND_UP_TO(__SSA__->brh.yExtent * __SSA__->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE); 		  \
-  (*pensure_extmat)(& __SSA__->data_block, __NEED__+ __SSA__->brh.rAxisBytes, 1); 						  \
-  1 == fread(__SSA__->data_block.ptr + __SSA__->brh.rAxisBytes, __NEED__, 1, __SSA__ -> file); 				  \
-  })
-
-#define TRY_SKIP_ANGLES(SSA) ({ 											  \
-  t_ssa * __SSA__ = (SSA); 												  \
-  ! (bigfseek(__SSA__ -> file, ROUND_UP_TO(__SSA__->brh.AssociatedAzimuths *sizeof(RSI_LUT), SEASCAN_DISK_CHUNK_SIZE), 	  \
-              SEEK_CUR));												  \
-  })
-
-#define TRY_READ_ANGLES(SSA) ({ 											  \
-  t_ssa * __SSA__ = (SSA); 												  \
-  int __NEED__ =  ROUND_UP_TO(__SSA__->brh.AssociatedAzimuths * sizeof(RSI_LUT),  SEASCAN_DISK_CHUNK_SIZE); 		  \
-  (*pensure_extmat)(& __SSA__->angle_block, __NEED__ + sizeof(RSI_LUT), 1); 						  \
-  1 == fread(__SSA__->angle_block.ptr + sizeof(RSI_LUT), __NEED__, 1, __SSA__ -> file); 				  \
-  })
-  
-/* attempt to skip the data block and the angle block */
-
-#define TRY_SKIP_DATA_AND_ANGLES(SSA) ({ 										  \
-  t_ssa * __SSA__ = (SSA); 												  \
-  ! (bigfseek(__SSA__ -> file,  ROUND_UP_TO(__SSA__->brh.yExtent * __SSA__->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE) 	  \
-                               +ROUND_UP_TO(__SSA__->brh.AssociatedAzimuths *sizeof(RSI_LUT), SEASCAN_DISK_CHUNK_SIZE),   \
-              SEEK_CUR));												  \
-  })
   
 // forward declarations
 int read_archive_contents (t_ssa *me);
 int read_archive_next_scan_hdr_ungated (t_ssa *me);
 int read_archive_next_scan_ungated (t_ssa *me, char *buffer);
-int try_read_chunk(t_ssa *ssa, char * ptr, int size);
-
-/* read data into a structure, then seek over the bytes remaining in the disk chunk 
-   allocated to that structure.  Seascan allocates disk storage for structures in 1024
-   byte chunks. */
-
-#define TRY_READ_CHUNK(SSA, OBJ) ({			     \
-  t_ssa * __SSA__ = (SSA); 				     \
-  char *__PTR__ = (char *) & __SSA__ -> OBJ;                 \
-  try_read_chunk(__SSA__, __PTR__, sizeof (__SSA__ -> OBJ)); \
-  })
+int try_read_chunk(t_ssa *me, void * ptr, int size);
+int read_ungated_chunk(t_ssa *me);

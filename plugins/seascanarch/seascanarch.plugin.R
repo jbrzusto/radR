@@ -24,16 +24,11 @@ get.menus = function() {
          list(option="choose.any",
               on.set = function(n, s) {
                 if (n == 1) {
-                  skip.changeover.pulse <<- s
-                  if (inherits(RSS$source, MYCLASS))
-                    config(RSS$source, skip.changeover.pulse=s)
-                } else if (n == 2) {
                   use.pc.timestamp <<- s
                   if (inherits(RSS$source, MYCLASS))
                     config(RSS$source, use.pc.timestamp=s)
                 }
               },
-              "Skip angle changeover pulses in ungated data (removes black radial streaks)" = skip.changeover.pulse,
               "Use timestamp from recording PC instead of GPS (close then re-open source after changing)" = use.pc.timestamp
               )
          ),
@@ -136,11 +131,6 @@ globals = list (
                  if (is.null(.Call("set_max_azimuth_err", as.integer(port$id - 1), as.real(port$config$max.azimuth.err), PACKAGE=MYCLASS)))
                    return(NULL)
                },
-               skip.changeover.pulse = {
-                 port$config$skip.changeover.pulse <- as.integer(opts[[opt]])
-                 if (is.null(.Call("set_skip_changeover_pulse", as.integer(port$id - 1), as.integer(port$config$skip.changeover.pulse), PACKAGE=MYCLASS)))
-                   return(NULL)
-               },
                use.pc.timestamp = {
                  port$config$use.pc.timestamp <- as.integer(opts[[opt]])
                  if (is.null(.Call("set_use_pc_timestamp", as.integer(port$id - 1), as.integer(port$config$use.pc.timestamp), PACKAGE=MYCLASS)))
@@ -240,7 +230,7 @@ globals = list (
       port$has.toc <- TRUE
       config(port, use.pc.timestamp = use.pc.timestamp)
       if (!port$is.gated)
-        config(port, desired.azimuths = desired.azimuths, max.azimuth.err = max.azimuth.err, skip.changeover.pulse = skip.changeover.pulse)
+        config(port, desired.azimuths = desired.azimuths, max.azimuth.err = max.azimuth.err)
       return(TRUE)
     }
     return(NULL)
