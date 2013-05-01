@@ -163,8 +163,8 @@ globals = list (
     ## run.start:  starting timestamp of each run
     ## run.end:    ending timestamp of each run
 
-    if (!port$has.toc)
-      rss.plugin.error("seascanarch:archive is ungated and does not have a table of contents")
+#    if (!port$has.toc)
+#      rss.plugin.error("seascanarch:archive is ungated and does not have a table of contents")
     if (!is.null(x <- .Call("get_contents", as.integer(port$id - 1), PACKAGE=MYCLASS))) {
       num.runs <- length(x) / 3
       rv <- list(num.scans=  x[seq(along=x) %% 3 == 1],
@@ -234,8 +234,10 @@ globals = list (
     if (!is.null(rv)) {
       ## set flags that depend on whether the data is gated
       port$is.gated <- rv
-      port$is.seekable <- rv
-      port$has.toc <- rv
+      ## port$is.seekable <- rv
+      ## port$has.toc <- rv
+      port$is.seekable <- TRUE
+      port$has.toc <- TRUE
       config(port, use.pc.timestamp = use.pc.timestamp)
       if (!port$is.gated)
         config(port, desired.azimuths = desired.azimuths, max.azimuth.err = max.azimuth.err, skip.changeover.pulse = skip.changeover.pulse)

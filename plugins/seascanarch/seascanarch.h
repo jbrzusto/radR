@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
-#include <stdint.h>
 
 // SeaScan Client.dll definitions
 
@@ -43,43 +42,44 @@ typedef enum {
 } t_ssa_port;
     
 typedef struct {
-  char filename[1024];              			/* full path to archive file */
-  FILE *file;		         			/* file handle for archive file */
-  char buff[ARCHIVE_FILE_BUFF_SIZE];	 		/* buffer for reading/writing archive file data */
-  DISK_DIRECTORY_ENTRY *dir_buff; 			/* buffer for archive directory */
-  ARCHIVE_LABEL arlab;					/* buffer for holding the archive label */
-  DATA_HEADER dh;                        		/* buffer for scan data header */
-  BASE_RADAR_HDR brh;		        		/* archive data header for each quadrant  */
-  TAPE_CONTENTS toc;                     		/* table of contents for the archive */
-  int segment_index;                 			/* index of segment which includes next scan to be read */
-  int scan_index;                   			/* index of next archive scan to be read, among all scans in the archive, not */
-  							/* just the ones in the current segment zero-based */
-  int segment_first_scan_index[MAX_DATA_BLOCKS + 1]; 	/* extra one at the end to simplify code */
-  int have_archive_dir;		                        /* has the archive directory been read in? */
-  int have_toc;                  			/* is the table of contents in tc valid? */
-  int have_scan_data;            			/* is there data available for a call to get_scan_data */
-  t_ssa_port port;					/* what port am I?  if ssa->port == x, then ports[x] == ssa */
-  double time_end_latest_block;                         /* timestamp of end of most recently read data block; estimated if it doesn't exist */
-  double time_start_this_block;                         /* timestamp of start of this data block */
-  int is_gated;			                        /* is the underlying data archive gated? */
-  int use_PCTimestamp;                                  /* if non-zero, use the PCTimestamp, rather than GPS timestamp */
+  char filename[1024];                                   /* full path to archive file */
+  FILE *file;                                            /* file handle for archive file */
+  char buff[ARCHIVE_FILE_BUFF_SIZE];                     /* buffer for reading/writing archive file data */
+  DISK_DIRECTORY_ENTRY *dir_buff;                        /* buffer for archive directory */
+  ARCHIVE_LABEL arlab;                                   /* buffer for holding the archive label */
+  DATA_HEADER dh;                                        /* buffer for scan data header */
+  BASE_RADAR_HDR brh;                                    /* archive data header for each quadrant  */
+  TAPE_CONTENTS toc;                                     /* table of contents for the archive */
+  int32_t segment_index;                 		 /* index of segment which includes next scan to be read */
+  int32_t scan_index;                   		 /* index of next archive scan to be read, among all scans in the archive, not */
+                                                         /* just the ones in the current segment zero-based */
+  int32_t segment_first_scan_index[MAX_DATA_BLOCKS + 1]; /* extra one at the end to simplify code */
+  int32_t segment_num_scans[MAX_DATA_BLOCKS + 1];        /* apparent number of scans in each segment */
+  int32_t have_archive_dir;		                 /* has the archive directory been read in? */
+  int32_t have_toc;                                      /* is the table of contents in tc valid? */
+  int32_t have_scan_data;                                /* is there data available for a call to get_scan_data */
+  t_ssa_port port;                                       /* what port am I?  if ssa->port == x, then ports[x] == ssa */
+  double time_end_latest_block;                          /* timestamp of end of most recently read data block; estimated if it doesn't exist */
+  double time_start_this_block;                          /* timestamp of start of this data block */
+  int32_t is_gated;			                 /* is the underlying data archive gated? */
+  int32_t use_PCTimestamp;                               /* if non-zero, use the PCTimestamp, rather than GPS timestamp */
 
   // fields used only for ungated data: ----------------------------------------
 
-  int desired_azimuths;                                 /* how many azimuths to be created for the gated data */
-  double max_azimuth_err;                               /* how much can an output azimuth differ from the real azimuth used to */
- 						        /* provide its data?  1.0 means a single (output) azimuth and so on */
-  BASE_RADAR_HDR brh2;                                  /* a second archive header, for reading ungated data; this holds
+  int32_t desired_azimuths;                              /* how many azimuths to be created for the gated data */
+  double max_azimuth_err;                                /* how much can an output azimuth differ from the real azimuth used to */
+                                                         /* provide its data?  1.0 means a single (output) azimuth and so on */
+  BASE_RADAR_HDR brh2;                                   /* a second archive header, for reading ungated data; this holds
                                                            the header for the next (unread) data block */     
-  int have_data_block;                                  /* has a data block been read in from this archive yet? */
-  int input_index;                                      /* input pulse to use for next output pulse */
-  double out_dtheta;                                    /* angle change per pulse in desired gated output */
-  double in_dtheta;                                     /* angle change per pulse in current data block */
-  double angle_range;                                   /* angle range of data described by brh */
-  double prev_pulse_theta;                              /* the angle corresponding to the last pulse of the previous data block */
-  t_extmat data_block;		                        /* buffer for current data block */
-  t_extmat angle_block;		                        /* buffer for current angle lookup table block */
-  int skip_changeover_pulse;                            /* if true, skip the last pulse at a given bearing, which might have bad data */
+  int32_t have_data_block;                               /* has a data block been read in from this archive yet? */
+  int32_t input_index;                                   /* input pulse to use for next output pulse */
+  double out_dtheta;                                     /* angle change per pulse in desired gated output */
+  double in_dtheta;                                      /* angle change per pulse in current data block */
+  double angle_range;                                    /* angle range of data described by brh */
+  double prev_pulse_theta;                               /* the angle corresponding to the last pulse of the previous data block */
+  t_extmat data_block;                                   /* buffer for current data block */
+  t_extmat angle_block;                                  /* buffer for current angle lookup table block */
+  int32_t skip_changeover_pulse;                         /* if true, skip the last pulse at a given bearing, which might have bad data */
 
   // end of fields only for ungated data ----------------------------------------
 } t_ssa;
