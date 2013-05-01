@@ -41,28 +41,44 @@ typedef enum {
   SSA_READER = 0,		/* the archive reader */
   SSA_WRITER = 1,		/* the archive writer */
 } t_ssa_port;
-    
+
+typedef struct {
+  int32_t first_chunk_index;    /* extra one at the end to simplify code */
+  int32_t num_scans;    /* apparent number of scans in each segment */
+  int32_t is_gated;             /* are the segment data gated? */
+} segment_info_t;
+
 typedef struct {
   char filename[1024];                                   /* full path to archive file */
   FILE *file;                                            /* file handle for archive file */
   char buff[ARCHIVE_FILE_BUFF_SIZE];                     /* buffer for reading/writing archive file data */
   DISK_DIRECTORY_ENTRY *dir_buff;                        /* buffer for archive directory */
-  ARCHIVE_LABEL arlab;                                   /* buffer for holding the archive label */
+  union {
+    ARCHIVE_LABEL arlab;                                 /* buffer for holding the archive label */
+    char filler1[ROUND_UP_TO(sizeof(ARCHIVE_LABEL), SEASCAN_DISK_CHUNK_SIZE)];                /* filler so we can just read a full chunk */
+  };
   DATA_HEADER dh;                                        /* buffer for scan data header */
-  BASE_RADAR_HDR brh;                                    /* archive data header for each quadrant  */
-  TAPE_CONTENTS toc;                                     /* table of contents for the archive */
+  union {
+    BASE_RADAR_HDR brh;                                    /* archive data header for each quadrant  */
+    char filler2[ROUND_UP_TO(sizeof(BASE_RADAR_HDR), SEASCAN_DISK_CHUNK_SIZE)];                 /* filler */
+  };
+  union {
+    TAPE_CONTENTS toc;                               /* table of contents for the archive */
+    char filler3[ROUND_UP_TO(sizeof(TAPE_CONTENTS), SEASCAN_DISK_CHUNK_SIZE)];                 /* filler */
+  };
   int32_t segment_index;                 		 /* index of segment which includes next scan to be read */
   int32_t chunk_index;                   		 /* index of next archive chunk to be read, among all chunks in the archive, not */
                                                          /* just the ones in the current segment zero-based */
-  int32_t segment_first_chunk_index[MAX_DATA_BLOCKS + 1]; /* extra one at the end to simplify code */
-  int32_t segment_num_scans[MAX_DATA_BLOCKS + 1];        /* apparent number of scans in each segment */
+  segment_info_t seg_info[MAX_DATA_BLOCKS + 1];          /* extra info on each segment */
+
   int32_t have_archive_dir;		                 /* has the archive directory been read in? */
-  int32_t have_toc;                                      /* is the table of contents in tc valid? */
+  int32_t have_toc;                                      /* is the table of contents in toc valid? */
   int32_t have_scan_data;                                /* is there data available for a call to get_scan_data */
   t_ssa_port port;                                       /* what port am I?  if ssa->port == x, then ports[x] == ssa */
   double time_end_latest_block;                          /* timestamp of end of most recently read data block; estimated if it doesn't exist */
   double time_start_this_block;                          /* timestamp of start of this data block */
-  int32_t is_gated;			                 /* is the underlying data archive gated? */
+
+  double time_at_zero_degrees;                           /* timestamp of pulse at zero degrees true heading in most recently read scan */
   int32_t use_PCTimestamp;                               /* if non-zero, use the PCTimestamp, rather than GPS timestamp */
 
   // fields used only for ungated data: ----------------------------------------
@@ -82,6 +98,8 @@ typedef struct {
 } t_ssa;
   
 // forward declarations
+int gated (t_ssa *me);
+int cleanup_toc (t_ssa *me);
 int read_archive_contents (t_ssa *me);
 int read_archive_next_scan_hdr_ungated (t_ssa *me);
 int read_archive_next_scan_ungated (t_ssa *me, char *buffer);

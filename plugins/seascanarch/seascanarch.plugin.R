@@ -74,8 +74,8 @@ get.ports = function() {
                         can.specify.start.time = TRUE,
                         config = list(filename = NULL),
                         has.toc = TRUE,
-                        is.gated = TRUE,
-                        file.ext = "dat"
+                        file.ext = "dat",
+                        new.index = NA
                         ),
               class = c(MYCLASS, "strictenv"))
   }
@@ -189,7 +189,8 @@ globals = list (
                 PACKAGE=MYCLASS)
     if (is.null(dur))
       return(NULL)
-    RSS$scan.info$duration <- dur
+    RSS$scan.info$duration = dur[1]
+    port$new.index = dur[2]
     return(extmat)
   },
 
@@ -223,14 +224,9 @@ globals = list (
     rv <- .Call("start_up", as.integer(port$id - 1), PACKAGE=MYCLASS)
     if (!is.null(rv)) {
       ## set flags that depend on whether the data is gated
-      port$is.gated <- rv
-      ## port$is.seekable <- rv
-      ## port$has.toc <- rv
       port$is.seekable <- TRUE
       port$has.toc <- TRUE
-      config(port, use.pc.timestamp = use.pc.timestamp)
-      if (!port$is.gated)
-        config(port, desired.azimuths = desired.azimuths, max.azimuth.err = max.azimuth.err)
+      config(port, use.pc.timestamp = use.pc.timestamp, desired.azimuths = desired.azimuths, max.azimuth.err = max.azimuth.err)
       return(TRUE)
     }
     return(NULL)
@@ -257,10 +253,6 @@ globals = list (
     ## if we are "stopping" playback of an ungated archive
     ## then shut down and restart the port, so it can
     ## be played back again
-    if (! port$is.gated && new.state == RSS$PS$STOPPED && port$is.source) {
-      shut.down(port)
-      start.up(port)
-    }
   }
 
   
