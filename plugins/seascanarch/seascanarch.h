@@ -78,7 +78,6 @@ typedef struct {
   double time_end_latest_block;                          /* timestamp of end of most recently read data block; estimated if it doesn't exist */
   double time_start_this_block;                          /* timestamp of start of this data block */
 
-  double time_at_zero_degrees;                           /* timestamp of pulse at zero degrees true heading in most recently read scan */
   int32_t use_PCTimestamp;                               /* if non-zero, use the PCTimestamp, rather than GPS timestamp */
 
   // fields used only for ungated data: ----------------------------------------
@@ -94,6 +93,7 @@ typedef struct {
   int zero_angle_index;                                  /* TERRIBLE KLUDGE: when a pulse at zero bearing is found, its non-negative angle is stored here */
   int have_prev_chunk;                                   /* do we have the previous block's last pulse and angle stored ?*/
   double prev_chunk_theta;                               /* the angle corresponding to the last pulse of the previous data block */
+  int axis_bytes;                                        /* number of bytes per pulse allocated for a sweep */
   // end of fields only for ungated data ----------------------------------------
 } t_ssa;
   
