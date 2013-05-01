@@ -21,7 +21,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
-
+#include <stdint.h>
 // SeaScan Client.dll definitions
 
 #include "wintypes.h"
