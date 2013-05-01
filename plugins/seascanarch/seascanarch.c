@@ -87,14 +87,14 @@ do_start_up(int port)
   if (RADR_ERROR_NONE != read_archive_contents (me))  // sets an error code
     return FAIL_SEXP;
 
-  if (! me->is_gated) {
-    // a char extmat to hold temporary raw data
-    me->data_block  = CREATE_EXTMAT(EXTMAT_TYPE_CHAR, "ungated data block");
-    // a char extmat to hold temporary angle data
-    me->angle_block = CREATE_EXTMAT(EXTMAT_TYPE_CHAR, "angle lookup table");
-  }
+  cleanup_toc(me);
 
-  return me->is_gated ? PASS_SEXP : ScalarLogical(FALSE);
+  // a char extmat to hold temporary raw data
+  me->data_block  = CREATE_EXTMAT(EXTMAT_TYPE_CHAR, "ungated data block");
+  // a char extmat to hold temporary angle data
+  me->angle_block = CREATE_EXTMAT(EXTMAT_TYPE_CHAR, "angle lookup table");
+
+  return PASS_SEXP;
 }
 
 SEXP
@@ -119,6 +119,13 @@ set_filename (SEXP portsxp, SEXP fnsxp) {
   strncpy(me->filename, CHAR(STRING_ELT(fnsxp, 0)), sizeof(me->filename));
   return PASS_SEXP;
 }
+
+/* are data in the current segment gated? */
+
+int
+gated(t_ssa *me) {
+  return me->seg_info[me->segment_index].is_gated;
+};
 
 SEXP
 set_desired_azimuths (SEXP portsxp, SEXP azisxp) {
@@ -166,16 +173,11 @@ set_use_pc_timestamp (SEXP portsxp, SEXP usepcsxp)
   return PASS_SEXP;
 }
 
-/* read data into a structure, then seek over the bytes remaining in the disk chunk 
-   allocated to that structure.  Seascan allocates disk storage for structures in 1024
-   byte chunks. */
+/* read data into a structure; we've set the appropriate fields up as unions containing 
+   a padding member of sufficient size. */
 
 int try_read_chunk(t_ssa *ssa, void * ptr, int size) {
-  int read_ok = FALSE, seek_ok = FALSE;
-  read_ok = (1 == fread(ptr, size, 1, ssa->file));
-  if (read_ok)
-    seek_ok = ! bigfseek(ssa->file, ROUND_UP_TO(size, SEASCAN_DISK_CHUNK_SIZE) - size, SEEK_CUR);
-  return read_ok && seek_ok;
+  return 1 == fread(ptr, ROUND_UP_TO(size, SEASCAN_DISK_CHUNK_SIZE), 1, ssa->file);
 };
 
 int
@@ -198,8 +200,8 @@ seek_archive_chunk (t_ssa *me, int i, int intraseg)
     return FALSE;
   }
   if (intraseg 
-	   && (i < me->segment_first_chunk_index[me->segment_index]
-	       || i >= me->segment_first_chunk_index[me->segment_index + 1])) {
+	   && (i < me->seg_info[me->segment_index].first_chunk_index
+	       || i >= me->seg_info[me->segment_index + 1].first_chunk_index)) {
     error_code = RADR_ERROR_INVALID_RUN;
     return FALSE;
   }
@@ -208,13 +210,14 @@ seek_archive_chunk (t_ssa *me, int i, int intraseg)
     return FALSE;
   }
 
+  dbgprintf("Did bigfseek to %ld\n", me->dir_buff[i].Position.QuadPart);
   me->chunk_index = i;
 
   if (!intraseg) {
     /* determine which segment this scan is from */
     /* NumSegments is limited to a small number, so efficiency here is not important */
     
-    for (j = 0; j < me->toc.NumSegments && me->segment_first_chunk_index[j] <= i; ++j)
+    for (j = 0; j < me->toc.NumSegments && me->seg_info[j].first_chunk_index <= i; ++j)
       /* empty body */;
     
     me->segment_index = j - 1;
@@ -249,17 +252,6 @@ read_archive_contents (t_ssa *me)
       || strcmp(me->arlab.SystemName, ARCHIVE_LABEL_TEXT))
     return RADR_ERROR_INVALID_ARCHIVE;
 
-  // check for whether data is gated
-  // by reading until a valid header is found
-  // and then checking its Gated flag
-
-  do {
-    if (! try_read_chunk(me, &me->brh, sizeof(me->brh)))
-      return FALSE;
-  } while (me->brh.TimeStamp == 0);
-  
-  me->is_gated = me->brh.Gated;
-
   if (bigfseek(me->file, SEASCAN_DISK_CHUNK_SIZE + me->arlab.directoryPosition.QuadPart, SEEK_SET))
     return RADR_ERROR_INVALID_ARCHIVE;
 
@@ -285,7 +277,7 @@ read_archive_contents (t_ssa *me)
 
   // we add an extra bogus segment to simplify the seek code
   for (i=0, tot=0; i < toc->NumSegments + 1; tot += toc->NumImages[i++] )
-    me->segment_first_chunk_index[i] = tot;
+    me->seg_info[i].first_chunk_index = tot;
 
   me->segment_index = 0;
   me->chunk_index = 0;
@@ -339,7 +331,7 @@ seek_archive_time (t_ssa *me, time_t t)
 
   // back up until we are earlier than t
 
-  while (me->dir_buff[j].TimeStamp > t && j > me->segment_first_chunk_index[i])
+  while (me->dir_buff[j].TimeStamp > t && j > me->seg_info[i].first_chunk_index)
     --j;
   
   // go forward until we find the first block after t
@@ -355,7 +347,7 @@ seek_archive_time (t_ssa *me, time_t t)
 
      FALSE specifies that this is not necessarily in the current segment */
 
-  return seek_archive_chunk (me, max(0, j - (me->is_gated ? 4 : 1)), FALSE);
+  return seek_archive_chunk (me, max(0, j - (gated(me) ? 4 : 1)), FALSE);
 }
 
 double make_timestamp (SEASCAN_REALTIME *t, int milliseconds) {
@@ -401,7 +393,7 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
 
   DATA_HEADER *dh = &me->dh;
 
-  if (me->chunk_index >= me->segment_first_chunk_index[me->segment_index + 1])
+  if (me->chunk_index >= me->seg_info[me->segment_index + 1].first_chunk_index)
     return FALSE;
 
   //  dbgprintf("Seeking to seascan archive chunk_index = %d\n", me->chunk_index);
@@ -464,7 +456,7 @@ read_archive_scan_hdr (t_ssa *me, int filldh)
   dh->FTCNdx = me->brh.current.FTC;
   dh->State = 0;
 
-  dbgprintf ("%d,%d,%d,%d,%d,%d,%d,%ld,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
+  //  dbgprintf ("%d,%d,%d,%d,%d,%d,%d,%u,%.3f\n", me->brh.PCTimeStamp.wYear, me->brh.PCTimeStamp.wMonth, me->brh.PCTimeStamp.wDay, me->brh.PCTimeStamp.wHour, me->brh.PCTimeStamp.wMinute, me->brh.PCTimeStamp.wSecond, me->brh.PCTimeStamp.wMilliseconds, me->brh.TimeStamp, me->brh.StartAngle);
 
   /* if this is the last header block for this scan, then record its timestamp */
   if (dh->StartBearing + dh->AngleCoverage == 360.0) {
@@ -627,8 +619,7 @@ read_archive_next_scan_full (t_ssa *me, char *buffer)
   return TRUE;
 }
 
-
-void
+int
 cleanup_toc (t_ssa *me)
 {
 
@@ -647,82 +638,104 @@ cleanup_toc (t_ssa *me)
   have_first = FALSE; // have we read the header from the first valid run?
 
   for (i = 0; i < toc->NumSegments; ++i) {
-    seek_archive_chunk(me, me->segment_first_chunk_index[i], FALSE);
-    // Find the first scan header that starts at 0 degrees; this is
-    // the first "full" scan.
-    // We allow for some bad scan headers.
+    seek_archive_chunk(me, me->seg_info[i].first_chunk_index, FALSE);
+
+    // check for whether segment is gated
+    // by reading until a valid header is found
+    // and then checking its Gated flag
     
-    for (j = 0; j < MAX_BAD_SCAN_HEADERS && j < toc->NumImages[i]; ++j) {
-      if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 0.0)
-	break;
-    }
-    if (!me->brh.TimeStamp || me->dh.StartBearing != 0.0) {
-      /* there do not seem to be any full scans in this segment */
-      is_valid[i] = FALSE;
-      continue;
-    }
-    if (!have_first) {
-      have_first = TRUE;
-      save_dh = me->dh;
-    }
-
-    // Adjust the first scan index upward to drop the incomplete scan
-    me->segment_first_chunk_index[i] += j;
-    if (me->use_PCTimestamp) {
-      toc->StartTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
-    } else {
-      toc->StartTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
-    }
-
-    // Starting at the end of the segment, look for a 4th scan quadrant
-    j = me->segment_first_chunk_index[i + 1] - 1;
-
-    while (j > me->segment_first_chunk_index[i]) {
-      seek_archive_chunk(me, j, FALSE);
-      if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 270.0)
-	break;
-      --j;
-    }
-
-    if (j > me->segment_first_chunk_index[i]) {
-    // Continue backing up until the 1st scan quadrant
-      while (j > me->segment_first_chunk_index[i]) {
-	seek_archive_chunk(me, j, FALSE);
-	if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 0.0)
-	  break;
-	--j;
+    do {
+      if (! try_read_chunk(me, &me->brh, sizeof(me->brh)))
+        return FALSE;
+    } while (me->brh.TimeStamp == 0);
+    
+    if ((me->seg_info[i].is_gated = me->brh.Gated)) {
+      // gated data
+      // Find the first scan header that starts at 0 degrees; this is
+      // the first "full" scan.
+      // We allow for some bad scan headers.
+    
+      for (j = 0; j < MAX_BAD_SCAN_HEADERS && j < toc->NumImages[i]; ++j) {
+        if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 0.0)
+          break;
+      }
+      if (!me->brh.TimeStamp || me->dh.StartBearing != 0.0) {
+        /* there do not seem to be any full scans in this segment */
+        is_valid[i] = FALSE;
+        continue;
+      }
+      if (!have_first) {
+        have_first = TRUE;
+        save_dh = me->dh;
+      }
+      // Adjust the first scan index upward to drop the incomplete scan
+      me->seg_info[i].first_chunk_index += j;
+      if (me->use_PCTimestamp) {
+        toc->StartTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
+      } else {
+        toc->StartTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
       }
 
-      if (j > me->segment_first_chunk_index[i]) {
-	is_valid[i] = TRUE;
-        if (me->use_PCTimestamp) {
-          toc->StopTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
-        } else {
-          toc->StopTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+      // Starting at the end of the segment, look for a 4th scan quadrant
+      j = me->seg_info[i + 1].first_chunk_index - 1;
+
+      while (j > me->seg_info[i].first_chunk_index) {
+        seek_archive_chunk(me, j, FALSE);
+        if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 270.0)
+          break;
+        --j;
+      }
+
+      if (j > me->seg_info[i].first_chunk_index) {
+        // Continue backing up until the 1st scan quadrant
+        while (j > me->seg_info[i].first_chunk_index) {
+          seek_archive_chunk(me, j, FALSE);
+          if (read_archive_scan_hdr(me, TRUE) && me->dh.StartBearing == 0.0)
+            break;
+          --j;
         }
-	toc->NumImages[i] = j - me->segment_first_chunk_index[i] + 4;
+
+        if (j > me->seg_info[i].first_chunk_index) {
+          is_valid[i] = TRUE;
+          if (me->use_PCTimestamp) {
+            toc->StopTime[i] = make_timestamp(&me->dh.TimePosStamp.Time, me->dh.TimePosStamp.Time.Milliseconds);
+          } else {
+            toc->StopTime[i] = me->brh.TimeStamp - 15.0 / me->dh.AntennaSpeed;
+          }
+          toc->NumImages[i] = j - me->seg_info[i].first_chunk_index + 4;
+        }
       }
+    } else {
+      // ungated segments are assumed to be valid
+      is_valid[i] = TRUE;
+      // now visit 
     }
   }
+
 
   // compress out the invalid segment entries
   // copy valid ones from slot j to slot i
 
   for (i = 0, j = 0; j < toc->NumSegments; ++j) {
-    if (is_valid[j]) {
+    if (is_valid[j] && toc->NumImages[j] > 0) {
       toc->NumImages[i] = toc->NumImages[j];
       toc->StartTime[i] = toc->StartTime[j];
       toc->StopTime[i] = toc->StopTime[j];
-      ++i;
+      me->seg_info[i] = me->seg_info[j];
+      // calculate number of scans, for gated data; use chunks for ungated
+      me->seg_info[i].num_scans = me->seg_info[i].is_gated ? toc->NumImages[i] / 4 : toc->NumImages[i];
+     ++i;
     }
   }
 
   // leave the file pointer at the first valid scan
   if ((toc->NumSegments = i) > 0) 
-    seek_archive_chunk(me, me->segment_first_chunk_index[0], FALSE);
+    seek_archive_chunk(me, me->seg_info[0].first_chunk_index, FALSE);
 
   // restore the data header for that scan
   me->dh = save_dh;
+
+  return TRUE;
 }
 
 
@@ -745,20 +758,9 @@ get_contents (SEXP portsxp) {
       if(do_start_up (port) == FAIL_SEXP)
 	return FAIL_SEXP;
       
-    if (me->is_gated)
-      cleanup_toc(me);
-
     PROTECT(rv = allocVector(INTSXP, toc->NumSegments * 3)); // WARNING:  Y2037K time_t != int issue?
     for (i = 0; i < toc->NumSegments; ++i) {
-      if (me->is_gated) {
-        me->segment_num_scans[i] = INTEGER(rv)[3*i] = toc->NumImages[i] / 4; /* convert number of quadrant scans to number of full scans */
-        
-      } else {
-        // FIXME: bad hack to allow seeking in ungated archives; we estimate scan time by the rotation time of the first base radar header
-        // then look at the total elapsed time in the archive.  Ideally, we'd scan the whole archive and get the precise number here.
-        // The "-2" in the following is to discard possible partial scans at start and end of the segment.
-        me->segment_num_scans[i] = INTEGER(rv)[3*i] = (toc->StopTime[i] - toc->StartTime[i]) * 1000.0 / me->brh.BandwidthStatus.RotationTime - 2;
-      }
+      INTEGER(rv)[3*i]   = me->seg_info[i].num_scans;
       INTEGER(rv)[3*i+1] = toc->StartTime[i];
       INTEGER(rv)[3*i+2] = toc->StopTime[i];
     }
@@ -792,7 +794,7 @@ get_scan_info(SEXP portsxp) {
 
   me->have_scan_data = FALSE;
 
-  if (!(me->is_gated ? read_archive_next_scan_hdr_full : read_archive_next_scan_hdr_ungated) (me)) {
+  if (!(gated(me) ? read_archive_next_scan_hdr_full : read_archive_next_scan_hdr_ungated) (me)) {
     error_code = RADR_ERROR_EOF_ON_PORT;
     return FAIL_SEXP;
   }
@@ -817,7 +819,8 @@ get_scan_info(SEXP portsxp) {
     // If we have the timestamp for the end of the previous data block, then we use it as the start
     // time for this block, and estimate a duration.
     dbgprintf("Estimating start time and duration from time_end_latest_block=%.3f\n", me->time_end_latest_block);
-    SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block = me->is_gated ? me->time_end_latest_block : time_end_this_block));
+    //    SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block = gated(me) ? me->time_end_latest_block : time_end_this_block));
+    SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block = me->time_end_latest_block));
     SET_VECTOR_ELT(rv, 4, ScalarInteger((time_end_this_block - me->time_end_latest_block) * 1000 * (360 / dh->AngleCoverage)));
   } else {
     // we don't have the time for the end of the previous block, so we approximate it using
@@ -854,28 +857,32 @@ get_scan_data(SEXP portsxp, SEXP buffsxp) {
   DATA_HEADER *dh;
   t_extmat *scan_buff = SEXP_TO_EXTMAT(buffsxp);
 
+  SEXP rv;
   if (!me || !me->have_scan_data) {
     error_code = RADR_ERROR_EOF_ON_PORT;
     return FAIL_SEXP;
   }
 
   dh = &me->dh;
-
   (*pensure_extmat)(scan_buff, dh->Lines * 360 / dh->AngleCoverage, dh->SamplesPerLine);
-
-  if (!(me->is_gated ? read_archive_next_scan_full : read_archive_next_scan_ungated) (me, (char *) scan_buff->ptr)) {
+  if (!(gated(me) ? read_archive_next_scan_full : read_archive_next_scan_ungated) (me, (char *) scan_buff->ptr)) {
     error_code = RADR_ERROR_EOF_ON_PORT;
     return FAIL_SEXP;
   }
-    
+   
   me->have_scan_data = FALSE;
     
   // return measured scan duration (in milliseconds), to replace
   // estimate, unless we don't have the end of the previous block, in
   // which case we estimate.
 
-  return ScalarInteger(floor(me->time_end_latest_block ? 1000 * (me->time_end_latest_block - me->time_start_this_block) :
-			     0.5 + 60000.0 / dh->AntennaSpeed)); 
+  PROTECT(rv = allocVector(INTSXP, 2));
+
+  INTEGER(rv)[0] = floor(me->time_end_latest_block > 0 ? 1000 * (me->time_end_latest_block - me->time_start_this_block) :
+                         0.5 + 60000.0 / dh->AntennaSpeed);
+  INTEGER(rv)[1] = gated(me) ? NA_INTEGER : me->chunk_index - me->seg_info[me->segment_index].first_chunk_index;
+  UNPROTECT(1);
+  return (rv);
 }
 
 SEXP
@@ -890,7 +897,7 @@ end_of_data(SEXP portsxp) {
 
   toc = &me->toc;
 
-  return LOGICAL_SEXP(me->chunk_index - me->segment_first_chunk_index[me->segment_index] > toc->NumImages[me->segment_index] - (me->is_gated ? 4 : 0));
+  return LOGICAL_SEXP(me->chunk_index - me->seg_info[me->segment_index].first_chunk_index > toc->NumImages[me->segment_index] - (gated(me) ? 4 : 0));
 }
 
 SEXP
@@ -927,33 +934,32 @@ seek_scan(SEXP portsxp, SEXP runsxp, SEXP scansxp) {
   int run = INTEGER(AS_INTEGER(runsxp))[0];
   int scan;
 
+  if (!me)
+    return FAIL_SEXP;
+
   if (run < 0)
     run = me->segment_index;
   else
     me->segment_index = run;
 
-  if (me->is_gated) {
+  if (gated(me)) {
     // notice the "4 *" to convert a radR 360-degree scan number to an internal scan (i.e. quadrant) number
     scan = 4 * INTEGER(AS_INTEGER(scansxp))[0];
   } else {
+    // it's really a chunk number
     scan = INTEGER(AS_INTEGER(scansxp))[0];
-    if (scan != me->chunk_index) {
-      time_t t = me->toc.StartTime[run] + (double) (scan) / me->segment_num_scans[run] * (me->toc.StopTime[run] - me->toc.StartTime[run]);
-      if (!seek_archive_time(me, t)) 
-        return FAIL_SEXP;
-    }
-    return LOGICAL_SEXP(1);
   };
-
 
   if (scan > 0)
     --scan;
   else
     me->time_end_latest_block = -1;
 
-  if (!me || !seek_archive_chunk(me, me->segment_first_chunk_index[run] + scan, FALSE))
+  if (! seek_archive_chunk(me, me->seg_info[run].first_chunk_index + scan, FALSE))
     return FAIL_SEXP;
-  
+
+  dbgprintf("Did seek to run %d chunk %8d\n", run, scan);
+
   return LOGICAL_SEXP(1);
 }
 
@@ -1015,11 +1021,11 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
       // the pulse corresponding to angle zero is contained in the current data block
       me->input_index = me->zero_angle_index + 1; // NB: adjust by 1 to skip over slot for last pulse of previous block
       break;
-    } else if (me->have_prev_chunk && ((RSI_LUT *) me->angle_block.ptr)[0].Bearing  > ((RSI_LUT *)me->angle_block.ptr)[1].Bearing + 4096.0/360) {
+    } else if (me->have_prev_chunk && ((RSI_LUT *) me->angle_block.ptr)[0].Bearing  > ((RSI_LUT *)me->angle_block.ptr)[1].Bearing * 4096.0/360) {
       // we crossed the zero cut, but this block doesn't have
       // the zero pulse, so use its first pulse
       dbgprintf("Crossed zero cut.\n");
-      me->input_index = 0; // we try use the last pulse of the previous block first, as it have a closer azimuth
+      me->input_index = 0; // we try use the last pulse of the previous block first, as it has a closer azimuth
       break;
     }
     me->have_prev_chunk = TRUE;
@@ -1043,6 +1049,9 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
 
   // The index angle is part way through the data block.  Estimate a
   // start time for it.
+
+  // an estimate based on the measured PRF for this block
+  me->time_at_zero_degrees = make_timestamp2 (&me->brh.PCTimeStamp) + me->zero_angle_index * me->brh.BandwidthStatus.PulsePeriod * 1e-6;
 
   block_time = me->brh.TimeStamp + me->brh.PCTimeStamp.wMilliseconds / 1000.0;
   pulse_time = block_time;
@@ -1165,7 +1174,7 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
       // the angle of the current input pulse is closer to the desired angle than is that
       // of the next input pulse
       // copy the current pulse to the output
-      dbgprintf("inp. ind: %4d, j: %4d, output_theta: %7.3f pulse_theta: %7.3f next_pulse_theta: %7.3f\n", me->input_index, j, output_theta, pulse_theta, next_pulse_theta);
+      // dbgprintf("inp. ind: %4d, j: %4d, output_theta: %7.3f pulse_theta: %7.3f next_pulse_theta: %7.3f\n", me->input_index, j, output_theta, pulse_theta, next_pulse_theta);
       memcpy(dst, src, me->brh.rAxisBytes); 
       dst += me->brh.rAxisBytes;
       ++j;
@@ -1186,7 +1195,9 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
   
   if (me->brh.BitsPerSample == 16 && me->brh.rAxisBytes < 2 * me->brh.Samples)
     expand_12_bit_packed(buffer, me->brh.Samples * me->desired_azimuths);
-  
+
+  me->time_end_latest_block = make_timestamp2 (&me->brh.PCTimeStamp) + me->zero_angle_index * me->brh.BandwidthStatus.PulsePeriod * 1e-6;
+
   return TRUE;
 }
 
@@ -1203,7 +1214,7 @@ int read_ungated_chunk(t_ssa *me) {
   }
   */
   // sanity check - are we within the correct portion of the file for this segment?
-  if (ftell(me->file) > me->dir_buff[me->toc.NumImages[me->segment_index]-1].Position.QuadPart)
+  if (ftell(me->file) > me->dir_buff[me->seg_info[me->segment_index].first_chunk_index + me->toc.NumImages[me->segment_index]-1].Position.QuadPart)
     return FALSE;
 
   if (me->buffered_chunk_index + 1 == me->chunk_index && me->buffered_chunk_index >= 0 ) {
@@ -1277,7 +1288,7 @@ int read_ungated_chunk(t_ssa *me) {
     if (k > 0) { // rescale block, using bs from this block or previous one
       for (ii = j; ii < i; ++ii) {
         ap[ii].Bearing = floor(fmod(me->brh.Heading + ap[ii].Bearing + (ii-j) / bs, 360.0) * 4096/360.0);
-        if (ap[ii].Bearing == 0 && me->zero_angle_index == -1)
+        if (ap[ii].Bearing < me->out_dtheta * 4096 / 360.0 && me->zero_angle_index == -1)
           me->zero_angle_index = ii;
       }
     }
