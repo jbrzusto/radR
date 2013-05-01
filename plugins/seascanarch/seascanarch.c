@@ -221,8 +221,6 @@ seek_archive_chunk (t_ssa *me, int i, int intraseg)
       /* empty body */;
     
     me->segment_index = j - 1;
-  } else {
-    j = me->segment_index + 1;
   }
 
   return TRUE;
@@ -643,11 +641,13 @@ cleanup_toc (t_ssa *me)
     // check for whether segment is gated
     // by reading until a valid header is found
     // and then checking its Gated flag
+    // Invalid headers have TimeStamp == 0 or AssociatedAzimuths == 0,
+    // and are apparently followed (eventually) by valid headers.
     
     do {
       if (! try_read_chunk(me, &me->brh, sizeof(me->brh)))
         return FALSE;
-    } while (me->brh.TimeStamp == 0);
+    } while (me->brh.TimeStamp == 0 || me->brh.AssociatedAzimuths == 0);
     
     if ((me->seg_info[i].is_gated = me->brh.Gated)) {
       // gated data
@@ -815,7 +815,7 @@ get_scan_info(SEXP portsxp) {
     time_end_this_block = make_timestamp (&dh->TimePosStamp.Time, 0);
   }
 
-  if (me->time_end_latest_block >= 0) {
+  if (me->time_end_latest_block >= 0 && gated(me)) {
     // If we have the timestamp for the end of the previous data block, then we use it as the start
     // time for this block, and estimate a duration.
     dbgprintf("Estimating start time and duration from time_end_latest_block=%.3f\n", me->time_end_latest_block);
@@ -827,10 +827,14 @@ get_scan_info(SEXP portsxp) {
     // the antenna rotation speed and fraction of the scan covered by this block
     dbgprintf("Estimating start time and duration from rpm:%f", me->time_end_latest_block);
     SET_VECTOR_ELT(rv, 4, ScalarInteger(floor(0.5 + 60000.0 / dh->AntennaSpeed))); // duration in ms; antenna speed is in rpm 
-    if (me->use_PCTimestamp) {
-      me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
+    if (gated(me)) {
+      if (me->use_PCTimestamp) {
+        me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, dh->TimePosStamp.Time.Milliseconds);
+      } else {
+        me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, - REAL(VECTOR_ELT(rv, 4))[0] * dh->AngleCoverage / 360.0);
+      }
     } else {
-      me->time_start_this_block = make_timestamp(&dh->TimePosStamp.Time, - REAL(VECTOR_ELT(rv, 4))[0] * dh->AngleCoverage / 360.0);
+      // ungated case: do nothing; time_start_this_block set by read_archive_next_scan_hdr_ungated
     }
     SET_VECTOR_ELT(rv, 3, ScalarReal(me->time_start_this_block));
   }
@@ -933,11 +937,12 @@ seek_scan(SEXP portsxp, SEXP runsxp, SEXP scansxp) {
   t_ssa *me = ports[port];
   int run = INTEGER(AS_INTEGER(runsxp))[0];
   int scan;
+  int intraseg = run < 0;
 
   if (!me)
     return FAIL_SEXP;
 
-  if (run < 0)
+  if (intraseg)
     run = me->segment_index;
   else
     me->segment_index = run;
@@ -955,7 +960,7 @@ seek_scan(SEXP portsxp, SEXP runsxp, SEXP scansxp) {
   else
     me->time_end_latest_block = -1;
 
-  if (! seek_archive_chunk(me, me->seg_info[run].first_chunk_index + scan, FALSE))
+  if (! seek_archive_chunk(me, me->seg_info[run].first_chunk_index + scan, intraseg))
     return FAIL_SEXP;
 
   dbgprintf("Did seek to run %d chunk %8d\n", run, scan);
@@ -1051,7 +1056,7 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
   // start time for it.
 
   // an estimate based on the measured PRF for this block
-  me->time_at_zero_degrees = make_timestamp2 (&me->brh.PCTimeStamp) + me->zero_angle_index * me->brh.BandwidthStatus.PulsePeriod * 1e-6;
+  me->time_start_this_block = make_timestamp2 (&me->brh.PCTimeStamp) + me->zero_angle_index * me->brh.BandwidthStatus.PulsePeriod * 1e-6;
 
   block_time = me->brh.TimeStamp + me->brh.PCTimeStamp.wMilliseconds / 1000.0;
   pulse_time = block_time;
@@ -1068,6 +1073,7 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
 
   dh->Heading = 0; // we already take heading into account when gating ungated data
   dh->SamplesPerLine = me->brh.Samples;
+  me->axis_bytes = me->brh.rAxisBytes;
 
   // the following are set by fiat: we will accumulate one full scan worth of data
   // with desired_azimuths pulses
@@ -1082,9 +1088,9 @@ read_archive_next_scan_hdr_ungated (t_ssa *me) {
   // so halve it before computing range
   dh->RangeCoverage = me->brh.usecRangeCell * 1.0E-6 / 2 * VELOCITY_OF_LIGHT * me->brh.Samples;
   // we want Hz, PulsePeriod is in usec
-  dh->PRF = floor (0.5 + 1.0E6 / me->brh.BandwidthStatus.PulsePeriod);  
+  dh->PRF = me->brh.BandwidthStatus.PulsePeriod ? floor (0.5 + 1.0E6 / me->brh.BandwidthStatus.PulsePeriod) : NA_REAL;
   // we want RPM; rotation time is in milliseconds
-  dh->AntennaSpeed = floor (0.5 + 60000 / me->brh.BandwidthStatus.RotationTime);
+  dh->AntennaSpeed = me->brh.BandwidthStatus.RotationTime ? floor (0.5 + 60000 / me->brh.BandwidthStatus.RotationTime) : NA_REAL;
   // FIXME?: is this correct?
   dh->NorthAligned = me->brh.NorthStabilized;  
   dh->RangePerSample = me->brh.usecRangeCell * 1.0E-6 / 2 * VELOCITY_OF_LIGHT;
@@ -1126,7 +1132,11 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
 
   // pointer to first pulse to (possibly) use from this chunk
   // (or possibly the last pulse from the previous chunk)
-  char *src = me->data_block.ptr + me->input_index * me->brh.rAxisBytes;
+  char *src = me->data_block.ptr + me->input_index * me->axis_bytes;
+
+  // do we need to expand 12 bits to 16?
+
+  int expand_12_to_16 = me->brh.BitsPerSample == 16 && me->brh.rAxisBytes == 3 * me->brh.Samples / 2;
 
   // pointer to scaled angle of that pulse
   RSI_LUT *anglep = ((RSI_LUT *)me->angle_block.ptr) + me->input_index;
@@ -1153,7 +1163,7 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
       // we must update our copy of the me->data_block.ptr
       // same holds for me->angle_block.ptr
 
-      src = me->data_block.ptr + me->input_index * me->brh.rAxisBytes;
+      src = me->data_block.ptr + me->input_index * me->axis_bytes;
       anglep = ((RSI_LUT *)me->angle_block.ptr) + me->input_index;
       pulse_theta = anglep->Bearing * 360.0 / 4096;
 
@@ -1175,8 +1185,8 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
       // of the next input pulse
       // copy the current pulse to the output
       // dbgprintf("inp. ind: %4d, j: %4d, output_theta: %7.3f pulse_theta: %7.3f next_pulse_theta: %7.3f\n", me->input_index, j, output_theta, pulse_theta, next_pulse_theta);
-      memcpy(dst, src, me->brh.rAxisBytes); 
-      dst += me->brh.rAxisBytes;
+      memcpy(dst, src, me->axis_bytes); 
+      dst += me->axis_bytes;
       ++j;
       output_theta = fmod (output_theta + 360.0 / me->desired_azimuths, 360.0);
     } else {
@@ -1185,7 +1195,7 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
       ++me->input_index;
       ++anglep;
       pulse_theta = next_pulse_theta;
-      src += me->brh.rAxisBytes;
+      src += me->axis_bytes;
     }
   }
   // if we're reading packed 12-bit samples, unpack them into 16 bits
@@ -1193,8 +1203,8 @@ read_archive_next_scan_ungated (t_ssa *me, char *buffer)
   // FIXME:  this assumes that for packed 12-bit data, the number
   // of bytes per line is 0 (mod 6)
   
-  if (me->brh.BitsPerSample == 16 && me->brh.rAxisBytes < 2 * me->brh.Samples)
-    expand_12_bit_packed(buffer, me->brh.Samples * me->desired_azimuths);
+  if (expand_12_to_16)
+    expand_12_bit_packed(buffer, me->axis_bytes * 2 * me->desired_azimuths / 3);
 
   me->time_end_latest_block = make_timestamp2 (&me->brh.PCTimeStamp) + me->zero_angle_index * me->brh.BandwidthStatus.PulsePeriod * 1e-6;
 
@@ -1219,7 +1229,7 @@ int read_ungated_chunk(t_ssa *me) {
 
   if (me->buffered_chunk_index + 1 == me->chunk_index && me->buffered_chunk_index >= 0 ) {
     // save the last pulse, in case we need it when  gating
-    memcpy(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->brh.rAxisBytes, me->brh.rAxisBytes);
+    memcpy(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->axis_bytes, me->axis_bytes);
     
     // save the last pulse's angle info
     memcpy(me->angle_block.ptr, me->angle_block.ptr + me->brh.AssociatedAzimuths * sizeof(RSI_LUT), sizeof(RSI_LUT));
@@ -1235,7 +1245,7 @@ int read_ungated_chunk(t_ssa *me) {
   do {
     if ( ! try_read_chunk(me, &me->brh, sizeof(me->brh)))
       return FALSE;
-  } while (me->brh.TimeStamp == 0);
+  } while (me->brh.TimeStamp == 0 || me->brh.AssociatedAzimuths == 0);
 
   int needed =  ROUND_UP_TO(me->brh.yExtent * me->brh.rAxisBytes,  SEASCAN_DISK_CHUNK_SIZE);
   if (me->brh.BitsPerSample != 16 || me->brh.SourceId > 16 || me->brh.SourceId < 0 || needed > 10000000 || needed < 0) {
@@ -1288,20 +1298,40 @@ int read_ungated_chunk(t_ssa *me) {
     if (k > 0) { // rescale block, using bs from this block or previous one
       for (ii = j; ii < i; ++ii) {
         ap[ii].Bearing = floor(fmod(me->brh.Heading + ap[ii].Bearing + (ii-j) / bs, 360.0) * 4096/360.0);
-        if (ap[ii].Bearing < me->out_dtheta * 4096 / 360.0 && me->zero_angle_index == -1)
-          me->zero_angle_index = ii;
       }
     }
     if (k == 1) { // this is the first full block; go back and rescale the first (partial) block using the same scale factor
       for (ii = 0; ii < j; ++ii) {
         ap[ii].Bearing = floor(fmod(me->brh.Heading + ap[ii].Bearing + 1 - (j-ii) / bs, 360.0) * 4096/360.0);
-        if (ap[ii].Bearing == 0 && me->zero_angle_index == -1)
-          me->zero_angle_index = ii;
       }
     }
     j = i;
     ++k;
   };
+
+  // Check whether a zero-degree pulse occurs in this block
+  // This isn't optimally efficient, since the closeness as a function of ii
+  // is piecewise monotonic with at most 2 pieces.
+
+  double best_angle_diff = 0;
+  int best_angle_index = -1; // no best angle so far
+  for (j = 0; j < na; ++j) {
+    double angle = ap[j].Bearing * 360.0 / 4096;
+    double angle_diff = ang_diff(angle, 0.0);
+    if (best_angle_index < 0 || angle_diff < best_angle_diff) {
+      best_angle_diff = angle_diff;
+      best_angle_index = j;
+    }
+  }
+
+  // we've found the angle closest to zero degrees, but how close must it be to be treated
+  // as zero?  We'll treat it as zero if it is within two pulse-steps of zero, where
+  // a pulse step is the mean angle change per pulse
+  
+  double pulse_step = ang_diff(ap[na - 1].Bearing * 360.0 / 4096, ap[0].Bearing * 360.0 / 4096) / na;
+  if (best_angle_diff < 2 * pulse_step)
+    me->zero_angle_index = best_angle_index;
+
   me->brh.Degrees = (((RSI_LUT *) me->angle_block.ptr)[me->brh.AssociatedAzimuths-1].Bearing - ((RSI_LUT *) me->angle_block.ptr)[0].Bearing) * 360.0 / 4096;
   dbgprintf("Rescaled angle range = %7.3f, %7.3f   zero-angle-index: %3d\n", ((RSI_LUT *)me->angle_block.ptr)[1].Bearing * 360.0/4096, ((RSI_LUT *)me->angle_block.ptr)[me->brh.AssociatedAzimuths].Bearing * 360.0/4096, me->zero_angle_index);
 
