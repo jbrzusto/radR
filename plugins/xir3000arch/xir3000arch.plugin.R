@@ -323,7 +323,15 @@ globals = list (
     ## timestamps and compute total run time and scan duration.
     ## If no timestamps are available, 
 
-    run.files <- dir(path=dirname(port$config$filename), pattern=basename(port$file.basename) %:% "[0-9]+\\.rec$")
+    ## workaround non-idempotent R version of file.basename, which first strips
+    ## trailing path separators
+    if (substring(port$file.basename, nchar(port$file.basename)) == "/") {
+      ## actual basename is empty
+      stem = ""
+    } else {
+      stem = basename(port$file.basename)
+    }
+    run.files <- dir(path=dirname(port$config$filename), pattern=stem %:% "[0-9]+\\.rec$")
     
     ## get all the sequence numbers so we don't have to worry about missing ones later on
 
