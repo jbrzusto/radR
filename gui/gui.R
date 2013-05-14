@@ -2633,10 +2633,13 @@ gui.get.event.list <- function() {
             SCAN_ADVANCE =
             
             function(...) {
-              ## Advance the slider up one, if it is visible.
+              ## Advance the slider up one or to a source-specified index.
               
               if (isTRUE(RSS$source$is.seekable)) {
-                .Tcl(".play.slider set [expr 1 + [.play.slider get]]")
+                if ("new.index" %in% names(RSS$source) && !is.na(RSS$source$new.index))
+                  tcl(".play.slider", "set", RSS$source$new.index)
+                else
+                  .Tcl(".play.slider set [expr 1 + [.play.slider get]]")
               } else {
                 ## No slider, so update the progress display.
                 if (!is.null(GUI$play.start.time)) {
