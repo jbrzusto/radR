@@ -326,7 +326,7 @@ globals = list (
       rss.enable.hook(h, name)
 
     ## open the file
-    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, read.only=port$is.source)
+    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, cache.size=1, read.only=port$is.source)
     
     if (port$is.source) {
       ## disable the blip finding controls
