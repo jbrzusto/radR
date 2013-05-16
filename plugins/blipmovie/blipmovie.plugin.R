@@ -18,7 +18,7 @@ about = function() {
 }
 
 set.bl.length = function(bl, len) {
-  dim(bl$ndx) <- c(len, 2)
+  dim(attr(bl,"ndx")) <- c(len, 2)
 }
 
 get.ports = function() {
