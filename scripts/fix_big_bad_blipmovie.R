@@ -30,7 +30,7 @@ fix_big_bad_blipmovie = function() {
     return (NULL)
 
   # strip trailing ".i" if user selected index file
-  if (grepl("\\.bm.i$", f))
+  if (length(grep("\\.bm.i$", f)) == 1)
     f = substr(f, 1, nchar(f)-2)
   
 
@@ -95,7 +95,7 @@ fix_big_bad_blipmovie = function() {
   rss.gui("DELETE_MESSAGEBOX", id)
   
   filesize = file.info(f)$size
-  badbytes = filesize - bl$ndx[i1,1] + 1
+  badbytes = filesize - attr(bl,"ndx")[i1,1] + 1
   choice = rss.gui("POPUP_DIALOG", sprintf("Should I fix blipmovie'%s'?", basename(f)), sprintf("The last %d out of %d scans of this blipmovie are invalid.\nThis corresponds to the last %.0f bytes of this file; ie %.1f%%\nShould I chop the invalid tail from this blipmovie?\nIf I do this, the tail will be destroyed, so you should backup the file first.  Doing this should allow the blipmovie's table of contents to be recreated\nwhen you next open the blipmovie in radR", ceiling((n - i1 + 1) / 4), ceiling((n - 2) / 4), badbytes, badbytes / filesize * 100), buttons = c("Yes - fix", "No - do NOT fix"), default=2)
   if (choice == 2)
     return(TRUE)
@@ -110,7 +110,7 @@ fix_big_bad_blipmovie = function() {
     return(TRUE)
   }
 
-  dim(bl$ndx) <- c(i1 - 1, 2)
+  dim(attr(bl, "ndx")) <- c(i1 - 1, 2)
   close(bl)
   id = rss.gui("POPUP_DIALOG", "Tail truncated", sprintf("I chopped off the zero tail of the blipmovie\n'%s'\n\nOpening it in radR should automatically rebuild the table of contents.\n", f), buttons="Ok")
   

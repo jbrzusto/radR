@@ -1,13 +1,28 @@
-26 Feb. 2013
-- seascanarch:
-    - allow user to specify use of timestamp from recording PC rather than
-      GPS (in some cases, GPS timestamp appears to be broken)
-    - fix issues with recent ungated archives; this removes some workaround
-      code that may have been necessary with some old archives - please
-      contact the author if this breaks anything of yours
+16 May 2013
 
-- xir3000arch: quietly drop trailing bad .REC files from the end of a folder
-  (messages indicating this appear if user types "warnings()" at console)
+- added a script to fix (by truncation) blipmovies with "zero tails"
+  (i.e. files whose last portion is all zeroes, instead of containing
+  actual data.)  Details and files to apply this to existing radR
+  installations are here:
+
+https://radr-project.org/08_-_Current_Issues/Chopping_off_the_Zero_Tails_that_Break_Some_Blipmovies	
+
+14 May 2013
+- retooled seascanarch plugin to handle archives with some segments
+  gated, others not. You can now seek to arbitrary points in an
+  ungated archive, although the GUI for this is somewhat broken:
+  clicking to the left or right of the play window slider doesn't
+  advance a single sweep, but only a "chunk".  It may take dozens of
+  such clicks to move forward or backward by a full sweep.  The play
+  and play-1 buttons *do* advance correctly by one full sweep at a
+  time. (revised from 1 May 2013, which omitted part of the patch)
+
+Note: the USRP plugin in this version defaults to using only ACP pulses
+to delimit sweeps, because of issues we've had with wonky ARP (Heading)
+lines.  To make your USRP plugin use the ARP (Heading) line as usual,
+add this line to your antenna_db/XXX_antenna.R file:
+  
+     use_acp_for_sweeps = 0
 
 28 June 2012
 - declutter plugin now handles tilter
