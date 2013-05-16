@@ -17,6 +17,10 @@ about = function() {
          "\n") 
 }
 
+set.bl.length = function(bl, len) {
+  dim(bl$ndx) <- c(len, 2)
+}
+
 get.ports = function() {
 
   rv <- list()
@@ -322,7 +326,7 @@ globals = list (
       rss.enable.hook(h, name)
 
     ## open the file
-    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, cache.size=1, read.only=port$is.source)
+    port$bl <- biglist(port$config$filename, overwrite=port$is.sink, read.only=port$is.source)
     
     if (port$is.source) {
       ## disable the blip finding controls
@@ -493,7 +497,7 @@ verify.blipmovie = function(port) {
         if (nrun == 1) {
           toc <- empty.TOC
           fixing.message("The TOC has only one entry and its first slot is not valid.\nThe blipmovie is effectively empty.\n")
-          length(bl) <- 0
+          set.bl.length(bl, 0)
           close(bl)
           return(TRUE)
         }
@@ -509,7 +513,7 @@ verify.blipmovie = function(port) {
           ## we're missing runs
           fixing.message("The blipmovie's last run is missing some or all data from its last " %:% ceiling( -diff / toc$num.scans[nrun]) %:% " scans.  I'm adjusting the TOC to match this.")
           toc$num.scans[nrun] <- toc$num.scans[nrun] - ceiling( -diff / k)
-          length(bl) <- toc$first.slot[nrun] + k * toc$num.scans[nrun]
+          set.bl.length(bl, toc$first.slot[nrun] + k * toc$num.scans[nrun])
           bl[[1]] <- toc
           close(bl)
           return(TRUE)
@@ -521,7 +525,7 @@ verify.blipmovie = function(port) {
       }
     } else {
       fixing.message("This blipmovie is empty.\n", FALSE)
-      length(bl)<-0
+      set.bl.length(bl, 0)
       close(bl)
       return(FALSE)
     }
@@ -547,7 +551,7 @@ verify.blipmovie = function(port) {
       return(TRUE)
     }
     fixing.message("The only run of this blipmovie has been deleted.  It is now empty.")
-    length(bl) <- 0
+    set.bl.length(bl, 0)
     close(bl)
     return(FALSE)
   }
@@ -559,7 +563,7 @@ verify.blipmovie = function(port) {
 
   if (num.scans == 0) {
     fixing.message("The blipmovie's last (only?) run had only one scan,\n which might be corrupt.  I'm deleting that run.")
-    length(bl) <- first.slot - 1
+    set.bl.length(bl, first.slot - 1)
     close(bl)
     return(TRUE)
   }
@@ -579,7 +583,7 @@ verify.blipmovie = function(port) {
 
   toc <- rbind(toc, data.frame(start.time=structure(start.time, class="POSIXct"), end.time=structure(si$timestamp, class="POSIXct"), num.scans=num.scans, first.slot=first.slot))
   bl[[1]] <- toc
-  length(bl) <- last.slot
+  set.bl.length(bl, last.slot)
   fixing.message("I've added a run to the end of the TOC, which now looks like:\n" %:% paste(capture.output(toc), collapse="\n"))
     
   ## Close the biglist
