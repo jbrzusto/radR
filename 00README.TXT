@@ -1,3 +1,9 @@
+27 May 2013
+- seascanarch: make sure timestamps are being calculated without
+  daylight savings time adjustments, since we're working in GMT.
+  Fixes issues with timestamps and scan duration, the latter wreaking
+  havoc with the tracker plugin.
+
 16 May 2013
 
 - added a script to fix (by truncation) blipmovies with "zero tails"
