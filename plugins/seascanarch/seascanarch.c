@@ -360,6 +360,7 @@ double make_timestamp (SEASCAN_REALTIME *t, int milliseconds) {
   tm.tm_mday = t->Day;
   tm.tm_mon = t->Month - 1;
   tm.tm_year = t->Year - 1900;
+  tm.tm_isdst = 0;
 
   return mktime(&tm) + (t->Milliseconds + milliseconds) / 1000.0;
 }
@@ -375,6 +376,7 @@ double make_timestamp2 (SYSTEMTIME *t) {
   tm.tm_mday = t->wDay;
   tm.tm_mon = t->wMonth - 1;
   tm.tm_year = t->wYear - 1900;
+  tm.tm_isdst = 0;
 
   return mktime(&tm) + (t->wMilliseconds ) / 1000.0;
 }
