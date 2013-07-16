@@ -47,9 +47,13 @@ grab_file_slice = function() {
   start = get.num.with.units(fields[1,1])
   len = get.num.with.units(fields[1,2])
 
-  fcon = file(f, "r+b")
-  seek(fcon, start)
-  data = readBin(fcon, raw(), n=len)
+  fcon = file(f, "rb")
+  if (len > 0)
+    seek(fcon, start)
+  else
+    seek(fcon, len, "end")
+  data = readBin(fcon, raw(), n=abs(len))
+  close(fcon)
   outf = sprintf("%s_slice@%.0f_%.0f", f, start, len)
   writeBin(data, outf)
 
