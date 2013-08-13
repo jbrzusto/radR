@@ -2,6 +2,7 @@
 #define _RADR_H
 //#define _LARGEFILE64_SOURCE
 //#define _FILE_OFFSET_BITS 64
+#include <stdint.h>
 #include "R.h"
 #define USE_RINTERNALS
 #include "Rinternals.h"
@@ -26,7 +27,7 @@
 typedef T_SAMPLE_TYPE t_sample;  // the type used to store a single sample from a pulse
 #define T_SAMPLE_TYPE_SIZE sizeof(T_SAMPLE_TYPE)
 
-typedef unsigned short t_scan_dim; // the type used to identify a single dimension of the scan
+typedef uint16_t t_scan_dim; // the type used to identify a single dimension of the scan
                                    // e.g. if unsigned short is used, then a scan can
                                    // be up to 65535 pulses by 65535 samples per pulse, memory
                                    // permitting.  FIXME:  this is used only occasionally

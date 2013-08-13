@@ -29,6 +29,8 @@
 ###                                                                                ###
 ######################################################################################
 
+as.real = as.double
+
 ## handle errors by dumping to a log file and/or the text console and/or the GUI console
 
 rss.handle.error <- function(extra.msg = "", last.dump=NULL) {

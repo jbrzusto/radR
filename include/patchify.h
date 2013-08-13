@@ -33,13 +33,13 @@
 #define PATCH_INVALID_CELL (-1)	 /* a value for a cell that does not occur in real data */
 #define OUT_OF_MEMORY -1
 
-typedef short t_dim;		/* the type used for linear dimensions (e.g. image width, height) */
-typedef int t_dim_2;		/* the type used for squared dimensions (e.g. number of patches)
+typedef int16_t t_dim;		/* the type used for linear dimensions (e.g. image width, height) */
+typedef int32_t t_dim_2;		/* the type used for squared dimensions (e.g. number of patches)
 				   this type should generally be twice as large as t_dim */ 
 typedef struct cell_run
   {
-    int next_run_offset;	 /* offset from this run to the next run in this patch */
-    int next_patch_offset;	 /* offset from this run to the first run in the next patch  */
+    int32_t next_run_offset;	 /* offset from this run to the next run in this patch */
+    int32_t next_patch_offset;	 /* offset from this run to the first run in the next patch  */
     t_dim_2 patch_id;		 /* runs in the same patch share this value; initially positive for all patches,
 				    negated in a patch's first run when the patch is deactivated; its absolute value is 
 				    the index of the first run in this patch (numbered starting at 1) */
@@ -74,9 +74,9 @@ typedef struct
 
 typedef struct
 {
-  int 			drop_singletons;  /* flag: if non-zero, keep singletons out of the patch list */
-  int 			use_diags;	  /* flag: extend patches along diagonals too? */
-  int 			vertical_wrap;	  /* flag: wrap patches across the bottom/top boundary */
+  int32_t		drop_singletons;  /* flag: if non-zero, keep singletons out of the patch list */
+  int32_t		use_diags;	  /* flag: extend patches along diagonals too? */
+  int32_t		vertical_wrap;	  /* flag: wrap patches across the bottom/top boundary */
   t_runbuf_info 	run_info;         /* geometry etc. of the run buffer */
   t_patch_cell 		fgd;  	          /* the foreground cell value */
   t_extmat 		runs;		  /* buffer of runs; runs are stored with this invariant:  the first run

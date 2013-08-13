@@ -1951,7 +1951,7 @@ void radR_fix_readline_problem(void) {
   // remove the tcltk-installed callback handler
   // this fixes the problem of readline being in a non-echo
   // state upon GUI-induced exit of radR
-  rl_callback_handler_remove();
+  //  rl_callback_handler_remove();
 }
 
 static void radRHandler(void)

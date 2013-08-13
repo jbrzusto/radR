@@ -729,11 +729,17 @@ gui.track.started = function(track, tid = track$index, state=track$state) {
                  state= if (np >= min.blips.to.show) "normal" else "hidden",
                  smooth=TRACKER$smooth.plotted.tracks,
                  tags=tags)
-  gui.tracks <<- rbind(gui.tracks, data.frame(tkid=tkid,
-                                              tid=tid,
-                                              state=state,
-                                              last.time=all.blips[track$points[np], COL.T][[1]],
-                                              np=np))
+  last.time = all.blips[track$points[np], COL.T][[1]]
+  
+  if (length(tkid) > 0 && length(tid) > 0 && length(state) > 0 && length(last.time) > 0 && length(np) > 0) {
+    gui.tracks <<- rbind(gui.tracks, data.frame(tkid=tkid,
+                                                tid=tid,
+                                                state=state,
+                                                last.time=last.time,
+                                                np=np))
+  } else {
+    cat(sprintf("gui.track.started error: %d, %d, %d, %f, %d\n", tkid, tid, state, last.time, np))
+  }
   return(dim(gui.tracks)[1])
 }       
 

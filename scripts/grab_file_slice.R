@@ -51,7 +51,7 @@ grab_file_slice = function() {
   if (len > 0)
     seek(fcon, start)
   else
-    seek(fcon, len, "end")
+    seek(fcon, len - start, "end")
   data = readBin(fcon, raw(), n=abs(len))
   close(fcon)
   outf = sprintf("%s_slice@%.0f_%.0f", f, start, len)

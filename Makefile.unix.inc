@@ -19,9 +19,9 @@ EXE_SUFFIX_unix =
 CP = $(shell which cp)
 HEAD = $(shell which head)
 ## version of R you are building against
-R_MAJOR_VERSION = 2
-R_MINOR_VERSION = 15
-R_MINOR_SUBVERSION = 2
+R_MAJOR_VERSION = 3
+R_MINOR_VERSION = 0
+R_MINOR_SUBVERSION = 0
 R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
 R = /usr/bin/R
@@ -30,7 +30,7 @@ BUILD_PLATFORM_LIBOPTS =
 LOCAL_INSTALL_DIR=~/Desktop/radR
 RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
 
-BUILD_PLATFORM_CCOPTS = -fPIC
+BUILD_PLATFORM_CCOPTS = -fPIC -pg
 BUILD_PLATFORM_DEP = 
 TARGET_PLATFORM_CONF_FILES = radR.unix.conf.R gui.unix.conf.R
 TARGET_PLATFORM_RADR_FILES = radR.xbm startup.unix.R

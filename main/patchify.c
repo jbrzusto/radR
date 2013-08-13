@@ -837,8 +837,7 @@ reactivate_all_patches(t_image image)
 SEXP
 get_active_runbuf (SEXP patchessxp)
 {
-  // return a newly allocated STRSXP with a single element consisting
-  // of a CHARSXP buffer containing a runbuf_info header followed by a
+  // return a newly allocated RAWSXP containing a runbuf_info header followed by a
   // sorted set of runs corresponding only to active patches, followed
   // by the number of active patch cells.  This buffer can be saved
   // and then restored into an image's runs buffer.  As for the
@@ -874,8 +873,7 @@ get_active_runbuf (SEXP patchessxp)
 
   // allocate return value
 
-  PROTECT(rv = allocVector(STRSXP, 1)); 
-  SET_STRING_ELT(rv, 0, PROTECT(allocVector(CHARSXP, sizeof(t_runbuf_info) + (image->run_info.num_active_runs + 2) * sizeof(t_cell_run)))); // "raw" vector of required size
+  PROTECT(rv = allocVector(RAWSXP, sizeof(t_runbuf_info) + (image->run_info.num_active_runs + 2) * sizeof(t_cell_run))); 
 
   // allocate temporary buffer
 
@@ -919,7 +917,7 @@ get_active_runbuf (SEXP patchessxp)
 
   // Pass 2:   copy the active runs, correcting their offset fields
 
-  rbi = (t_runbuf_info *) CHAR(STRING_ELT(rv, 0));
+  rbi = (t_runbuf_info *) RAW(rv);
   q = (t_cell_run *) (rbi + 1);
 
   // make the bogus first run point to the first real run
@@ -997,11 +995,11 @@ SEXP
 set_runbuf (SEXP patchessxp, SEXP runsxp)
 {
   // Set the run/patch buffer of the image wrapped by patchessxp to the
-  // value contained in the 1st item of the character vector runsxp
+  // value contained in the raw vector runsxp.
   // If runsxp == NULL, then we mark the image's run buffer as empty.
   //
   // patchessxp: EXTPTRSEXP pointing to a t_image struct
-  // runssxp:    1 element STRSXP who
+  // runssxp:    RAWSXP of run data
 
   t_image image;
   t_cell_run *run;
@@ -1009,7 +1007,7 @@ set_runbuf (SEXP patchessxp, SEXP runsxp)
 
   image = (t_image) EXTPTR_PTR(patchessxp);
   if (runsxp != R_NilValue) {
-    rbi = (t_runbuf_info *) CHAR(STRING_ELT(runsxp, 0));
+    rbi = (t_runbuf_info *) RAW(runsxp);
     
     run = (t_cell_run *) (rbi + 1);
     
@@ -1042,7 +1040,7 @@ get_indexes_from_runbuf (SEXP runsxp)
   int *p;
   int i;
 
-  rbi = (t_runbuf_info *) CHAR(STRING_ELT(runsxp, 0));
+  rbi = (t_runbuf_info *) RAW(runsxp);
   run = 1 + (t_cell_run *) (rbi + 1); // skip first bogus run
   num_cols = rbi->num_cols;
 
@@ -1067,7 +1065,7 @@ get_runbuf_info (SEXP runsxp)
   t_runbuf_info *rbi;
   SEXP rv;
 
-  rbi = (t_runbuf_info *) CHAR(STRING_ELT(runsxp, 0));
+  rbi = (t_runbuf_info *) RAW(runsxp);
   rv = allocVector(INTSXP, 2);
   INTEGER(rv)[0] = rbi->num_patches;
   INTEGER(rv)[1] = rbi->num_cells;
@@ -1082,9 +1080,9 @@ index_extmat_by_runbuf (SEXP matsxp, SEXP runsxp)
   // string
   //
   // matsxp: EXTPTRSXP wrapping an extmat
-  // runsxp: STRSXP string scalar containing the results of a call to get_active_runbuf
+  // runsxp: RAWSXP containing the results of a call to get_active_runbuf
   //
-  // returns: string scalar containing the raw data from the extmat selected
+  // returns: raw vector containing the raw data from the extmat selected
   //          by the runs in the run buffer
 
   SEXP rv;
@@ -1096,7 +1094,7 @@ index_extmat_by_runbuf (SEXP matsxp, SEXP runsxp)
   char *p, *q;
 
   mat = SEXP_TO_EXTMAT(matsxp);
-  rbi = (t_runbuf_info *) CHAR(STRING_ELT(runsxp, 0));
+  rbi = (t_runbuf_info *) RAW(runsxp);
   if (mat->cols != rbi->num_cols || mat->rows != rbi->num_rows)
     error("index_extmat_by_runbuf: dimensions of matrix (%d, %d) and runbuf (%d, %d) do not match", mat->rows, mat->cols, rbi->num_rows, rbi->num_cols);
 
@@ -1105,10 +1103,9 @@ index_extmat_by_runbuf (SEXP matsxp, SEXP runsxp)
   ncol = mat->cols;
 
   // allocate return value
-  PROTECT(rv = allocVector(STRSXP, 1));
-  SET_STRING_ELT( rv, 0, allocVector(CHARSXP, rbi->num_cells * m));
+  PROTECT(rv = allocVector(RAWSXP, rbi->num_cells * m));
 
-  p = CHAR(STRING_ELT(rv, 0));
+  p = (char *) RAW(rv);
   q = (char *) mat->ptr;
 
   for (runmax = run + rbi->num_runs; run < runmax; ++run) {
@@ -1128,8 +1125,8 @@ assign_extmat_by_runbuf (SEXP matsxp, SEXP runsxp, SEXP valsxp)
   // string
   //
   // matsxp: EXTPTRSXP wrapping an extmat
-  // runsxp: STRSXP string scalar containing the results of a call to get_active_runbuf
-  // valsxp: string scalar containing the raw data to be stored in the slots of the extmat
+  // runsxp: RAWSXP raw vector containing the results of a call to get_active_runbuf
+  // valsxp: RAWSXP raw vector containing the raw data to be stored in the slots of the extmat
   //         determined by runsxp
   // 
   // returns NULL
@@ -1143,7 +1140,7 @@ assign_extmat_by_runbuf (SEXP matsxp, SEXP runsxp, SEXP valsxp)
 
 
   mat = SEXP_TO_EXTMAT(matsxp);
-  rbi = (t_runbuf_info *) CHAR(STRING_ELT(runsxp, 0));
+  rbi = (t_runbuf_info *) RAW(runsxp);
 
   if (mat->cols != rbi->num_cols || mat->rows != rbi->num_rows)
     error("assign_extmat_by_runbuf: dimensions of matrix (%d, %d) and runbuf (%d, %d) do not match", mat->rows, mat->cols, rbi->num_rows, rbi->num_cols);
@@ -1152,10 +1149,10 @@ assign_extmat_by_runbuf (SEXP matsxp, SEXP runsxp, SEXP valsxp)
   m = mat->size;
   ncol = mat->cols;
 
-  if (LENGTH(STRING_ELT(valsxp, 0)) != m * rbi->num_cells)
-    error("assign_extmat_by_runbuf: RHS holds %d bytes but runbuf specifies %d cells of size %d = %d bytes total", LENGTH(STRING_ELT(valsxp, 0)), rbi->num_cells, m, m * rbi->num_cells);
+  if (LENGTH(valsxp) != m * rbi->num_cells)
+    error("assign_extmat_by_runbuf: RHS holds %d bytes but runbuf specifies %d cells of size %d = %d bytes total", LENGTH(valsxp), rbi->num_cells, m, m * rbi->num_cells);
 
-  p = CHAR(STRING_ELT(valsxp, 0));
+  p = (char *) RAW(valsxp);
   q = (char *) mat->ptr;
 
   for (runmax = run + rbi->num_runs; run < runmax; ++run) {
@@ -1165,11 +1162,3 @@ assign_extmat_by_runbuf (SEXP matsxp, SEXP runsxp, SEXP valsxp)
   }
   return R_NilValue;
 }
-
-    
-  
-
-  
-  
-
-

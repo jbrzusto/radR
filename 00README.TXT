@@ -1,3 +1,21 @@
+
+14 May 2013
+- retooled seascanarch plugin to handle archives with some segments
+  gated, others not. You can now seek to arbitrary points in an
+  ungated archive, although the GUI for this is somewhat broken:
+  clicking to the left or right of the play window slider doesn't
+  advance a single sweep, but only a "chunk".  It may take dozens of
+  such clicks to move forward or backward by a full sweep.  The play
+  and play-1 buttons *do* advance correctly by one full sweep at a
+  time. (revised from 1 May 2013, which omitted part of the patch)
+
+Note: the USRP plugin in this version defaults to using only ACP pulses
+to delimit sweeps, because of issues we've had with wonky ARP (Heading)
+lines.  To make your USRP plugin use the ARP (Heading) line as usual,
+add this line to your antenna_db/XXX_antenna.R file:
+  
+     use_acp_for_sweeps = 0
+
 28 June 2012
 - declutter plugin now handles tilter
 - new scripts: 
