@@ -71,6 +71,8 @@ if (length(bms) == 0) {
           ## which are timestamp and duration
           i.timestamp = 1 + which(nsin == "timestamp")
           i.duration = 1 + which(nsin == "duration")
+          if (length(i.timestamp) == 0 || length(i.duration) == 0)
+            stop("Couldn't find timestamp and/or duration field in sweep ", i, " which has scan info diff ", capture.output(sin), "\n")
           dur = 1000 * as.numeric(sin[[i.timestamp]] - last.ts)
           totdur = totdur + dur
           ## correct duration of previous scan
