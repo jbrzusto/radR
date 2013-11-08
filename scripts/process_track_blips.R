@@ -102,7 +102,7 @@ if (! exists("blipfun")) {
 }
 
 #### JMB: open the output file
-MYFILE = file(subst(".csv$", "_blips.csv", trackfile), "w")
+MYFILE = file(sub(".csv$", "_blips.csv", trackfile), "w")
 #### JMB: write the header line
 cat ("timestamp,trackNo,numPixels,area\n", file=MYFILE)
 
