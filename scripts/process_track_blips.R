@@ -1,83 +1,19 @@
 ## given a blipmovie and a file of tracks,
 ## apply a function to every blip in every track
 
-process_track_blips = function(fb, ft, blipfun) {
-  ## remove interference from event loop (linux)
-  rss.remove.event.loop()
-  
-  ## not sure why the following line is needed
-  num.sources <<- 1
-  
-  tracks = read.csv(ft, as.is=TRUE)
-  ## sort tracks by scan, so we don't process any scan
-  ## more than once.
-  tracks = tracks[order(tracks$scan.no, tracks$blip.no),]
+## First, a function to lookup blip given the x, y coordinates
+## of its centroid.  There is a possibility of ambiguity
+## here, as two nested blips might have the same centroid, but this
+## should be extremely rare, and in any case the outer such blip, at least,
+## is clearly not a point target.
 
-  ## open the blipmovie by getting a "port" object
-  ## from the blipmovie plugin
-  
-  bm = BLIPMOVIE$get.ports()[[1]]
+## There are generally two cases:
+##  - the centroid is actually inside the blip (usually the case for point-sources, unless
+##    two nearby point-sources have been incorrectly joined into a single blip)
+##    In this case, use the faster rss.patch.at.sample.pulse() method
+##  - the centorid is not inside the blip (curvy shape); in this case, search the
+##    RSS$patches table directly
 
-  ## configure its filename
-  
-  config(bm, filename = fb)
-
-  ## start it up.
-  start.up(bm)
-
-  ## pretend this is the source; some code expect it
-  RSS$source = bm
-
-  ## get the table of contents
-  toc = get.contents(bm)
-
-  ## process the first scan to get scan info 
-  seek.scan(bm, 1, 1)
-  rss.get.scan()
-
-  ## scan.no is only well-defined for files with a single segment (run)
-  
-  if (nrow(toc) > 1)
-    warning("Table of contents shows more than one segment in file ", fb, ".\nOnly using first one.\n")
-
-
-  ## a function to process all blips in one scan
-  ## i are the indexes of tracks.csv from the same scan
-  
-  doScan = function(i) {
-      ## i is the set of rows in tracks corresponding to a single
-      ## scan.no
-       
-      ## seek to the scan and process it (this loads blips
-      ## and applies curent filtering criteria; these
-      ## must match those in effect when the tracker
-      ## was run, otherwise the wrong blips will be selected.
-
-      seek.scan(bm, 1, tracks$scan.no[i[1]])
-      rss.get.scan()
-      rss.process.patches()
-
-      if (length(RSS$blips) == 0)
-        return()
-      
-      ## process each required blip from this scan
-
-      for (j in i) {
-        coord = rss.patch.at.sample.pulse(rss.xy.to.sp(tracks$x[j], tracks$y[j]))
-        blipfun(coord, RSS$scan.mat[coord], tracks$timestamp[j], tracks$track.no[j])
-      }
-    }
-
-  ## now apply the doScan function to each scan where track blips were found
-  invisible(tapply(1:nrow(tracks), tracks$scan.no, doScan))
-
-  shut.down(bm)
-
-  RSS$source = NULL
-  
-  ## restore event loop (linux)
-  rss.install.event.loop()
-}
 
 if (!exists("trackfile"))
   trackfile <<- ""
@@ -110,6 +46,10 @@ fb.guess = sub(".csv$", ".bm", fb.guess)
 if (!file.exists(fb.guess))
   fb.guess = blipfile
 
+if (fb.guess == "") {
+  fb.guess = trackfile
+}
+
 fb = rss.gui("FILE_DIALOG",
   mode = "open.file",
   title = "Choose the blipmovie file",
@@ -128,17 +68,44 @@ blipfile <<- fb
 ## apply a function called blipfun to each blip
 ## this file defines blipfun as
 
+
+
 if (! exists("blipfun")) {
   blipfun = function(sp, v, t, tn) {
-    ## plot 2-d shape of blip in space
-    try (
-      plot(gui.tx.matrix.to.spatial(sp)[,1:2],
-           xlab="x",
-           ylab="y",
-           main=sprintf("At %s (track %d) blip has %d pixels\n", strftime(as.POSIXlt(structure(t,class="POSIXct")), "%Y-%m-%d %H:%M:%OS3"), tn, nrow(sp))
-           )
-      )
+#### adding these parameters into blipfun: theta ,phi ,dbm, max,etc.
+#### I don't know how you obtain sp,v, t, tn. Where are they specified?
+
+#### JMB: the rest of the code in this file has the job of working out what
+#### the sp, v, t, and tn are for each blip in each track, and calls (your) blipfun
+#### with these values, once per blip per track.  The job of your blipfun
+#### is to do something with these values.
+
+####   try (
+####     write.table((sp)[,1:2], file=MYFILE, sep=",")
+####       )
+        
+#### This only extracts information from the very last blip in the tracks.csv
+#### not sure if I should run a "for loop" looping through each pixel row 
+#### within the blipfun, to obtain all information from every pixel of every blip
+
+#### JMB: write.csv writes its first arg to a file, but does not append.
+#### it's intended for writing a large dataframe to a file all at once, not incrementally.
+#### To write incrementally, you need to open the file outside of this function,
+#### then use e.g. cat(stuff, file=MYFILE)
+#### then close the file when finished
+#### e.g. this writes the timestamp, track number, number of samples (which is the number of rows
+#### in the matrix sp) and the blip area
+
+    cat(sprintf("%.3f,%d,%d,%.1f\n", t, tn, nrow(sp), RSS$patches$area[attr(sp, "index")[1]]), file=MYFILE)
   }
 }
 
-process_track_blips(fb, ft, blipfun)
+#### JMB: open the output file
+MYFILE = file(subst(".csv$", "_blips.csv", trackfile), "w")
+#### JMB: write the header line
+cat ("timestamp,trackNo,numPixels,area\n", file=MYFILE)
+
+processTrackBlips(fb, ft, blipfun)
+
+#### JMB: close the output file
+close(MYFILE)
