@@ -14,6 +14,7 @@
 ##  - the centorid is not inside the blip (curvy shape); in this case, search the
 ##    RSS$patches table directly
 
+source("utils/processTrackBlips.R")
 
 if (!exists("trackfile"))
   trackfile <<- ""
