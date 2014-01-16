@@ -24,7 +24,7 @@ save.blips.key  <- "s"
 
 ## default filename for blip export
 
-default.blips.filename <- "./blips.RData"
+default.blips.filename <- "./blips.rds"
 
 ## Convert raw seascan sample value to received power at input
 ## waveguide, in dbm.  Assumes seascan gain was 255.  Default
@@ -54,6 +54,8 @@ reset.retained.blips <- function() {
   blips$samp.theta <<- list()
   blips$samp.phi <<- list()
   blips$samp.dbm <<- list()
+  blips$samp.iangle <<- list()
+  blips$samp.irange <<- list()
 }
   
 c("x", "y", "z", "t", "ns", "area", "int", "max", "aspan", "rspan",  "perim", "range")
@@ -75,10 +77,10 @@ retain.blip.at.sample.pulse <- function(sp) {
   ## get sample data in dbm (using the appropriate seascan "offset" parameter)
   ## You can remove the 2nd parameter in this call to use the default seascan offset of 61.
   
-  dbm <- sample.to.dbm(RSS$scan.mat[patch], RSS$scan.info$antenna.plugins$seascan$offset)
+   dbm <- sample.to.dbm(RSS$scan.mat[patch], RSS$scan.info$antenna.plugins$seascan$offset)
 
   n.blips <<- n.blips + 1
-  blips[n.blips,] <<- c(row, list(samp.r = list(sph[,"r"]), samp.theta = list(sph[,"theta"]), samp.phi = list(sph[,"phi"]), dbm = list(dbm)))
+  blips[n.blips,] <<- c(row, list(samp.r = list(sph[,"r"]), samp.theta = list(sph[,"theta"]), samp.phi = list(sph[,"phi"]), dbm = list(dbm), iangle=list(patch[,2]), irange=list(patch[,1])))
 
   ## tell user point was saved
   rss.gui("SET_POINTER_INFO", sprintf("\nRetained blip # %d\n", n.blips))
@@ -94,10 +96,10 @@ save.retained.blips <- function() {
   file <- rss.gui("FILE_DIALOG",
                   mode = "save",
                   title = sprintf("Choose file to hold %d blips", n),
-                  types = list(".Rdata" = "R Data", ".*" = "All files"),
+                  types = list(".rds" = "R Data Set", ".*" = "All files"),
                   init.file = default.blips.filename)
   if (length(file)) {
-    save(file=file, list="blips")
+    saveRDS(blips, file)
     reset.retained.blips()
     rss.gui("SET_POINTER_INFO", sprintf("\nSaved %d blips to file %s\n", n, file))
     default.blips.filename <<- file
