@@ -115,6 +115,13 @@ get.menus = function() {
                  )
                ),
              plugin = list(
+               "Connect Manually to USRP" = function() {
+                 connect.usrp(port)
+                 if (port$is.open)
+                   rss.gui("POPUP_MESSAGEBOX", "Connected to USRP", "You are connected to the USRP. Controls on the USRP menu are now live.", time.to.live=15)
+                 else
+                   rss.gui("POPUP_MESSAGEBOX", "Not connected to USRP", "Unable to connect to the USRP.  USRP menu controls won't do anything.", time.to.live=15)
+               },
                "Antenna selection..." = list(
                  "dyn.menu",
                  function() {
@@ -217,6 +224,38 @@ get.menus = function() {
                      on.set = function(x) config(port, trig_delay = x),
                      set.or.get = "trig_delay.gui"
                      ),
+               list (gain = "gauge",
+                     label = "Frontend DAC A",
+                     range = c(0, 4095),
+                     increment = 1,
+                     value = port$config$frontend.dac[1],
+                     on.set = function(x) { frontend.dac[1] <<- x; config(port, front_end_dac = dac_vec_to_double(frontend.dac))},
+                     set.or.get = "front_end_dac_a.gui"
+                     ),
+               list (gain = "gauge",
+                     label = "Frontend DAC B",
+                     range = c(0, 4095),
+                     increment = 1,
+                     value = port$config$frontend.dac[2],
+                     on.set = function(x) { frontend.dac[2] <<- x; config(port, front_end_dac = dac_vec_to_double(frontend.dac))},
+                     set.or.get = "front_end_dac_b.gui"
+                     ),
+               list (gain = "gauge",
+                     label = "Frontend DAC C",
+                     range = c(0, 4095),
+                     increment = 1,
+                     value = port$config$frontend.dac[3],
+                     on.set = function(x) { frontend.dac[3] <<- x; config(port, front_end_dac = dac_vec_to_double(frontend.dac))},
+                     set.or.get = "front_end_dac_c.gui"
+                     ),
+               list (gain = "gauge",
+                     label = "Frontend DAC D",
+                     range = c(0, 4095),
+                     increment = 1,
+                     value = port$config$frontend.dac[4],
+                     on.set = function(x) { frontend.dac[4] <<- x; config(port, front_end_dac = dac_vec_to_double(frontend.dac))},
+                     set.or.get = "front_end_dac_d.gui"
+                     ),
                "---",
                "Save signal parameters to antenna database..." = save.ant.params,
                "Reload signal parameters from antenna database" = reload.ant.params
@@ -254,6 +293,10 @@ load.config.from.db = function() {
   config(port, p)
   vid_gain.gui(port$config$vid_gain)
   trig_delay.gui(port$config$trig_delay)
+  front_end_dac_a.gui(dac_double_to_vec(port$config$front_end_dac)[1])
+  front_end_dac_b.gui(dac_double_to_vec(port$config$front_end_dac)[2])
+  front_end_dac_c.gui(dac_double_to_vec(port$config$front_end_dac)[3])
+  front_end_dac_d.gui(dac_double_to_vec(port$config$front_end_dac)[4])
 }
 
 get.current.params = function() {
@@ -383,21 +426,11 @@ globals = list (
     return (extmat)
   },
 
-  start.up.usrp = function(port, ...) {
-    ## connect to the USRP
-
-    ## set some sensible values for digitizing parameters
-
-    config(port,
-           counting   = 0, ## not interleaving debug counter
-           all_pulses = 0, ## getting gated data, rather than all pulses,
-           own_thread = 1, ## yes, getter runs in background
-           bbprx_mode = 0  ## normal mode: a chunk of video data is digitized for each trigger pulse
-           )
-
+  connect.usrp = function(port) {
+    okay = FALSE
     repeat {
       if (port$is.open)
-        break
+        return (TRUE)
       id <- rss.gui(POPUP_MESSAGEBOX, "Opening USRP device", sprintf("Please wait while I open the %s.\nThis will take up to 5 seconds...", port$name), time.to.live = 5)
 
       ## load configuration items from the antenna database
@@ -406,7 +439,7 @@ globals = list (
 
       ## start the usrp digitizing
       
-      rv <- .Call("start_up", port$urp, port$config$hw.filenames, PACKAGE=MYCLASS)
+      rv <- .Call("connect", port$urp, port$config$hw.filenames, PACKAGE=MYCLASS)
 
       rss.gui("DELETE_MESSAGEBOX", id)
 
@@ -417,11 +450,37 @@ globals = list (
           shut.down(port, force=TRUE) ## make sure we try redetect the device
           next
         }
+      } else {
+        port$is.open <- TRUE
       }
-        
-     id <- rss.gui("POPUP_MESSAGEBOX", "Checking for trigger", "Please wait while I verify that the USRP is receiving radar trigger pulses")
-     okay <- .Call("have_trigger", port$urp, PACKAGE=MYCLASS)
-     rss.gui("DELETE_MESSAGEBOX", id)
+    }
+    return (FALSE)
+  },
+    
+  start.up.usrp = function(port, ...) {
+    ## connect to the USRP
+    if (!connect.usrp(port))
+      return (NULL)
+    
+    ## set some sensible values for digitizing parameters
+    
+    config(port,
+           counting   = 0, ## not interleaving debug counter
+           all_pulses = 0, ## getting gated data, rather than all pulses,
+           own_thread = 1, ## yes, getter runs in background
+           bbprx_mode = 0  ## normal mode: a chunk of video data is digitized for each trigger pulse
+           )
+
+    rv <- .Call("start_up", port$urp, package=MYCLASS)
+    if (!rv)  {
+      rss.gui("POPUP_MESSAGEBOX", "Couldnt not startup USRP", "Strange - I couldn't start up the USRP to which you're connected.")
+      return(NULL)
+    }
+    
+    repeat {
+      id <- rss.gui("POPUP_MESSAGEBOX", "Checking for trigger", "Please wait while I verify that the USRP is receiving radar trigger pulses")
+      okay <- .Call("have_trigger", port$urp, PACKAGE=MYCLASS)
+      rss.gui("DELETE_MESSAGEBOX", id)
       if (okay) {
         port$is.open <- TRUE
         break
@@ -453,6 +512,29 @@ globals = list (
 
 hooks = list(
   ) ## end of hooks
+
+dac_double_to_vec = function(x) {
+  ## convert a double to an array of 4x 12-bit integers
+  ## lowest 12 bits of mantissa -> out[1]
+  ## ...
+  ## bits 36..47 of mantissa -> out[4]
+
+  out = integer(4)
+  out[1] = as.integer(x %% 4096)
+  out[2] = as.integer((x / 4096) %% 4096)
+  out[3] = as.integer((x / 4096^2) %% 4096) 
+  out[4] = as.integer((x / 4096^3) %% 4096)
+  return(out)
+}
+
+dac_vec_to_double = function(x) {
+  ## convert an array of 4x 12-bit integers
+  ## to a double.
+  ## x[1] -> bits 11..0 of the mantissa
+  ## ...
+  ## x[4] -> bits 47..36 of the mantissa
+  return (x[1] + 4096*(x[2] + 4096 * (x[3] + 4096 * x[4])))
+}
 
 ## additional plugin variables
 
@@ -490,7 +572,8 @@ usrp.param.names = c (
   "bbprx_mode",
   "n_bufs",
   "acps_per_sweep",
-  "use_acp_for_sweeps"
+  "use_acp_for_sweeps",
+  "front_end_dac"
   )
 
 ## additional configuration parameters that are not seen by the usrp

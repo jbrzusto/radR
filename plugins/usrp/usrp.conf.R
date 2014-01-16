@@ -65,3 +65,6 @@ n_bufs = 3
 ## where PLATFORM is unix or windows
 
 hw.filenames = c("usrp_bbprx.rbf", "std.ihx")
+
+## front-end-board DAC values for A, B, C, D:
+frontend.dac = c(0, 0, 0, 0)
