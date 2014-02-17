@@ -141,10 +141,10 @@ have_trigger (SEXP usxp)
 }
 
 SEXP 
-connect (SEXP usxp, SEXP filenames)
+connect (SEXP usxp, SEXP filenames, SEXP check_for_daughterboard)
 {
   URP me = ensure_URP(usxp);
-  return ScalarInteger(URP_connect(me, CHAR(STRING_ELT(filenames, 0)), CHAR(STRING_ELT(filenames, 1))));
+  return ScalarInteger(URP_connect(me, CHAR(STRING_ELT(filenames, 0)), CHAR(STRING_ELT(filenames, 1)), INTEGER(check_for_daughterboard)[0]));
 }
 
 SEXP 
@@ -333,7 +333,7 @@ R_CallMethodDef usrp_call_methods[]  = {
   MKREF(have_trigger	, 1),
   MKREF(set_params	, 3),
   MKREF(shut_down	, 1),
-  MKREF(connect	        , 2),
+  MKREF(connect	        , 3),
   MKREF(start_up	, 1),
   {NULL, NULL, 0}
 };

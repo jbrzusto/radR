@@ -439,7 +439,7 @@ globals = list (
 
       ## start the usrp digitizing
       
-      rv <- .Call("connect", port$urp, port$config$hw.filenames, PACKAGE=MYCLASS)
+      rv <- .Call("connect", port$urp, port$config$hw.filenames, check_for_daughterboard, PACKAGE=MYCLASS)
 
       rss.gui("DELETE_MESSAGEBOX", id)
 

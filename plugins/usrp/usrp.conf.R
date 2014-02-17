@@ -68,3 +68,8 @@ hw.filenames = c("usrp_bbprx.rbf", "std.ihx")
 
 ## front-end-board DAC values for A, B, C, D:
 frontend.dac = c(0, 0, 0, 0)
+
+## DANGER: if the following is FALSE, omit the start-up check for
+## an LFRX daughterboard in the USRP
+
+check_for_daughterboard = FALSE
