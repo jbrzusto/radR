@@ -1,10 +1,17 @@
 Package: extmat
 Type: Package
-Title: External matrices with elements of fixed but arbitrary size and no R-side copying.
+Title: External matrices with elements of fixed but arbitrary size and
+        no R-side copying.
 Version: 1.0
 Date: 2006-11-26
 Author: John Brzustowski
 Requires: methods
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
-Description: For large matrices with elements of fixed size that you don't want R to copy.  Access to data is via subclassed indexing.  Integer and floating point types beyond those native to R, as well as arbitrary fixed size "user" types are allowed.  Extmats created by R code use the R memory manager.
+Description: For large matrices with elements of fixed size that you
+        don't want R to copy.  Access to data is via subclassed
+        indexing.  Integer and floating point types beyond those native
+        to R, as well as arbitrary fixed size "user" types are allowed.
+        Extmats created by R code use the R memory manager.
 License: GPL
+Packaged: Fri Jul 30 09:53:44 2010; SYSTEM
+Built: R 2.5.1; i386-pc-mingw32; 2010-07-30 09:53:45; windows

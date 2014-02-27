@@ -68,9 +68,6 @@ update = function(TR, blips, i.blips, time.now, is.preview) {
 
   if(length(i.blips) > 0) {
     actual.tracks <- .Call("which_slots_full", TR$tracks)
-###.if $DEBUG    
-    gui.print.cons("Have " %:% length(actual.tracks) %:% " active tracks")
-###.endif    
     num.tracks <- length(actual.tracks)
     num.blips <- dim(blips)[1]
     if (num.tracks > 0) {
@@ -132,19 +129,10 @@ update = function(TR, blips, i.blips, time.now, is.preview) {
     ## track, or start a new track with it
     for (i in seq(along=which.track))
       if (!is.na(which.track[i])) {
-###.if $DEBUG
-        gui.print.cons("About to call add.blip.to.track")
-###.endif
         TR$add.blip.to.track(i.blips[i], actual.tracks[which.track[i]], expiry=all.blips[i.blips[i], COL.T] + track.stale.time) 
       } else {
-###.if $DEBUG
-        gui.print.cons("About to call start.new.track")
-###.endif
         TR$start.new.track(i.blips[i], expiry = all.blips[i.blips[i], COL.T] + track.stale.time)
       }
-###.if $DEBUG
-    gui.print.cons("Done update")
-###.endif
   }
 }
 

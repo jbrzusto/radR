@@ -6,5 +6,14 @@ Date: 2007-08-17
 Author: John Brzustowski
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Depends: methods
-Description: Creates file-backed data.frame like objects.  Data are inserted/extracted/deleted using indexing and indexed assignment.  Allowed column types are logical, integer, real, complex, and character.  Character columns are given maximum string lengths (from 4 to 512) at creation time.  Assigning to non-contiguous parts of the frame fills intervening rows with NA values, extending the file.  Deleting rows from the end of a bigframe truncates the associated file.
+Description: Creates file-backed data.frame like objects.  Data are
+        inserted/extracted/deleted using indexing and indexed
+        assignment.  Allowed column types are logical, integer, real,
+        complex, and character.  Character columns are given maximum
+        string lengths (from 4 to 512) at creation time.  Assigning to
+        non-contiguous parts of the frame fills intervening rows with
+        NA values, extending the file.  Deleting rows from the end of a
+        bigframe truncates the associated file.
 License: GPL
+Packaged: Tue Jun 21 16:31:54 2011; SYSTEM
+Built: R 2.5.1; i386-pc-mingw32; 2011-06-21 16:31:55; windows

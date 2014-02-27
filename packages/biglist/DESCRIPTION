@@ -7,5 +7,12 @@ Author: John Brzustowski
 Depends: methods, bigframe
 LinkingTo: bigframe
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
-Description: Creates file-backed lists of arbitrary R objects, indexed by integers.  Elements can be assigned in any order without space/time penalties.  This package is intended for keeping persistent lists of items that are rarely changed after being created.  WARNING:  changing or deleting biglist items after they are created leaves holes in the disk file.
+Description: Creates file-backed lists of arbitrary R objects, indexed
+        by integers.  Elements can be assigned in any order without
+        space/time penalties.  This package is intended for keeping
+        persistent lists of items that are rarely changed after being
+        created.  WARNING: changing or deleting biglist items after
+        they are created leaves holes in the disk file.
 License: GPL
+Packaged: Fri Jul 30 09:53:32 2010; SYSTEM
+Built: R 2.5.1; i386-pc-mingw32; 2010-07-30 09:53:33; windows

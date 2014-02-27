@@ -113,9 +113,6 @@ update = function(TR, blips, i.blips, time.now, is.preview) {
     .Call("set_max_dist", mfcp, max.dist, PACKAGE="multiframecorr")
   }
   .Call("update", mfcp, environment(), blips$x, blips$y, blips$z, blips$t, i.blips, time.now, is.preview, PACKAGE="multiframecorr")
-###.if $DEBUG
-  gui.print.cons("TR$tracks has " %:% .Call("num_full_slots", TR$tracks) %:% "items")
-###.endif
   if (is.preview && new.mfcp) {
     .Call("destroy", mfcp, PACKAGE="multiframecorr")
     mfcp <<- NULL
@@ -282,19 +279,10 @@ gain.pp = function (u, v, is.cons) {
   ## 1 minus the scaled distance between the points, scaled by 1 - alpha
   ## (i.e. term 2 of Eqn. (4) of [1])
   
-###.if $DEBUG  
-  print("gain.pp")
-  str(u)
-  str(v)
-###.endif
   dist <- sqrt(apply((v[1:3, , drop=FALSE] - u[1:3]) ^ 2, 2, sum))
 
   rv <- (1 - alpha) * (1 - dist / max.dist) - (!is.cons) * eps
 
-###.if $DEBUG
-  if (any (v[4, , drop=FALSE] - u[4] < 0))
-    stop("mfc: gain.pp found negative dt")
-###.endif
   
   ## If the implied speed between two points is larger than
   ## track.max.speed, force it to zero, which will effectively bar
@@ -303,9 +291,6 @@ gain.pp = function (u, v, is.cons) {
 
   rv[dist / (v[4, , drop=FALSE] - u[4]) > (track.max.speed / 3.6)] <- 0.0
 
-###.if $DEBUG  
-  str(rv)
-###.endif
 
   return (rv)
 }
@@ -343,12 +328,6 @@ gain.tp = function (u, v, state, is.cons) {
   
   ##     where | | is vector magnitude and . is dot product
 
-###.if $DEBUG  
-  print("gain.tp")
-  str(u)
-  str(v)
-  str(state)
-###.endif
 
   uxyz <- u[1:3]
   ut <- u[4]
@@ -357,10 +336,6 @@ gain.tp = function (u, v, state, is.cons) {
 
   dt <- vt - ut
 
-###.if $DEBUG
-  if (any (dt < 0))
-    stop("mfc: gain.tp found negative dt")
-###.endif
 
   dist <- sqrt(apply((vxyz - uxyz)^2, 2, sum))
 
@@ -390,9 +365,6 @@ gain.tp = function (u, v, state, is.cons) {
   ## will not be made
   
   rv[(rv < min.gain) | too.fast] <- 0.0
-###.if $DEBUG  
-  str(rv)
-###.endif
 
   return (rv)
 }
@@ -414,10 +386,6 @@ new.state = function (u, state, v) {
   ## Just calculate the apparent velocities in x, y, and z
   ## (the 4th coordinate is t)
   
-###.if $DEBUG  
-  if (v[4] <= u[4])
-    stop("mfc: new.state found non-positive dt")
-###.endif
   return ((v[1:3]-u[1:3]) / (v[4]-u[4]))
 }
   

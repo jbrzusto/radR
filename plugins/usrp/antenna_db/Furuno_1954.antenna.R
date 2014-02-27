@@ -12,20 +12,20 @@ desc               = "Furuno FR1954/FR1964 C-BB attached through version 2.0 of 
 vid_negate         = 0
 
 trig_gain          = 0
-trig_thresh_excite = 40
-trig_thresh_relax  = 20
+trig_thresh_excite = 20
+trig_thresh_relax  = 40
 trig_latency       = 0
 trig_delay         = 0
 
 arp_gain           = 0
-arp_thresh_excite  = 0
-arp_thresh_relax   = 100
+arp_thresh_excite  = 20
+arp_thresh_relax   = 40
 ## latency: wait at least 1.0 msec before allowing another ARP pulse (debouncing)
 arp_latency        = 64000
 
 acp_gain           = 0
-acp_thresh_excite  = 0
-acp_thresh_relax   = 100
+acp_thresh_excite  = 20
+acp_thresh_relax   = 40
 ## latency: wait at least 0.1 msec before allowing another ARP pulse (debouncing)
 acp_latency        = 6400
 

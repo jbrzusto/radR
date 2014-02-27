@@ -1,16 +1,19 @@
 Package: strictenv
 Type: Package
-Title: A Wrapper Class for Environments to Provide
-  Strict Symbol Lookup and Binding Semantics
+Title: A Wrapper Class for Environments to Provide Strict Symbol Lookup
+        and Binding Semantics
 Version: 1.0
 Date: 2006-11-20
 Author: John Brzustowski
 Maintainer: John Brzustowski <jbrzusto@fastmail.fm>
 Description: This simple class enforces explicit creation of new
- symbols in an environment.  Attempting to get or set the value of a
- non-existent symbol generates an error rather than the default R
- behaviour.  Operators are provided for explictly creating and binding
- new symbols.  Symbols are matched exactly (i.e. no partial matching).
- Using a strictenv in place of an environment may ease debugging.
+        symbols in an environment.  Attempting to get or set the value
+        of a non-existent symbol generates an error rather than the
+        default R behaviour.  Operators are provided for explictly
+        creating and binding new symbols.  Symbols are matched exactly
+        (i.e. no partial matching). Using a strictenv in place of an
+        environment may ease debugging.
 License: GPL version 2.
 SaveImage: yes
+Packaged: Fri Jul 30 09:53:57 2010; SYSTEM
+Built: R 2.5.1; ; 2010-07-30 09:53:58; windows

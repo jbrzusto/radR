@@ -1006,9 +1006,6 @@ gui.reset.slider <- function(new.source=FALSE) {
   ## we have changed to a different run (i.e. a different
   ## item from the playlist has been selected)
   
-###.if $DEBUG
-  print("Resetting slider.")
-###.endif  
 
   if (isTRUE(RSS$source$is.seekable) || new.source) {
     force <- 1 == Tclint(".play.slider get")
@@ -1025,9 +1022,6 @@ gui.new.slider.pos <- function() {
   ## of a user event, or of the event loop's call to SCAN_ADVANCE
 
   RSS$new.scan.index <- Tclint(".play.slider get")
-###.if $DEBUG
-  print("New scan index is " %:% RSS$new.scan.index)
-###.endif  
 
 }
 

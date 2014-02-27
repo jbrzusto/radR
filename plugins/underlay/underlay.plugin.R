@@ -249,9 +249,6 @@ hooks = list(
         if (is.null(last[[n]]) || (image.geom$track[[n]] && !identical(last[[n]], GUI[[n]]))) {
           last[[n]] <<- GUI[[n]]
           get.new.mapper <- TRUE
-###.if $DEBUG
-          print("New mapper because of " %:% n)
-###.endif          
         }
       }
       

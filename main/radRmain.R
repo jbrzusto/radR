@@ -63,10 +63,6 @@ rss.process.scan <- function(filter.noise     = FALSE,
 
   ## if we are playing, mark this as the start of the processing
   if (RSS$play.state >= RSS$PS$PLAYING && is.null(RSS$processing.time.start)) {
-###.if $DEBUG
-    print("Setting RSS$processing.time.start to " %:% RSS$scan.info$timestamp)
-    print("   and is.preview=" %:% is.preview )
-###.endif
     RSS$processing.time.start <- RSS$scan.info$timestamp
   }
 
@@ -186,9 +182,6 @@ rss.event.loop <- function(run.once = TRUE)
       scan.index <- rss.get.and.set("new.scan.index", 0, RSS)
 
     if (scan.index != 0 && isTRUE(RSS$source$is.seekable)) {
-###.if $DEBUG
-      print("Event loop got new scan index " %:% scan.index)
-###.endif
 
       seek.scan(RSS$source, RSS$current.run, scan.index)
       ## update the current scan index, subtracting one because rss.get.scan increments it
@@ -254,9 +247,6 @@ rss.event.loop <- function(run.once = TRUE)
 
 
     if (ps != 0) {
-###.if $DEBUG
-      print("Event loop got new play state " %:% ps)
-###.endif
 
       ## notify the ports of an impending change of play state
       if (!is.null(RSS$source))
@@ -294,27 +284,18 @@ rss.event.loop <- function(run.once = TRUE)
     ## are in play mode.
 
     previewing <- RSS$play.state < RSS$PS$PLAYING
-###.if $DEBUG
-    print("Processing scan with is.preview = " %:% previewing)
-###.endif
 
     ## if we are to skip this scan, do so
     
     if (RSS$skip$all.processing) {
       if (! previewing)
         RSS$skip$all.processing <- FALSE
-###.if $DEBUG
-      print(sprintf("Skipping scan at %s", format(structure(RSS$scan.info$timestamp, class="POSIXct"))))
-###.endif
     } else {
       rss.process.scan(filter.noise = TRUE, convert.scan = TRUE, is.preview = previewing, update.plot = RSS$play.state != RSS$PS$PLAY.ONE.SCAN )
     }
     ## tell the gui to advance the scan indicator if we're not previewing
 
     if (!previewing) {
-###.if $DEBUG
-      print("Advancing scan")
-###.endif
       rss.gui(SCAN_ADVANCE)
     }
 
@@ -669,9 +650,6 @@ rss.get.scan <- function()
       rv <- FALSE
     } else {
 
-###.if $DEBUG
-      print("Got scan info " %:% si$timestamp)
-###.endif
 
       ## allow any plugins to provide additional scan information
       ## (e.g. GPS, weather station, NMEA...), or overwrite existing
