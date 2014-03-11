@@ -2,6 +2,9 @@
 ## and requires the variables defined there.  To make this plugin, do "make tilter"
 ## from the radR toplevel folder.
 
+ifeq ("1", "1")
+$(info Skipping the tilter plugin)
+else
 TILTMINDER_DIR := $(PLUGIN_DIR)/tilter/tiltminder
 $(eval $(AT_MAKEFILE_START))
 
@@ -30,5 +33,4 @@ tiltminder/tiltserv1.1s$(EXE_SUFFIX): tiltminder/minder.cc
 
 $(eval $(AT_MAKEFILE_END))
 
-
-
+endif

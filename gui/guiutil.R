@@ -1494,14 +1494,18 @@ gui.show.graph <- function(graph.fun, position, size) {
   graph.fun()
   dev.off()
 
+  system(sprintf("convert %s %s", GUI$png.plot.filename, sub(".png", ".gif", GUI$png.plot.filename)))
   ## import the graph as a tk image and add it to the plot
   image <- "::img:" %:% id
-  tcl("image", "create", "photo", image, file=GUI$png.plot.filename)
+#  tcl("image", "create", "photo", image, file=GUI$png.plot.filename, "-format", "png")
+  tcl("image", "create", "photo", image, file=sub(".png", ".gif", GUI$png.plot.filename), "-format", "gif")
   tkid <- tcl(GUI$plot, "create", "image", position[1], position[2], image=image)
 
   ## add two tags to the graph, one for all graphs, one specific to this one
   tcl(GUI$plot, "addtag", "graph", "withtag", tkid)
   tcl(GUI$plot, "addtag", id, "withtag", tkid)
+  tcl(GUI$plot, "addtag", "zoom", "withtag", tkid)
+  tcl(GUI$plot, "addtag", "pan", "withtag", tkid)
   return(id)
 }
 

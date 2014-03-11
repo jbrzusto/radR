@@ -21,7 +21,7 @@ HEAD = $(shell which head)
 ## version of R you are building against
 R_MAJOR_VERSION = 3
 R_MINOR_VERSION = 0
-R_MINOR_SUBVERSION = 0
+R_MINOR_SUBVERSION = 2
 R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
 R = /usr/bin/R
