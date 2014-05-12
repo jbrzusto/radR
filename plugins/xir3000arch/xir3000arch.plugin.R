@@ -57,7 +57,9 @@ get.ports = function() {
                         si = NULL,                         # scan info
                         file.basename = "",                # path + file basename, to which XXXXXXXX.rec are appended
                         cur.file.data = NULL,              # raw vector of the contents of the REC file for the current scan
-                        prev.timestamp = NULL,             # for keeping track of duration of scans
+                        next.file.data = NULL,             # raw vector of the contents of the REC file for the next scan; needed to calculate durations
+                        next.file.si = NULL,               # scan info vector for next REC file
+                        next.scan = 0,                     # index of scan for next.file.data and next.file.si
                         default.duration = NULL,           # default duration of scan, in milliseconds
                         max.rangeind = 0                   # the maximum range index (in the range 0...8) for the current scan
                         ),
@@ -188,6 +190,11 @@ globals = list (
     port$cur.scan >= port$contents$num.scans[port$cur.run]
   },
 
+  get.filename = function(port, scan=port$cur.scan) {
+    ## get the filename for the given port and scan number
+    sprintf(paste("%s%0", port$seqno.digits, "d.rec", sep=""), port$file.basename, port$seqnos[scan])
+  },
+    
   get.scan.info.xir3000arch = function(port, ...) {
     ## gets the header information for the next scan
     ## This can include NMEA data.
@@ -195,75 +202,84 @@ globals = list (
     ## For simplicity, we read the whole file corresponding to the
     ## next scan, which includes data, and cache it for the likely
     ## imminent call to get.scan.data
+
+    ## Also, because other methods of calculating scan duration are
+    ## proving unreliable, we now pre-read the following scan too, so
+    ## that we can can diff the timestamps to get duration.
+
+    ## We read either the next or the next two scans, depending on whether we
+    ## already have the (appropriate) next scan.
+
+    have.next = port$next.scan == port$cur.scan + 1 && ! is.null(port$next.file.data)
+    if (have.next || port$cur.scan == 0)
     
-    port$cur.scan <- port$cur.scan + 1
+    for (jj in 1:(1 + !have.next)) {
+      port$next.scan = port$cur.scan + 1
+      port$cur.scan = port$next.scan
+      f = get.filename(port, port$next.scan)
+      port$cur.file.data = port$next.file.data
+      port$si = port$next.file.si
+      
+      port$next.file.data <- rss.read.file.as.raw(f)
 
-    port$cur.file.data <- rss.read.file.as.raw(f <- sprintf(paste("%s%0", port$seqno.digits, "d.rec", sep=""), port$file.basename, port$seqnos[port$cur.scan]))
+      ## grab the file magic and recording type
+      sig <- readBin(port$cur.file.data, "integer", 2)
+      if (sig[1] != file.magic) {
+        warning("xir3000arch: the file ", f, " is not a valid RTI .REC file")
+        return (NULL)
+      }
+      if (!sig[2] %in% supported.recording.types) {
+        warning("xir3000arch: the file ", f, " has data with RECORDING_TYPE = ", sig[2], ", which is not supported by this plugin")
+        return (NULL)
+      }
 
-    ## grab the file magic and recording type
-    sig <- readBin(port$cur.file.data, "integer", 2)
-    if (sig[1] != file.magic) {
-      warning("xir3000arch: the file ", f, " is not a valid RTI .REC file")
-      return (NULL)
+      x = .Call("get_scan_info", port$next.file.data, PACKAGE=MYCLASS)
+
+      port$max.rangeind = x[SIN$MaxRangeIndex]
+
+      port$next.file.si = list (
+        pulses = x[SIN$Pulses],  ## this should equal RTI.default$pulses, but we keep it flexible for now
+        
+        samples.per.pulse = if (!is.na(x[SIN$SamplesPerPulse])) {
+          x[SIN$SamplesPerPulse]
+        } else {
+          RTI.defaults$samples.per.pulse
+        },
+        
+        bits.per.sample = RTI.defaults$bits.per.sample,
+        
+        timestamp = structure(
+          if (is.timestamp.ok(x[SIN$TimeStamp])) {
+            x[SIN$TimeStamp]
+          } else if (is.timestamp.ok(port$start.time.midnight + x[SIN$UTC])) {
+            port$start.time.midnight + x[SIN$UTC]
+          } else {
+            port$start.time + (port$next.scan - 1) * port$default.duration / 1000
+          },
+          class="POSIXct"),
+        
+        duration = 0, ## filled in below, after we have two consecutive scans
+
+        sample.dist =
+        if (!is.na(x[SIN$SampleDist])) {
+          x[SIN$SampleDist]
+        } else {
+          distget.sample.dist(port)
+        },
+        
+        first.sample.dist = 0,
+        
+        bearing = if (!is.na(x[SIN$TrueHeading])) x[SIN$TrueHeading] else default.heading,
+        
+        orientation = +1,
+
+        antenna.lat = if (!is.na(x[SIN$Latitude])) x[SIN$Latitude] / 1e7,
+        
+        antenna.long = if (!is.na(x[SIN$Longitude])) x[SIN$Longitude] / 1e7
+        
+        )
     }
-    if (!sig[2] %in% supported.recording.types) {
-      warning("xir3000arch: the file ", f, " has data with RECORDING_TYPE = ", sig[2], ", which is not supported by this plugin")
-      return (NULL)
-    }
-
-    x <- .Call("get_scan_info", port$cur.file.data, PACKAGE=MYCLASS)
-
-    port$max.rangeind <- x[SIN$MaxRangeIndex]
-
-    port$si <- list(pulses = x[SIN$Pulses],  ## this should equal RTI.default$pulses, but we keep it flexible for now
-                    
-                    samples.per.pulse = if (!is.na(x[SIN$SamplesPerPulse])) {
-                      x[SIN$SamplesPerPulse]
-                    } else {
-                      RTI.defaults$samples.per.pulse
-                    },
-                    
-                    bits.per.sample = RTI.defaults$bits.per.sample,
-                    
-                    timestamp = structure(
-                      if (is.timestamp.ok(x[SIN$TimeStamp])) {
-                        x[SIN$TimeStamp]
-                      } else if (is.timestamp.ok(port$start.time.midnight + x[SIN$UTC])) {
-                        port$start.time.midnight + x[SIN$UTC]
-                      } else {
-                        port$start.time + (port$cur.scan - 1) * port$default.duration / 1000
-                      },
-                      class="POSIXct"),
-                    
-                    duration =
-                    if (!is.na(x[SIN$Duration])) {
-                      x[SIN$Duration]
-                    } else if(is.null(port$prev.timestamp) || port$prev.scan != port$cur.scan - 1) {
-                      port$default.duration
-                    } else {
-                      x[SIN$UTC] - port$prev.timestamp
-                    },
-
-                    sample.dist =
-                    if (!is.na(x[SIN$SampleDist])) {
-                      x[SIN$SampleDist]
-                    } else {
-                      distget.sample.dist(port)
-                    },
-                    
-                    first.sample.dist = 0,
-                    
-                    bearing = if (!is.na(x[SIN$TrueHeading])) x[SIN$TrueHeading] else default.heading,
-                    
-                    orientation = +1,
-
-                    antenna.lat = if (!is.na(x[SIN$Latitude])) x[SIN$Latitude] / 1e7,
-                    
-                    antenna.long = if (!is.na(x[SIN$Longitude])) x[SIN$Longitude] / 1e7
-                    
-                    )
-
-    port$prev.timestamp <- port$si$timestamp
+    port$si$duration = diff(as.numeric(port$si$timestamp, port$next.file.si$timestamp)) * 1000
     return(port$si)
   },
 
@@ -419,7 +435,6 @@ globals = list (
 
     ## drop the current file data
     port$cur.file.data <- NULL
-    port$prev.timestamp <- NULL
     port$default.duration <- NULL
     port$start.time <- NULL
     return(TRUE)
