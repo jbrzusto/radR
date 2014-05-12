@@ -211,75 +211,81 @@ globals = list (
     ## already have the (appropriate) next scan.
 
     have.next = port$next.scan == port$cur.scan + 1 && ! is.null(port$next.file.data)
-    if (have.next || port$cur.scan == 0)
     
     for (jj in 1:(1 + !have.next)) {
       port$next.scan = port$cur.scan + 1
       port$cur.scan = port$next.scan
-      f = get.filename(port, port$next.scan)
       port$cur.file.data = port$next.file.data
       port$si = port$next.file.si
-      
-      port$next.file.data <- rss.read.file.as.raw(f)
 
-      ## grab the file magic and recording type
-      sig <- readBin(port$cur.file.data, "integer", 2)
-      if (sig[1] != file.magic) {
-        warning("xir3000arch: the file ", f, " is not a valid RTI .REC file")
-        return (NULL)
-      }
-      if (!sig[2] %in% supported.recording.types) {
-        warning("xir3000arch: the file ", f, " has data with RECORDING_TYPE = ", sig[2], ", which is not supported by this plugin")
-        return (NULL)
-      }
+      if (port$next.scan <= length(port$seqnos)) {
+        f = get.filename(port, port$next.scan)
+        port$next.file.data <- rss.read.file.as.raw(f)
 
-      x = .Call("get_scan_info", port$next.file.data, PACKAGE=MYCLASS)
+        ## grab the file magic and recording type
+        sig <- readBin(port$next.file.data, "integer", 2)
+        if (sig[1] != file.magic) {
+          warning("xir3000arch: the file ", f, " is not a valid RTI .REC file")
+          return (NULL)
+        }
+        if (!sig[2] %in% supported.recording.types) {
+          warning("xir3000arch: the file ", f, " has data with RECORDING_TYPE = ", sig[2], ", which is not supported by this plugin")
+          return (NULL)
+        }
 
-      port$max.rangeind = x[SIN$MaxRangeIndex]
+        x = .Call("get_scan_info", port$next.file.data, PACKAGE=MYCLASS)
 
-      port$next.file.si = list (
-        pulses = x[SIN$Pulses],  ## this should equal RTI.default$pulses, but we keep it flexible for now
-        
-        samples.per.pulse = if (!is.na(x[SIN$SamplesPerPulse])) {
-          x[SIN$SamplesPerPulse]
-        } else {
-          RTI.defaults$samples.per.pulse
-        },
-        
-        bits.per.sample = RTI.defaults$bits.per.sample,
-        
-        timestamp = structure(
-          if (is.timestamp.ok(x[SIN$TimeStamp])) {
-            x[SIN$TimeStamp]
-          } else if (is.timestamp.ok(port$start.time.midnight + x[SIN$UTC])) {
-            port$start.time.midnight + x[SIN$UTC]
+        port$max.rangeind = x[SIN$MaxRangeIndex]
+
+        port$next.file.si = list (
+          pulses = x[SIN$Pulses],  ## this should equal RTI.default$pulses, but we keep it flexible for now
+          
+          samples.per.pulse = if (!is.na(x[SIN$SamplesPerPulse])) {
+            x[SIN$SamplesPerPulse]
           } else {
-            port$start.time + (port$next.scan - 1) * port$default.duration / 1000
+            RTI.defaults$samples.per.pulse
           },
-          class="POSIXct"),
-        
-        duration = 0, ## filled in below, after we have two consecutive scans
+          
+          bits.per.sample = RTI.defaults$bits.per.sample,
+          
+          timestamp = structure(
+            if (is.timestamp.ok(x[SIN$TimeStamp])) {
+              x[SIN$TimeStamp]
+            } else if (is.timestamp.ok(port$start.time.midnight + x[SIN$UTC])) {
+              port$start.time.midnight + x[SIN$UTC]
+            } else {
+              port$start.time + (port$next.scan - 1) * port$default.duration / 1000
+            },
+            class="POSIXct"),
+          
+          duration = 0, ## filled in below, after we have two consecutive scans
 
-        sample.dist =
-        if (!is.na(x[SIN$SampleDist])) {
-          x[SIN$SampleDist]
-        } else {
-          distget.sample.dist(port)
-        },
-        
-        first.sample.dist = 0,
-        
-        bearing = if (!is.na(x[SIN$TrueHeading])) x[SIN$TrueHeading] else default.heading,
-        
-        orientation = +1,
+          sample.dist =
+          if (!is.na(x[SIN$SampleDist])) {
+            x[SIN$SampleDist]
+          } else {
+            distget.sample.dist(port)
+          },
+          
+          first.sample.dist = 0,
+          
+          bearing = if (!is.na(x[SIN$TrueHeading])) x[SIN$TrueHeading] else default.heading,
+          
+          orientation = +1,
 
-        antenna.lat = if (!is.na(x[SIN$Latitude])) x[SIN$Latitude] / 1e7,
+          antenna.lat = if (!is.na(x[SIN$Latitude])) x[SIN$Latitude] / 1e7,
+          
+          antenna.long = if (!is.na(x[SIN$Longitude])) x[SIN$Longitude] / 1e7
+          
+          )
+      } else {
+        ## there is no next scan, so set timestamp of (bogus) next scan so that
+        ## current scan gets default duration
         
-        antenna.long = if (!is.na(x[SIN$Longitude])) x[SIN$Longitude] / 1e7
-        
-        )
+        port$next.file.si$timestamp = port$si$timestamp + port$default.duration / 1000
+      }
     }
-    port$si$duration = diff(as.numeric(port$si$timestamp, port$next.file.si$timestamp)) * 1000
+    port$si$duration = diff(as.numeric(c(port$si$timestamp, port$next.file.si$timestamp))) * 1000
     return(port$si)
   },
 
