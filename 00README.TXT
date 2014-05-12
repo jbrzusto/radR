@@ -1,3 +1,9 @@
+12 May 2014
+- xir3000arch: use difference between timestamps of consecutive
+  sweeps as duration of each sweep.  Previous methods using 'tick counts'
+  embedded in .REC files proved unreliable (some files had them,
+  some didn't).
+
 27 May 2013
 - seascanarch: make sure timestamps are being calculated without
   daylight savings time adjustments, since we're working in GMT.
