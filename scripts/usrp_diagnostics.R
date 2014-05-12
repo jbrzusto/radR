@@ -46,6 +46,8 @@ get.data <- function(channel.name, time, samples, extra="", datfile="temp_usrp.d
                       "-d ", decim,   # decimation rate
                       "-P ", np,      # number of "pulses" (really, USB packets)
                       "-n ", 256,     # number of samples in a USB packet
+                      "-F ", 512,     # size of fast USB block
+                      "-N ", 1,       # number of fast USB blocks
                       extra,          # extra options from caller
                       datfile,        # name of data file
                       sep = " "),
@@ -74,7 +76,8 @@ for (g in c(0, 10, 20)) {
 azi <- get.data("azi", 0.050, 2048)
 
 ## get 3 sec of heading data
-hdg <- get.data("hdg", 3, 3000)
+hdg <- get.data("hdg", 3, 3072)
+
 
 par(mfcol=c(2,2))
 
@@ -93,7 +96,7 @@ lines(vid$g0, col="black", lty=2)
 plot(trig$g0,
      xlab="time (s)",
      ylab="trigger (integer units)",
-     ylim=c(0, 4095),
+     ylim=c(0, 2048),
      main=c("Trigger signal", "gains of 0 (black), 10 (red), 20dB (blue)"),
      type="b",
      col="black"
@@ -105,7 +108,7 @@ lines(trig$g0, col="black", lty=2)  ## redo lines at low gain
 plot(azi,
      xlab="time (s)",
      ylab="azimuth / bearing pulse / ACP (integer units)",
-     ylim=c(0, 1),
+     ylim=c(0, 2048),
      main=c("Azimuth / bearing pulse / ACP"),
      type="l",
      col="black"
@@ -114,7 +117,7 @@ plot(azi,
 plot(hdg,
      xlab="time (s)",
      ylab="Heading / SHM / ARP (integer units)",
-     ylim=c(0, 1),
+     ylim=c(0, 2048),
      main=c("Heading / SHM / ARP"),
      type="l",
      col="black"

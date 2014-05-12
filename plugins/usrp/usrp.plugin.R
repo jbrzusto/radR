@@ -471,7 +471,7 @@ globals = list (
            bbprx_mode = 0  ## normal mode: a chunk of video data is digitized for each trigger pulse
            )
 
-    rv <- .Call("start_up", port$urp, package=MYCLASS)
+    rv <- .Call("start_up", port$urp, PACKAGE=MYCLASS)
     if (!rv)  {
       rss.gui("POPUP_MESSAGEBOX", "Couldnt not startup USRP", "Strange - I couldn't start up the USRP to which you're connected.")
       return(NULL)

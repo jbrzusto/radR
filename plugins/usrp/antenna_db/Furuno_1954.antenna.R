@@ -29,6 +29,8 @@ acp_thresh_relax   = 40
 ## latency: wait at least 0.1 msec before allowing another ARP pulse (debouncing)
 acp_latency        = 6400
 
+use_acp_for_sweeps = 0
+
 ## radar parameters for verifying empirical measurements:
 
 acps_per_sweep     = 450
