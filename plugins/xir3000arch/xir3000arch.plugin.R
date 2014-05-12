@@ -211,10 +211,13 @@ globals = list (
     ## already have the (appropriate) next scan.
 
     have.next = port$next.scan == port$cur.scan + 1 && ! is.null(port$next.file.data)
+
+    if (!have.next)
+      port$next.scan = port$cur.scan
     
     for (jj in 1:(1 + !have.next)) {
-      port$next.scan = port$cur.scan + 1
       port$cur.scan = port$next.scan
+      port$next.scan = port$next.scan + 1
       port$cur.file.data = port$next.file.data
       port$si = port$next.file.si
 
