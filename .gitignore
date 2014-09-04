@@ -1,2 +1,14 @@
-*
-!.gitignore
+.*
+*.gz
+*.zip
+*.dll
+*.exe
+CHANGELOG
+plugins/usrp/usrp_radR_plugin.h
+plugins/xir3000/CANRib_names.txt
+plugins/xir3000/CANSTAR.H
+plugins/xir3000/CANSTAR.H.orig
+plugins/xir3000/myCANSTAR.h
+LATEST_VERSION*
+.gitignore
+*.update.R

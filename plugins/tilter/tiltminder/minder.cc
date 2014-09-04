@@ -538,7 +538,17 @@ public:
   virtual time_stamp send_command(const std::string &cmd) {
     out << cmd;
     out.flush();
-    return (time_stamp) boost::get_system_time();
+    time_stamp ts = (time_stamp) boost::get_system_time();
+    // to allow for a flaky connection and still hope to get the command sent
+    // retry several times.  We still return the ts above, on the assumption
+    // that the first try will usually work.  The tilter commands are all
+    // idempotent, so it doesn't matter if several of the same one are
+    // received in a row.
+    for (int i = 0; i < 3; ++i) {
+      out << cmd;
+      out.flush();
+    }
+    return ts;
   };
 
 protected:
