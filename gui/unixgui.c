@@ -31,20 +31,20 @@ SEXP
 get_tcl_interp(SEXP win) {
   // when passed the X window ID of a tk window, finds
   // the tcl interpreter associated with it
-  // as an integer SEXP; It will be 0 if no interpreter was found.
+  // as an EXTPTRSEXP; It will be NULL if no interpreter was found.
   Tk_Window tw;
   TkDisplay *dispPtr;
   Tcl_HashEntry *hPtr;
 
   dispPtr = TkGetDisplayList();
   if (dispPtr == NULL)
-    return ScalarInteger(0);
+    return R_NilValue;
   
-  hPtr = Tcl_FindHashEntry(&dispPtr->winTable, (char *) INTEGER(AS_INTEGER(win))[0]);
+  hPtr = Tcl_FindHashEntry(&dispPtr->winTable, (char *) (long long) INTEGER(AS_INTEGER(win))[0]);
   if (hPtr == NULL)
-    return ScalarInteger(0);
+    return R_NilValue;
   tw = (Tk_Window) Tcl_GetHashValue(hPtr);
-  return ScalarInteger((int) (my_tcl=((TkWindow *) tw)->mainPtr->interp));
+  return PTR_TO_EXTPTR((my_tcl=((TkWindow *) tw)->mainPtr->interp));
 }
 
 void
