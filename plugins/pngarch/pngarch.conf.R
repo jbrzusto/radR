@@ -37,7 +37,7 @@ default = list (
   
   ## for reading timestamps from the OCR'd video grab timestamp, we use
   ## a strptime-compatible format string:
-  date.ocr.format = "%Y.%m.%d %H-%M-%S\n",
+  date.ocr.format = "%d.%m.%y %H:%M:%S",
 
   ## bit mask for extracting the timestamp from the radar image
   date.ocr.bitmask = 0x00ff0000,
@@ -68,7 +68,10 @@ default = list (
   ## The maximum range shown on the radar image is usually in km
 
   max.range = 1.5,
-  
+
+  ## The implied scale, in metres per pixel is the ratio of max.range * 1000 / radius
+  scale = 1000 * 1.5 / 496,
+    
   ## default rotation of the coordinate system, in degrees clockwise.
   ## Normally, y increases bottom to top, and x increases left to right, but
   ## any rotation can be specified here.

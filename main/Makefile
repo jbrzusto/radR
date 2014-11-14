@@ -21,10 +21,12 @@ RADR_SOURCE_FILES :=            \
 	scancvt.c               \
 	statefun.c
 
+ifeq ($(TARGET_PLATFORM), windows)
 TKIMGPNG_SOURCE_FILES :=        \
 	tkImgPNG.c              \
 	tkImgPNGInit.c          \
 	R_tkImgPNG.c
+endif
 
 R_FILES := 			\
 	batchparm.R		\
@@ -42,7 +44,12 @@ R_FILES := 			\
 RADR_LIB     := radR$(SHLIB_SUFFIX)
 TKIMGPNG_LIB := R_tkImgPNG$(SHLIB_SUFFIX)
 
+ifeq ($(TARGET_PLATFORM), windows)
 EXTRA_TARGETS = $(RADR_LIB) $(TKIMGPNG_LIB) 
+else
+EXTRA_TARGETS = $(RADR_LIB)
+endif
+
 EXTRA_PRECIOUS_TARGETS = rbatch rbatch.bat
 
 $(eval $(call DEF_INST_ALIAS,radRshared.h,../include/radRshared.h))

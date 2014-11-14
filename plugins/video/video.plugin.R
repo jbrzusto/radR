@@ -87,7 +87,7 @@ get.menus = function() {
                label = "date and time at start of first video frame",
                value = as.numeric(default.start.time),
                on.set = function(x) {
-                 t <- structure(x, class="POSIXct")
+                 t <- structure(round(x), class="POSIXct")
                  default.start.time <<- t
                  if (inherits(RSS$source, MYCLASS))
                    RSS$source$start.time <- t
@@ -363,7 +363,7 @@ globals = list (
       } else {
         port$start.time <- file.info(port$config$filename)$ctime
       }
-      gui.video.start.time(port$start.time)
+      gui.video.start.time(round(port$start.time))
     }
     ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
     

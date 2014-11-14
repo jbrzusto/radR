@@ -17,7 +17,7 @@
 SHLIB_SUFFIX_unix = .so
 EXE_SUFFIX_unix = 
 CP = /bin/cp
-HEAD = /bin/head
+HEAD = /usr/bin/head
 ## version of R you are building against
 R_MAJOR_VERSION = 2
 R_MINOR_VERSION = 5
@@ -30,7 +30,7 @@ BUILD_PLATFORM_LIBOPTS =
 LOCAL_INSTALL_DIR=~/Desktop/radR
 RINC =-I/usr/src/R-$(R_VERSION)/include -I/usr/src/R-$(R_VERSION)/src/include
 
-BUILD_PLATFORM_CCOPTS = -march=k8
+BUILD_PLATFORM_CCOPTS = -march=k8 -fPIC
 BUILD_PLATFORM_DEP = 
 TARGET_PLATFORM_CONF_FILES = radR.unix.conf.R gui.unix.conf.R
 TARGET_PLATFORM_RADR_FILES = radR.xbm startup.unix.R
@@ -43,8 +43,8 @@ TCLTK_INC = -I/usr/src/tk8.4.15/generic -I/usr/src/tk8.4.15/win -I /usr/src/tcl8
 RLIB = $(R_WINDOWS_HOME)/bin/R.dll
 NM = /usr/bin/i586-mingw32msvc-nm 
 else
-TCLTK_LIB = -L/usr/lib -ltcl8.4 -ltk8.4
-TCLTK_INC = -I/usr/include/tcl8.4 -I/usr/include/tcl8.4/tk-private/generic  -I/usr/include/tcl8.4/tcl-private/generic
+TCLTK_LIB = -L/usr/lib -ltcl8.5 -ltk8.5
+TCLTK_INC = -I/usr/include/tcl8.5 -I/usr/include/tcl8.5/tk-private/generic  -I/usr/include/tcl8.5/tcl-private/generic -I/usr/include/tcl8.5/tk-private/unix  -I/usr/include/tcl8.5/tcl-private/unix
 RLIB = -L/usr/src/R-$(R_VERSION)/lib -lR
 NM = /usr/bin/nm
 LIBZ_LIB = -L/usr/lib -lz -Wl,-rpath=/usr/lib

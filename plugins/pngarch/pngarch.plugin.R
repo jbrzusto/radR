@@ -48,7 +48,7 @@ get.ports = function() {
                         scan.data = NULL,                  # the data, pre-read by get.scan.info
                         contents = empty.TOC,
                         start.time = NULL,                 # the time of the first frame
-                        duration = 0L,                     # how long the video file lasts, in seconds
+                        duration = 0L,                     # how long the PNG folder lasts, in seconds
                         si = NULL                          # scan info
                         ),
               class = c(MYCLASS, "strictenv"))
@@ -62,6 +62,8 @@ get.ports = function() {
 }
 
 load = function() {
+    library(png)
+    rss.dyn.load("ocr", in.dir.of=plugin.file)
 }
 
 unload = function(save.config) {
@@ -211,37 +213,28 @@ globals = list (
   get.scan.info.pngarch = function(port, ...) {
     ## gets the header information for the next scan
 
-    ## bump up the scan counter
-    port$cur.scan <- port$cur.scan + 1
+    ## read the PNG frame, skipping any missing ones, into port$scan.data
 
-    ## make sure the video pipe is open
-    if (is.null(video.pipe))
-      open.png.at.cur.scan(port)
-    
-    ## to be safe, we verify that the next bit
-    ## of the video pipe contains a proper header for a PGM file.
+    repeat {
+        ## bump up the scan counter
+        port$cur.scan = port$cur.scan + 1
+        x = read.scan.file(port, port$cur.scan, asNative = FALSE)[,,1]
+        port$scan.data = as.integer(32767 * x)
+        dims = dim(x)
+        if (!is.null(port$scan.data)) break
+        if (end.of.data(port))
+            return (NULL)
+    }
 
-    hdr <- readLines(video.pipe, 3)
-    
-    if (length(hdr) != 3 || hdr[1] != "P5" || hdr[3] != "255")
-      return (NULL)
-
-    dims <- as.integer(strsplit(hdr[2], " ")[[1]])
-
-    port$scan.data <- readBin(video.pipe, "integer", size=1, signed=FALSE, n=prod(dims)) * 128L
     port$si <- list(pulses = dims[2],
                     
                     samples.per.pulse = dims[1],
                     
                     bits.per.sample = 15, ## even though the gray channel is only 8 bits, we shift up to improve stats
                     
-                    timestamp = port$start.time + (port$cur.scan - 1) / port$config$frame.rate,
+                    timestamp = structure(round(as.numeric(port$start.time) + (port$cur.scan - 1) * port$duration), class=c("POSIXct", "POSIXt")),
                     
-                    duration = 1000 / port$config$frame.rate,
-
-                    ## FIXME: the rest of this needs rethinking for video data
-                    ## In principal, each sample is a polyhedron extending to infinity,
-                    ## or some kind of projective version of that.
+                    duration = port$duration,
 
                     sample.dist = port$config$scale,
                     
@@ -275,7 +268,7 @@ globals = list (
     dim(RSS$class.mat) <- dim
     dim(RSS$score.mat) <- dim
 
-    extmat[] <- port$scan.data
+    extmat[1:prod(dim)] <- port$scan.data
     return(extmat)
   },
 
@@ -284,11 +277,10 @@ globals = list (
     ## scan = integer NAN requests a seek past the last scan in
     ##        the current run (which must be the last run
     ##        for most modules)
-    ## run = 0 represents the current run; but we only allow one run per video file
+    ## run = 0 represents the current run; but we only allow one run per png archive
     if (scan == port$cur.scan + 1)
       return()
     port$cur.scan <- scan - 1 ## adjust for immediate adding of +1 by get.scan.info
-    open.png.at.cur.scan(port)
   },
 
   seek.time.pngarch = function(port, time, ...) {
@@ -360,7 +352,7 @@ globals = list (
     
     port$duration <- duration
     port$start.time <- ts[1]
-    gui.png.start.time(round(port$start.time))
+##    gui.png.start.time(round(port$start.time))
     port$contents <- list (
                           num.scans = num.scans,
                           start.time = structure(as.numeric(port$start.time), class="POSIXct"),
@@ -379,22 +371,19 @@ globals = list (
     ## closing files, etc.
     rss.disable.hook("PATCH_STATS", MYCLASS)
 
-    GUI$plot.title.date.format <- old.plot.title.date.format
+##    GUI$plot.title.date.format <- old.plot.title.date.format
     ## restore old coord tx
     gui.set.coord.tx()
     ## drop the current file data
     port$start.time <- NULL
     port$scan.data <- NULL
-    if (!is.null(video.pipe))
-      close(video.pipe)
-    video.pipe <<- NULL
     return(TRUE)
   },
 
   new.play.state.pngarch = function(port, new.state, old.state, ...) {
     ## indicate to this port that radR is
     ## changing play state.
-
+      return(NULL)
   }
   
   )  ## end of globals
@@ -424,58 +413,48 @@ hooks = list (
 ##   file.path(dirname(datafilename), "_metadata.R")
 ## }
 
-read.scan.file = function(port, n) {
+read.scan.file = function(port, n, asNative=TRUE) {
   ## read the n'th scan
   ## returns a nativeRaster with the n'th image,
   ## where n is the image selected by the user
 
   f = sprintf(port$config$template, port$config$firstScan + n - 1)
-  rv = readPNG(f, native=TRUE)
-  ## swap nominal dimensions to match actual storage;
-  ## first dimension is raster width
-  dim(rv) = rev(dim(rv))
-  return(rv)
+  if (! file.exists(f))
+      return (NULL)
+  
+  rv = readPNG(f, native=asNative)
+  ## swap data storage orientation, but retain current dimensions
+  ## first dimension is raster width, second is height
+  ## we allow for a possible 3rd dimension for channels
+  ## (when asNative is FALSE) which we leave alone\
+  if (asNative) {
+      ## swap dimensions without changing data order
+      dim(rv)[1:2] = dim(rv)[2:1]
+      return(rv)
+  } else {
+      ## swap dimensions *and* change data order!
+      nrv = array(0, dim=dim(rv)[c(2, 1, 3)])
+      for (i in 1:dim(rv)[3])
+          nrv[,,i] = t(rv[,,i])
+      return(nrv)
+  }
 }
   
 get.image.timestamp = function(port, img) {
   ## img is a nativeRaster
-  tsi = img[port$config$tsbox.h, port$config$tsbox.v]
-  ts = strptime(
-    .Call(
-          "ocr",
-          tsi,
-          as.integer(
-                     c(length(port$config$tsbox.v), length(port$config$tsbox.h),
-                       1,  ## invert - timestamps are white on background, not black on white
-                       3,  ## scale - required for proper recognition
-                       2,  ## threshold 
-                       port$config$date.ocr.bitmask)))[[1]],
-    port$config$date.ocr.format)
-  return (as.POSIXct(ts))
-}
-
-open.png.at.cur.scan = function(port) {
-  ## returns a pipe connection to an ffmpeg process which dumps
-  ## video starting from the current scan.  This is only called
-  ## at startup and with seek.scan
-
-  if (!is.null(video.pipe))
-    close(video.pipe)
-
-  cmd <- paste(ffmpeg.path,
-               "-ss", round((port$cur.scan - 1) / port$config$frame.rate,2), ## seek to frame
-               "-flags gray",
-               "-i",
-               paste("\"", port$config$filename, "\"", sep=""),
-               "-r ", port$config$frame.rate,  ## output at desired frame rate
-               "-f rawvideo", ## output format is sequence of raw frames
-               "-vcodec pgm", ## output codec is portable gray map
-               "-pix_fmt gray", ## output pixel format is grayscale (8-bit)
-               "-s", paste(port$config$width, port$config$height, sep="x"), ## ask for size at current setting
-               "pipe:1",      ## output to standard output
-               paste("2>", RSS$null.device, sep=""))  ## hide ffmpeg splash & info
-  
-  video.pipe <<- pipe(cmd, "rb")
+    tsi = img[port$config$tsbox.h, port$config$tsbox.v]
+    ts = strptime(
+        .Call(
+            "ocr",
+            tsi,
+            as.integer(
+                c(length(port$config$tsbox.v), length(port$config$tsbox.h),
+                  1,  ## invert - timestamps are white on background, not black on white
+                  3,  ## scale - required for proper recognition
+                  2,  ## threshold 
+                  port$config$date.ocr.bitmask)))[[1]],
+        port$config$date.ocr.format)
+    return (as.POSIXct(ts))
 }
 
 update = function() {
@@ -489,7 +468,7 @@ update = function() {
   }
 }
 
-## coordinate transform functions for rectangular video coordinates
+## coordinate transform functions for rectangular PNG coordinates
 
 tx.plot.to.matrix <- function(coords) {
   ## convert xy coordinates in the plot window
@@ -564,15 +543,12 @@ tx.matrix.to.spatial <- function(coords) {
 
 ## additional plugin variables
 
-## what a video table of contents looks like, initially
+## what a table of contents looks like, initially
 empty.TOC = list(
   start.time = structure(double(0), class = "POSIXct"),
   end.time = structure(double(0), class = "POSIXct"),
   num.scans = integer(0)
   )
-
-## pipe connection from which we read raw video frames
-video.pipe = NULL
 
 ## the one and only port
 my.port = NULL
