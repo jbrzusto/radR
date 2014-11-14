@@ -1,0 +1,9 @@
+PROGFILES:=$(shell if [ -d "/cygdrive/c/Program Files (x86)" ]; then echo "Program Files (x86)"; else echo "Program Files"; fi)
+## the version of R against which to link the .dlls
+R_VERSION = 2.5.1
+RINC = -I "c:/$(PROGFILES)/R/R-$(R_VERSION)/include" 
+RLIB = "c:/$(PROGFILES)/R/R-$(R_VERSION)/bin/R.dll"
+
+ocr.dll: ocr.c
+	gcc -O3 -c -fPIC -o ocr.o -I . $(RINC) ocr.c
+	g++ -static -shared -fPIC -o ocr.so  ocr.o -L . -locrad  $(RLIB) -lstdc++
