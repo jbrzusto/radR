@@ -1,5 +1,5 @@
 ##  radR : an R-based platform for acquisition and analysis of radar data
-##  Copyright (C) 2006-2011 John Brzustowski
+##  Copyright (C) 2006-2014 John Brzustowski
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -15,12 +15,11 @@
 ##  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-##           VIDEO   PLUGIN
+##           PNGARCH   PLUGIN
 ##                                                         
-##  Read images from a video file.  Any input format supported by ffmpeg
-##  is allowed.
+##  Read scans from a folder of PNG files.
 
-MYCLASS = "video"
+MYCLASS = "pngarch"
 
 about = function() {
   return(plugin.label)
@@ -39,10 +38,9 @@ get.ports = function() {
                         is.live = FALSE,
                         is.file = TRUE,
                         is.seekable = TRUE,
-                        file.ext = video.extensions,
+                        file.ext = file.extensions,
                         can.specify.start.time = TRUE,
-                        config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height,
-                          origin = default.origin, scale = default.scale, rotation = default.rotation),
+                        config = c(default, filename = NULL),
                         has.toc = TRUE,
                         cur.run = 0,
                         cur.scan = 0,
@@ -64,7 +62,6 @@ get.ports = function() {
 }
 
 load = function() {
-  default.start.time <<- Sys.time()
 }
 
 unload = function(save.config) {
@@ -73,7 +70,7 @@ unload = function(save.config) {
 get.menus = function() {
   list(
        sources = list (
-         titles = "Video reader",
+         titles = "PNG Image reader",
          menu = list (
            options = "no-tearoff",
            "Choose a file..." = gui.create.port.file.selector(get.ports()[[1]])
@@ -83,59 +80,14 @@ get.menus = function() {
 ##         "Save geometry and frame rate parameters for this video in XXX.metadata.R..." = save.metafile,
 ##         "Load geometry and frame rate parameters for this video from another video's metdata.R file..." = load.metafile,
 ##         "---",
-         list ("datetime",
-               label = "date and time at start of first video frame",
-               value = as.numeric(default.start.time),
-               on.set = function(x) {
-                 t <- structure(round(x), class="POSIXct")
-                 default.start.time <<- t
-                 if (inherits(RSS$source, MYCLASS))
-                   RSS$source$start.time <- t
-               },
-               set.or.get = "gui.video.start.time"
-               ),
-         list ("gauge",
-               label = "desired frame rate, in frames per seconds" ,
-               range = c(0.001, 1000),
-               increment = 1,
-               value = default.frame.rate,
-               on.set = function(x) { default.frame.rate <<- x
-                                      if (inherits(RSS$source, MYCLASS))
-                                        config(RSS$source, frame.rate=x)
-                                    }
-               ),
-         list ("gauge",
-               label = "desired image width, in pixels",
-               range = c(100, 2000),
-               increment = 10,
-               value = default.width,
-               on.set = function(x) { default.width <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, width=x)
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "desired image height, in pixels",
-               range = c(100, 2000),
-               increment = 10,
-               value = default.height,
-               on.set = function(x) { default.height <<- x;
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, height=x)
-                                        update()
-                                      }
-                                    }
-               ),
          list ("gauge",
                label = "image centre x coordinate offset, in image pixels",
                range = c(-10000, 10000),
                increment = 1,
-               value = default.origin[1],
-               on.set = function(x) { default.origin[1] <<- x
+               value = default$origin[1],
+               on.set = function(x) { default$origin[1] <<- x
                                       if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, origin=default.origin)
+                                        config(RSS$source, origin=default$origin)
                                         update()
                                       }
                                     }
@@ -144,22 +96,34 @@ get.menus = function() {
                label = "image centre y coordinate offset, in image pixels",
                range = c(-10000, 10000),
                increment = 1,
-               value = default.origin[2],
-               on.set = function(x) { default.origin[2] <<- x
+               value = default$origin[2],
+               on.set = function(x) { default$origin[2] <<- x
                                       if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, origin=default.origin) 
+                                        config(RSS$source, origin=default$origin) 
                                         update()
                                       }
                                     }
                ),
          list ("gauge",
-               label = "scale of image, in metres per pixel",
+               label = "radius of image, in pixels",
                range = c(0, 10000),
-               increment = 0.1,
-               value = default.scale,
-               on.set = function(x) { default.scale <<- x
+               increment = 1,
+               value = default$radius,
+               on.set = function(x) { default$radius <<- x
                                       if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, scale=default.scale)
+                                        config(RSS$source, scale=default$radius)
+                                        update()
+                                      }
+                                    }
+               ),
+         list ("gauge",
+               label = "maximum range shown, in km",
+               range = c(0, 20),
+               increment = 0.01,
+               value = default$max.range,
+               on.set = function(x) { default$max.range <<- x
+                                      if (inherits(RSS$source, MYCLASS)) {
+                                        config(RSS$source, max.range=default$max.range)
                                         update()
                                       }
                                     }
@@ -168,11 +132,11 @@ get.menus = function() {
                label = "rotation of coordinates, in degrees clockwise",
                range = c(-360, 360),
                increment = 0.1,
-               value = default.rotation,
-               on.set = function(x) { default.rotation <<- x
+               value = default$rotation,
+               on.set = function(x) { default$rotation <<- x
                                       if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, rotation=default.rotation)
-                                        GUI$north.angle <- -default.rotation
+                                        config(RSS$source, rotation=default$rotation)
+                                        GUI$north.angle <- -default$rotation
                                         update()
                                       }
                                     }
@@ -185,7 +149,7 @@ get.menus = function() {
 
 globals = list (
   
-  as.character.video = function(x, ...) {
+  as.character.pngarch = function(x, ...) {
     sprintf("radR interface port: %s: %s: %s",
             MYCLASS,
             x$name,
@@ -193,12 +157,12 @@ globals = list (
             )
   },
   
-  print.video = function(x, ...) {
+  print.pngarch = function(x, ...) {
     ## print a description of this port
     cat (as.character(x) %:% "\n")
   },
 
-  config.video = function(port, ...) {
+  config.pngarch = function(port, ...) {
     
     opts <- list(...)
     if (length(opts) != 0) {
@@ -207,27 +171,25 @@ globals = list (
                filename = {
                  port$config$filename <- opts[[opt]]
                  port$contents <- empty.TOC  ## mark the table of contents as needing regeneration
-               },
-               width = {
-                 port$config$width <- opts[[opt]]
-               },
-               height = {
-                 port$config$height <- opts[[opt]]
-               },
-               frame.rate = {
-                 port$config$frame.rate <- opts[[opt]]
-               },
-               scale = {
-                 port$config$scale <- opts[[opt]]
+                 port$config$firstScan = get.seqno(port$config$filename)
+                 port$config$template = get.template(port$config$filename)
                },
                origin = {
                  port$config$origin <- opts[[opt]]
+               },
+               radius = {
+                 port$config$radius <- opts[[opt]]
+                 port$config$scale <- port$config$max.range * 1000 / port$config$radius ## metres per pixel
+               },
+               max.range = {
+                 port$config$max.range <- opts[[opt]]
+                 port$config$scale <- port$config$max.range * 1000 / port$config$radius ## metres per pixel
                },
                rotation = {
                  port$config$rotation <- opts[[opt]]
                },
                {
-                 rss.plugin.error("video: unknown configuration option for port: " %:% opt)
+                 rss.plugin.error("PNG: unknown configuration option for port: " %:% opt)
                  return(NULL)
                }
                )
@@ -236,17 +198,17 @@ globals = list (
     return(port$config)
   },
   
-  get.contents.video = function(port, ...) {
+  get.contents.pngarch = function(port, ...) {
     return(port$contents)
   },
   
-  end.of.data.video = function(port, ...) {
+  end.of.data.pngarch = function(port, ...) {
     ## return TRUE if there is no data left to be read
     ## on this port (e.g. if the end of a tape run has been hit)
     port$cur.scan >= port$contents$num.scans[port$cur.run]
   },
 
-  get.scan.info.video = function(port, ...) {
+  get.scan.info.pngarch = function(port, ...) {
     ## gets the header information for the next scan
 
     ## bump up the scan counter
@@ -254,7 +216,7 @@ globals = list (
 
     ## make sure the video pipe is open
     if (is.null(video.pipe))
-      open.video.at.cur.scan(port)
+      open.png.at.cur.scan(port)
     
     ## to be safe, we verify that the next bit
     ## of the video pipe contains a proper header for a PGM file.
@@ -298,7 +260,7 @@ globals = list (
     return(port$si)
   },
     
-  get.scan.data.video = function(port, extmat, ...) {
+  get.scan.data.pngarch = function(port, extmat, ...) {
     ## copies the data for the current scan into the extmat
     ## the data have already been read by get.scan.info
 
@@ -317,7 +279,7 @@ globals = list (
     return(extmat)
   },
 
-  seek.scan.video = function(port, run, scan, ...) {
+  seek.scan.pngarch = function(port, run, scan, ...) {
     ## seek to a particular run and scan on the current source
     ## scan = integer NAN requests a seek past the last scan in
     ##        the current run (which must be the last run
@@ -326,10 +288,10 @@ globals = list (
     if (scan == port$cur.scan + 1)
       return()
     port$cur.scan <- scan - 1 ## adjust for immediate adding of +1 by get.scan.info
-    open.video.at.cur.scan(port)
+    open.png.at.cur.scan(port)
   },
 
-  seek.time.video = function(port, time, ...) {
+  seek.time.pngarch = function(port, time, ...) {
     ## seek to the first scan at or after time in the current source
     ## scan = +Inf requests a seek past the last scan in
     ##        the current run (which must be the last run
@@ -340,10 +302,11 @@ globals = list (
     return (NULL)
   },
 
-  start.up.video = function(port, ...) {
-    ## determine how many frames are in the archive at the current
-    ## frame interval
 
+  start.up.pngarch = function(port, ...) {
+    ## determine how many sweeps are in the archive at the current
+    ## frame interval
+    
     ## The contents will be treated as a single run.
     ##
     ## Returns a one-row dataframe with three elements:
@@ -351,26 +314,57 @@ globals = list (
     ## start.time:  timestamp first scan
     ## end.time:    timestamp of last scan
 
-    old.plot.title.date.format <<- GUI$plot.title.date.format
-    GUI$plot.title.date.format <- plot.title.date.format
+    f = port$config$filename
+    fs = port$config$firstScan
+    
+    files = dir(dirname(f), pattern=".*.(png|PNG)$", full.names=TRUE)
+    files = files[get.seqno(files) >= fs]
+    num.scans = length(files)
+
+    ## image timestamps are rounded (truncated?) to the nearest second
+    ## we need to estimate duration, and actual starting timestamp so that we can
+    ## match the image timestamps throughout, to make it easy for users to compare
+    ## radR's sweep at time T to the image for time T
+    
+    ts = as.numeric(c(get.image.timestamp(port, read.scan.file(port, 1)), get.image.timestamp(port, read.scan.file(port, num.scans))))
+
+    ## unbiased duration estimate, for a reasonable number of sweeps
+    duration = diff(as.numeric(ts)) / (num.scans - 1)
+
+    ## given the duration estimate and number of intervening sweeps, how many fractional
+    ## seconds do we have to alter the first timestamp by to get the correct value for
+    ## the rounded final timestamp?  Getting this right should make timestamps align
+    ## more or less correctly throughout the sequence.
+
+    i = 0
+    repeat {
+      tsEnd = round(ts[1] + duration * (num.scans - 1))
+      if (tsEnd == ts[2])
+        break
+      if (tsEnd < ts[2]) {
+        ts[1] = ts[1] + 0.1
+        if (i > 10)
+          break
+      } else {
+        ts[1] = ts[1] - 0.1
+        if (i > 10)
+          break
+      }
+      i = i + 1
+    }
+    class(ts) = class(Sys.time())
+
     gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial, matrix.to.spatial = tx.matrix.to.spatial)
     rss.enable.hook("PATCH_STATS", MYCLASS)
-    port$duration <- get.video.duration(port$config$filename)
-    if (is.null(port$start.time)) {
-      split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
-      if (split[1] != -1) {
-        port$start.time <- strptime(substring(port$config$filename, split), date.guess.format)
-      } else {
-        port$start.time <- file.info(port$config$filename)$ctime
-      }
-      gui.video.start.time(round(port$start.time))
-    }
-    ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
+
     
+    port$duration <- duration
+    port$start.time <- ts[1]
+    gui.png.start.time(round(port$start.time))
     port$contents <- list (
-                          num.scans = ns,
+                          num.scans = num.scans,
                           start.time = structure(as.numeric(port$start.time), class="POSIXct"),
-                          end.time = structure(as.numeric(port$start.time + ns / port$config$frame.rate), class="POSIXct")
+                          end.time = structure(as.numeric(port$start.time + num.scans * port$duration), class="POSIXct")
                            )
 
     port$cur.run <- 1
@@ -378,7 +372,7 @@ globals = list (
     return (TRUE)
   },
 
-  shut.down.video = function(port, ...) {
+  shut.down.pngarch = function(port, ...) {
     ## do whatever is required to minimize
     ## resource consumption by this port
     ## eg. stopping digitization and playback,
@@ -397,7 +391,7 @@ globals = list (
     return(TRUE)
   },
 
-  new.play.state.video = function(port, new.state, old.state, ...) {
+  new.play.state.pngarch = function(port, new.state, old.state, ...) {
     ## indicate to this port that radR is
     ## changing play state.
 
@@ -430,12 +424,37 @@ hooks = list (
 ##   file.path(dirname(datafilename), "_metadata.R")
 ## }
 
-## get the video duration in seconds
-get.video.duration = function(f) {
-  as.numeric(as.difftime(strsplit(grep("Duration", readLines(pipe(paste(ffmpeg.path, "-i", paste("\"", f, "\"", sep=""), "-vframes 0 2>&1"))), value=TRUE), ",")[[1]][1], format="  Duration: %H:%M:%OS", units="secs"))
+read.scan.file = function(port, n) {
+  ## read the n'th scan
+  ## returns a nativeRaster with the n'th image,
+  ## where n is the image selected by the user
+
+  f = sprintf(port$config$template, port$config$firstScan + n - 1)
+  rv = readPNG(f, native=TRUE)
+  ## swap nominal dimensions to match actual storage;
+  ## first dimension is raster width
+  dim(rv) = rev(dim(rv))
+  return(rv)
+}
+  
+get.image.timestamp = function(port, img) {
+  ## img is a nativeRaster
+  tsi = img[port$config$tsbox.h, port$config$tsbox.v]
+  ts = strptime(
+    .Call(
+          "ocr",
+          tsi,
+          as.integer(
+                     c(length(port$config$tsbox.v), length(port$config$tsbox.h),
+                       1,  ## invert - timestamps are white on background, not black on white
+                       3,  ## scale - required for proper recognition
+                       2,  ## threshold 
+                       port$config$date.ocr.bitmask)))[[1]],
+    port$config$date.ocr.format)
+  return (as.POSIXct(ts))
 }
 
-open.video.at.cur.scan = function(port) {
+open.png.at.cur.scan = function(port) {
   ## returns a pipe connection to an ffmpeg process which dumps
   ## video starting from the current scan.  This is only called
   ## at startup and with seek.scan

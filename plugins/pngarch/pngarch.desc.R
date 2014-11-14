@@ -1,8 +1,8 @@
-### Read images from video files
+### Read sweeps from PNG files
 list(
      version = "1.0",
      
-     label = "Read images from a video file.  Any input format supported by ffmpeg"
+     label = "Read scans from a folder of .PNG images"
 
      )
 

@@ -1,4 +1,4 @@
-##     PNG   PLUGIN   CONFIG
+##     PNGARCH   PLUGIN   CONFIG
 ##                                                        
 ##  Read frames from PNG files.
 ##                                                        
@@ -13,49 +13,74 @@ enabled = TRUE
 ## this plugin is not always on
 always.on = FALSE
 
-## for guessing timestamps from the OCR'd video grab timestamp, we use a strptime-compatible
-## format string:
-date.guess.format = "%Y.%m.%d %H-%M-%S"
+## get the sequence numbers from filenames
+## For Benoit Gineste's frame grabber, the filenames look
+## like this:
+##  20140129_ARDA_4J1_0001.png
+## with the _0001 representing the sequence number.
+get.seqno = function(x) as.numeric(sapply(strsplit(basename(x), "[_.]"), function(i) i[4]))
 
-## regardless of the video's frame rate, at what rate do we grab frames for processing in radR?
-## this is in frames per second
+## get the sprintf template string from a filename;
+## this string can be used to generate the filename for
+## the n'th scan like so:  sprintf(template, n)
 
-default.rpm = 24
+get.template = function(x) {
+  parts = strsplit(basename(x), "[_.]")[[1]]
+  parts[4] = "%04d.png"
+  parts = parts[1:4]
+  return (file.path(dirname(x), paste(parts, collapse="_")))
+}
+  
+## defaults for configuration items
 
-## regardless of the video's actual resolution, we can specify the width
-## and height in video pixels for the frames we analyze, and ffmpeg
-## will take care of rescaling for us
+default = list (
+  
+  ## for reading timestamps from the OCR'd video grab timestamp, we use
+  ## a strptime-compatible format string:
+  date.ocr.format = "%Y.%m.%d %H-%M-%S\n",
 
-default.width = 320
-default.height = 200
+  ## bit mask for extracting the timestamp from the radar image
+  date.ocr.bitmask = 0x00ff0000,
+  
+  ## the location of the timestamp on the PNG image
+  ## is given by x[tsbox.h, tsbox.v]
+  tsbox.h = 1107:1278,
+  tsbox.v = 1001:1020,
+  
+  ## The clipping region is the subframe of each PNG image which we retain
+  ## as data.  If the image is read as x = readPNG("myfile.PNG", native=TRUE),
+  ## then the retained portion is
+  ##   x[clip.h[1]:clip.h[2], clip.v[1]:clip.v[2]]
 
-## default offset of image centre from the plot window centre, in pixels
-## a value of c(A, B) here has the effect of shifting display of the video
-## right A pixels and up B pixels (video pixels, not plot window pixels)
+  ## horizontal clipping region
+  clip.h = c(1, 1000),
 
-default.origin = c(0, 0)
+  ## vertical clipping region
+  clip.v = c(100, 500),
 
-## default scale of the video; i.e. how many metres represented by a pixel width
-## we assume square pixels
+  ## The origin and radius determine the clipping region
+  ## This is pixels from the left, pixels from the top, and
+  ## number of pixels from centre to maximum range.
 
-default.scale = 5
+  origin = c(528, 513),
+  radius = 496,
 
-## default rotation of the coordinate system, in degrees clockwise.
-## Normally, y increases bottom to top, and x increases left to right, but
-## any rotation can be specified here.
+  ## The maximum range shown on the radar image is usually in km
 
-default.rotation = 0
+  max.range = 1.5,
+  
+  ## default rotation of the coordinate system, in degrees clockwise.
+  ## Normally, y increases bottom to top, and x increases left to right, but
+  ## any rotation can be specified here.
 
-## list of video extensions (and descriptions) that we're interested
-## in and able to read (via ffmpeg). The first one listed will be the
-## default choice in "open file" dialgoues, and the rest will be in
-## the drop-down menu in the order given here.  An all files ("*.*") choice
-## is automatically added to the end of the list, and this will allow
-## the user to open any file.
+  rotation = 0
+  )
+
+## In the future, we might support other file types here:
 
 file.extensions = list(
-  png = 'PNG - sequence of PNG images',
-w  )
+  png = 'PNG - sequence of PNG images'
+)
 
 ## the plot window date format:
 plot.title.date.format           = "%Y %b %d %H:%M:%OS3"
