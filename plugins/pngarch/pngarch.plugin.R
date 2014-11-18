@@ -62,7 +62,7 @@ get.ports = function() {
 }
 
 load = function() {
-    library(png)
+    library(png, lib.loc="packages")
     rss.dyn.load("ocr", in.dir.of=plugin.file)
 }
 
