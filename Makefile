@@ -171,8 +171,8 @@ RADR_LIB_DIR            = $(RADR_TOPLEVEL_DIR)/libs
 ## makefiles in subdirectories should begin with the line $(eval $(AT_MAKEFILE_START))
 AT_MAKEFILE_START = include $(RADR_TOPLEVEL_DIR)/Makefile.inc
 CCOPTS_COMMON=-DBITS_PER_SAMPLE=$(BITS_PER_SAMPLE) -Wall
-CCOPTS_DEBUG=$(CCOPTS_COMMON) -g3 -DRADR_DEBUG
-CCOPTS_PRODUCTION=$(CCOPTS_COMMON) -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload -march=pentium4 -mfpmath=sse -msse2
+CCOPTS_DEBUG=$(CCOPTS_COMMON) -fPIC -g3 -DRADR_DEBUG
+CCOPTS_PRODUCTION=$(CCOPTS_COMMON) -fPIC -O3 -ffast-math -fgcse-sm -fgcse-las -fgcse-after-reload -march=pentium4 -mfpmath=sse -msse2
 CCOPTS_BCHECK=$(CCOPTS_COMMON) -B/usr/src/gcc-3.4.4-bounds-checking/gcc/ -fbounds-checking /usr/src/gcc-3.4.4-bounds-checking/gcc/bounds/lib/libboundscheck.a
 CCOPTS_BCHECK_DEBUG= $(CCOPTS_BCHECK) $(CCOPTS_DEBUG)
 CCOPTS_BCHECK_PRODUCTION=$(CCOPTS_BCHECK) $(CCOPTS_PRODUCTION)

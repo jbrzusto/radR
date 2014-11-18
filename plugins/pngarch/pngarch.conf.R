@@ -37,7 +37,7 @@ default = list (
   
   ## for reading timestamps from the OCR'd video grab timestamp, we use
   ## a strptime-compatible format string:
-  date.ocr.format = "%Y.%m.%d %H-%M-%S\n",
+  date.ocr.format = "%d.%m.%y %H:%M:%S",
 
   ## bit mask for extracting the timestamp from the radar image
   date.ocr.bitmask = 0x00ff0000,
@@ -58,17 +58,27 @@ default = list (
   ## vertical clipping region
   clip.v = c(100, 500),
 
-  ## The origin and radius determine the clipping region
-  ## This is pixels from the left, pixels from the top, and
+  ## The origin and radius determine the clipping region.
+  ## This is the adjustment in pixels from the left, pixels from the top,
+  ## which must be made to align the PNG images with the radar plot origin.
+  ## i.e. if the PNG images have the radar at image centre, then the value
+  ## here should be origin = c(0, 0).  If the image is left of centre,
+  ## the x value should be positive.  If the image is above centre, the
+  ## y value should be should be positive.
+
+  origin = c(112.5, -2),
+
   ## number of pixels from centre to maximum range.
 
-  origin = c(528, 513),
   radius = 496,
 
   ## The maximum range shown on the radar image is usually in km
 
   max.range = 1.5,
-  
+
+  ## The implied scale, in metres per pixel is the ratio of max.range * 1000 / radius
+  scale = 1000 * 1.5 / 496,
+    
   ## default rotation of the coordinate system, in degrees clockwise.
   ## Normally, y increases bottom to top, and x increases left to right, but
   ## any rotation can be specified here.

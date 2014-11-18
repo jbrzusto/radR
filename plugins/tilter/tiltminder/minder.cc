@@ -535,7 +535,7 @@ public:
    * @returns the time at which the physical device will have received the command
    *
    */
-  virtual time_stamp send_command(const std::string &cmd) {
+  virtual time_stamp send_command (const std::string &cmd) {
     out << cmd;
     out.flush();
     return (time_stamp) boost::get_system_time();

@@ -41,7 +41,7 @@ define BINARY_BUILD_RULE
 $$(addprefix $(RADR_PACKAGE_DIR)/,$$(addsuffix $$(BINARY_PACKAGE_SUFFIX),$(1))): $$(call GET_R_PACKAGE_FILENAMES, $(1))
 	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) build "$(1)"
 ifeq (unix,$(TARGET_PLATFORM))
-	$(RCMD) check $(addsuffix $(SOURCE_PACKAGE_SUFFIX),$(1))
+##	$(RCMD) check $(addsuffix $(SOURCE_PACKAGE_SUFFIX),$(1))
 	$(RM) -rf $(1).Rcheck
 endif
 	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) build --binary $(1)
