@@ -113,7 +113,7 @@ get.menus = function() {
                value = default$radius,
                on.set = function(x) { default$radius <<- x
                                       if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, scale=default$radius)
+                                        config(RSS$source, radius=default$radius)
                                         update()
                                       }
                                     }
@@ -218,12 +218,14 @@ globals = list (
     repeat {
         ## bump up the scan counter
         port$cur.scan = port$cur.scan + 1
-        x = read.scan.file(port, port$cur.scan, asNative = FALSE)[,,1]
-        port$scan.data = as.integer(32767 * x)
-        dims = dim(x)
-        if (!is.null(port$scan.data)) break
-        if (end.of.data(port))
-            return (NULL)
+        port$scan.data = read.scan.file(port, port$cur.scan, asNative = FALSE)
+        if (is.null(port$scan.data)) {
+            if (end.of.data(port))
+                return(NULL)
+            next
+        }
+        dims = dim(port$scan.data)[1:2]
+        break
     }
 
     port$si <- list(pulses = dims[2],
@@ -232,7 +234,7 @@ globals = list (
                     
                     bits.per.sample = 15, ## even though the gray channel is only 8 bits, we shift up to improve stats
                     
-                    timestamp = structure(round(as.numeric(port$start.time) + (port$cur.scan - 1) * port$duration), class=c("POSIXct", "POSIXt")),
+                    timestamp = structure((as.numeric(port$start.time) + (port$cur.scan - 1) * port$duration), class=c("POSIXct", "POSIXt")),
                     
                     duration = port$duration,
 
@@ -250,6 +252,15 @@ globals = list (
                     
                     )
 
+    if (is.null(port$config$inrange)) {
+        ## get a vector of linear indexes into the image for those pixels which are
+        ## within the specified range of the origin; other pixels are not part of
+        ## the radar image
+        tmp = matrix(0L, nrow=dims[1], ncol=dims[2])
+        dist = (row(tmp) - (dims[2] / 2 + port$config$origin[1]))^2 + (col(tmp) - (dims[1] / 2 + port$config$origin[2]))^2
+        port$config$inrange = which(dist <= port$config$radius^2)
+    }
+    
     return(port$si)
   },
     
@@ -259,6 +270,15 @@ globals = list (
 
     if (is.null(port$scan.data))
       return (NULL)
+    
+    ## remove portions of image which are white.
+    ## unfortunately, this will split some blips, but there's not much we can do
+
+    ## Classify remaining samples within range and with non-zero red channel
+    ## as hot.
+
+    keep = port$scan.data[,,3] == 0.0 & port$scan.data[,,1] > 0.0
+
     dim <- c(port$si$samples.per.pulse, port$si$pulses)
     
     if (is.null(dim))
@@ -268,7 +288,16 @@ globals = list (
     dim(RSS$class.mat) <- dim
     dim(RSS$score.mat) <- dim
 
-    extmat[1:prod(dim)] <- port$scan.data
+    ## paint in the red channel, suitably scaled
+    extmat[1:prod(dim)] <- as.integer(32767L * port$scan.data[,,1])
+
+    ## mark the inrange portion of the classification matrix as hot
+    RSS$class.mat[] <- RSS$CLASS.VAL$cold
+
+    RSS$class.mat[port$config$inrange][port$scan.data[,,1][port$config$inrange] > 0 & port$scan.data[,,3][port$config$inrange] < 1.0] <- RSS$CLASS.VAL$hot
+
+    RSS$new.have.valid$classification <- TRUE
+
     return(extmat)
   },
 
@@ -361,6 +390,22 @@ globals = list (
 
     port$cur.run <- 1
     port$scan.data <- NULL
+
+    ## disable the blip finding controls
+    rss.gui(ENABLE_CONTROLS, "blip.finding", FALSE)
+    ## make it look like we are blip finding
+    RSS$blip.finding <- TRUE
+    ## To indicate we are not learning, set the number of scans to learn to zero.
+    RSS$scans.to.learn <- 0
+    ## tell the scan processor to skip the sample classifying 
+    ## steps, since we are reading pre-digested data
+    save.restart.learning <<- RSS$restart.learning.after.stop
+    RSS$restart.learning.after.stop <- FALSE
+    RSS$skip$classify.samples <- TRUE
+    RSS$skip$update.stats <- TRUE
+
+    port$config$inrange = NULL  ## to be filled in when the first sweep is read
+
     return (TRUE)
   },
 
@@ -370,7 +415,18 @@ globals = list (
     ## eg. stopping digitization and playback,
     ## closing files, etc.
     rss.disable.hook("PATCH_STATS", MYCLASS)
-
+    
+    RSS$skip$classify.samples <- FALSE
+    RSS$skip$update.stats <- FALSE
+    RSS$scans.to.learn <- RSS$default.scans.to.learn
+    if (!is.null(save.restart.learning))
+          RSS$restart.learning.after.stop <- save.restart.learning 
+    
+    ## drop the patch finding hook
+    rss.drop.hook("FIND_PATCHES", MYCLASS)
+    ## re-enable the blipping controls
+    rss.gui(ENABLE_CONTROLS, "blip.finding", TRUE)
+    
 ##    GUI$plot.title.date.format <- old.plot.title.date.format
     ## restore old coord tx
     gui.set.coord.tx()

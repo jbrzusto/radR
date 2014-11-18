@@ -58,11 +58,18 @@ default = list (
   ## vertical clipping region
   clip.v = c(100, 500),
 
-  ## The origin and radius determine the clipping region
-  ## This is pixels from the left, pixels from the top, and
+  ## The origin and radius determine the clipping region.
+  ## This is the adjustment in pixels from the left, pixels from the top,
+  ## which must be made to align the PNG images with the radar plot origin.
+  ## i.e. if the PNG images have the radar at image centre, then the value
+  ## here should be origin = c(0, 0).  If the image is left of centre,
+  ## the x value should be positive.  If the image is above centre, the
+  ## y value should be should be positive.
+
+  origin = c(112.5, -2),
+
   ## number of pixels from centre to maximum range.
 
-  origin = c(528, 513),
   radius = 496,
 
   ## The maximum range shown on the radar image is usually in km
