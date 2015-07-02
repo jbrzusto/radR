@@ -29,7 +29,7 @@ RCMD = $(R) CMD
 BUILD_PLATFORM_LIBOPTS = 
 LOCAL_INSTALL_DIR=~/Desktop/radR
 #RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
-RINC =-I/usr/lib/R/include
+RINC =-I/usr/share/R/include
 
 BUILD_PLATFORM_CCOPTS = -fPIC -pg
 BUILD_PLATFORM_DEP = 
