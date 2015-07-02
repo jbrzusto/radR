@@ -40,41 +40,41 @@
 //
 
 #include "extmatimg.h"
-
+#include <tcl8.6/tk-private/generic/tkImgPhoto.h>
 // forward declaration 
 void
 do_image_extmat_changed (t_extmat *m, int x, int y, int width, int height, int imgWidth, int imgHeight);
 
-// from tkImgPhoto.c in tk8.4.13:
+/* // from tkImgPhoto.c in tk8.4.13: */
 
-typedef struct PhotoMaster {
-    Tk_ImageMaster tkMaster;	/* Tk's token for image master.  NULL means
-				 * the image is being deleted. */
-    Tcl_Interp *interp;		/* Interpreter associated with the
-				 * application using this image. */
-    Tcl_Command imageCmd;	/* Token for image command (used to delete
-				 * it when the image goes away).  NULL means
-				 * the image command has already been
-				 * deleted. */
-    int	flags;			/* Sundry flags, defined below. */
-    int	width, height;		/* Dimensions of image. */
-    int userWidth, userHeight;	/* User-declared image dimensions. */
-    Tk_Uid palette;		/* User-specified default palette for
-				 * instances of this image. */
-    double gamma;		/* Display gamma value to correct for. */
-    char *fileString;		/* Name of file to read into image. */
-    Tcl_Obj *dataString;	/* Object to use as contents of image. */
-    Tcl_Obj *format;		/* User-specified format of data in image
-				 * file or string value. */
-    unsigned char *pix32;	/* Local storage for 32-bit image. */
-    int ditherX, ditherY;	/* Location of first incorrectly
-				 * dithered pixel in image. */
-    TkRegion validRegion;	/* Tk region indicating which parts of
-				 * the image have valid image data. */
-    struct PhotoInstance *instancePtr;
-				/* First in the list of instances
-				 * associated with this master. */
-} PhotoMaster;
+/* typedef struct PhotoMaster { */
+/*     Tk_ImageMaster tkMaster;	/\* Tk's token for image master.  NULL means */
+/* 				 * the image is being deleted. *\/ */
+/*     Tcl_Interp *interp;		/\* Interpreter associated with the */
+/* 				 * application using this image. *\/ */
+/*     Tcl_Command imageCmd;	/\* Token for image command (used to delete */
+/* 				 * it when the image goes away).  NULL means */
+/* 				 * the image command has already been */
+/* 				 * deleted. *\/ */
+/*     int	flags;			/\* Sundry flags, defined below. *\/ */
+/*     int	width, height;		/\* Dimensions of image. *\/ */
+/*     int userWidth, userHeight;	/\* User-declared image dimensions. *\/ */
+/*     Tk_Uid palette;		/\* User-specified default palette for */
+/* 				 * instances of this image. *\/ */
+/*     double gamma;		/\* Display gamma value to correct for. *\/ */
+/*     char *fileString;		/\* Name of file to read into image. *\/ */
+/*     Tcl_Obj *dataString;	/\* Object to use as contents of image. *\/ */
+/*     Tcl_Obj *format;		/\* User-specified format of data in image */
+/* 				 * file or string value. *\/ */
+/*     unsigned char *pix32;	/\* Local storage for 32-bit image. *\/ */
+/*     int ditherX, ditherY;	/\* Location of first incorrectly */
+/* 				 * dithered pixel in image. *\/ */
+/*     TkRegion validRegion;	/\* Tk region indicating which parts of */
+/* 				 * the image have valid image data. *\/ */
+/*     struct PhotoInstance *instancePtr; */
+/* 				/\* First in the list of instances */
+/* 				 * associated with this master. *\/ */
+/* } PhotoMaster; */
 
 SEXP
 radR_attach_image_to_extmat (SEXP name, SEXP tclinterp, SEXP matsxp) {

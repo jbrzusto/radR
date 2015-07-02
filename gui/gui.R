@@ -2098,9 +2098,6 @@ GUI.init <- function() {
   GUI.PACKAGE <<- .Platform$OS.type %:% "gui"
   rss.dyn.load(GUI.PACKAGE, in.dir.of="gui/gui.conf.R")
 
-  ## read the tkImgPNG library (which allows .png images to be loaded into Tk)
-  rss.dyn.load("main/R_tkImgPNG")
-
   ## load the gradient palette editor
   source("gui/epal.R")
 
@@ -2211,8 +2208,6 @@ gui.create.windows <- function() {
   gui.create.command.menu()
   gui.setup.bindings()
 
-  ## initialize the TkImgPNG library (which must be done after create.plot.window sets the tcl interpreter)
-  .Call("init_tk_img_png", GUI$tcl.interp)
 }
 
 gui.restore.window.settings <- function() {
