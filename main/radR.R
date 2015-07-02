@@ -76,6 +76,7 @@ if (use.gui) {
   rss.tcl.stubs()
 }
 
+library(lubridate)
 ## run the main radR loop, which also initializes the GUI, if any.
 
 rss.init(use.gui)

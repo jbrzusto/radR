@@ -639,7 +639,7 @@ gui.destroy.menu <- function(id) {
 ## t1 and t2 are vectors of starting and ending times
 
 format.time.interval <- function(t1, t2) {
-  len<-lapply(seq(along=t1),
+  len<-lapply(seq(along=unclass(t1)),
            function(i){
              d<-round(difftime(t2[i], t1[i]), digits=2)
              paste(d, attr(d, "units"))

@@ -20,15 +20,16 @@ CP = $(shell which cp)
 HEAD = $(shell which head)
 ## version of R you are building against
 R_MAJOR_VERSION = 3
-R_MINOR_VERSION = 0
-R_MINOR_SUBVERSION = 0
+R_MINOR_VERSION = 2
+R_MINOR_SUBVERSION = 1
 R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
 R = /usr/bin/R
 RCMD = $(R) CMD
 BUILD_PLATFORM_LIBOPTS = 
 LOCAL_INSTALL_DIR=~/Desktop/radR
-RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
+#RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
+RINC =-I/usr/lib/R/include
 
 BUILD_PLATFORM_CCOPTS = -fPIC -pg
 BUILD_PLATFORM_DEP = 
@@ -43,9 +44,10 @@ TCLTK_INC = -I/home/src/tk8.4.15/generic -I/home/src/tk8.4.15/win -I /home/src/t
 RLIB = $(R_WINDOWS_HOME)/bin/R.dll
 NM = /usr/bin/i586-mingw32msvc-nm 
 else
-TCLTK_LIB = -L/usr/lib -ltcl8.5 -ltk8.5
-TCLTK_INC = -I/usr/include/tcl8.5 -I/usr/include/tcl8.5/tk-private/generic  -I/usr/include/tcl8.5/tcl-private/generic
-RLIB = -L/home/src/R-$(R_VERSION)/lib -lR
+TCLTK_LIB = -L/usr/lib -ltcl8.6 -ltk8.6
+TCLTK_INC = -I/usr/include/tcl8.6 -I/usr/include/tcl8.6/tk-private/generic  -I/usr/include/tcl8.6/tcl-private/generic  -I/usr/include/tcl8.6/tk-private/unix  -I/usr/include/tcl8.6/tcl-private/unix
+##RLIB = -L/home/src/R-$(R_VERSION)/lib -lR
+RLIB = -lR
 NM = /usr/bin/nm
 LIBZ_LIB = -L/usr/lib -lz -Wl,-rpath=/usr/lib
 endif

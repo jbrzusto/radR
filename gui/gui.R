@@ -634,7 +634,7 @@ gui.create.plot.window <- function() {
     TCL('canvas .plot.frame.canvas -cursor hand2 -borderwidth 0 -relief flat -highlightthickness 0 -background "black" -closeenough 3')
     TCL('place configure .plot.frame -x 0 -y 0 -anchor nw -relwidth 1.0 -relheight 1.0')
     tcl("bind", ".plot.frame", "<Map>", gui.continue.create.plot.window)
-
+    tcl("update", "idletasks"); Sys.sleep(0.1)
     GUI$plot.dim <- gui.parse.geometry(GUI$windows$.plot$geometry)
     
     tcl("bind", ".plot.frame", "<Expose>",
@@ -676,7 +676,6 @@ gui.create.plot.window <- function() {
 
   ## determine our tcl interpreter (KLUDGE: this code relies on having a Tk window)
   GUI$tcl.interp <- .Call("get_tcl_interp", tclint("winfo", "id", ".plot"))
-
   ## make the range rings and compass items
   gui.create.range.rings()
   gui.create.compass()
@@ -823,6 +822,31 @@ gui.select.file.for.port <- function(port, init.dir) {
   }
   return(FALSE)
 }
+
+gui.select.folder.for.port <- function(port, init.dir) {
+  ## pop up a directory selection dialog for a port
+  ## - init.dir is the initial directory at which the dialog points
+
+  is.source <- port$is.source
+  dir <- tclchar("tk_chooseDirectory",
+                 title="Choose a folder for " %:% ifelse(is.source, "loading", "saving"),
+                 initialdir=init.dir,
+                 mustexist=is.source)
+  tcl("focus", ".play")
+  if (length(dir) > 0 && nchar(dir) > 0) {
+    rss.set.port(port, folder=dir)
+    return (TRUE)
+  }
+  return(FALSE)
+}   
+
+gui.create.port.folder.selector <- function(port) {
+  ## create a closure whose job is to select a folder for a
+  ## file-archive type port, and add it to the appropriate menu
+
+  return(function() gui.select.folder.for.port(port, GUI$default.dir))
+}
+
 
 gui.port.label <- function(port) {
   ## return the label to be used in source/sink menus and labels for

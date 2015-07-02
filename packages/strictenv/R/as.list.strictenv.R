@@ -1,2 +1,2 @@
 "as.list.strictenv" <-
-function(x, ...) .Internal(env2list(x, TRUE))
+function(x, ...) as.list(structure(x, class=NULL), all.names=TRUE)

@@ -233,7 +233,7 @@ plot.data.sources = list (
 
 plot.data.source               = "scan.mat"
 
-splash.text = "radR, Copyright (C) 2006-2010 John Brzustowski\nradR is free software and comes with\n    ABSOLUTELY NO WARRANTY.\nYou are welcome to redistribute radR\nunder certain conditions; for details,\nright click the mouse and do Help | License.\n\n"
+splash.text = "radR, Copyright (C) 2006-2015 John Brzustowski\nradR is free software and comes with\n    ABSOLUTELY NO WARRANTY.\nYou are welcome to redistribute radR\nunder certain conditions; for details,\nright click the mouse and do Help | License.\n\n"
 
 ## layer prototypes
 
