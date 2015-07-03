@@ -222,7 +222,11 @@ globals = list (
                         
                         orientation = +1,
                         
-                        is.rectangular = FALSE
+                        is.rectangular = FALSE,
+
+                        adc.gain = SH$adc_gain,
+
+                        adc.offset = SH$adc_offset
                         
                         )
 
