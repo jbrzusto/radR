@@ -212,7 +212,7 @@ globals = list (
                         
                         timestamp = structure(SH$time_stamp_seconds + SH$time_stamp_useconds / 1e6, class=class(Sys.time())),
                         
-                        duration = SH$scan_duration * 1e3,
+                        duration = SH$scan_duration / 1e3,
 
                         sample.dist = SH$range_per_sample / 1e5,
                         
