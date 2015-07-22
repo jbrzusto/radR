@@ -99,7 +99,7 @@
 ##    - reset item's coordinates according to the change between
 ##      the current and old coordinates
 
-show.zone = function(canvas, zone, geom) {
+show.zone = function(canvas, zone, geom, as.is=FALSE) {
   ##
   ## show a zone on a canvas
   ##
@@ -114,7 +114,8 @@ show.zone = function(canvas, zone, geom) {
 
   zone$.tag <- "z_" %:% zone$.id
   zone$.geom <- geom
-  zone$visible <- TRUE
+  if (! as.is)
+      zone$visible <- TRUE
   draw.zone (canvas, zone)
   bind.zone (canvas, zone)
 }
@@ -130,7 +131,7 @@ draw.zone = function(canvas, zone) {
   ## draw a zone on a canvas
   ##
   ## angles in radians
-  a <- list ((90 - (zone$a[[1]] + zone$a[[2]]) - zone$.geom()$north.angle) * (pi / 180))
+  a <- list ((90 - (zone$a[[1]] + zone$a[[2]]) - zone$.geom()$offset.angle) * (pi / 180))
   a[[2]] <- a[[1]] + zone$a[[2]] * (pi / 180)
              
 
@@ -213,7 +214,7 @@ draw.zone = function(canvas, zone) {
       tcl(canvas, "coords", tagexp,
           c(org - zone$r[[j]][i] / zone$.geom()$mpp, org + zone$r[[j]][i] / zone$.geom()$mpp))
       .Tcl(paste(canvas, "itemconfigure", tagexp,
-                 "-start", 90 - (zone$a[[1]][i] + zone$a[[2]][i]) - zone$.geom()$north.angle,
+                 "-start", 90 - (zone$a[[1]][i] + zone$a[[2]][i]) - zone$.geom()$offset.angle,
                  "-extent", if (zone$a[[2]][i] == 360.0) 359.999 else zone$a[[2]][i],
                  "-outline", zone$colour, zone$.par$arc[1 + zone$.hilite[i]]))
     }
@@ -255,6 +256,13 @@ item.info.zone = function(canvas, zone) {
   return (list (segno=segno, type=type, index=index))
 }
 
+bearing.offset = function() {
+    if (is.null(RSS$scan.info) || is.null(RSS$scan.info$bearing.offset))
+        0
+    else
+        RSS$scan.info$bearing.offset
+}
+
 xy.to.zone.coords = function(zone, xy) {
   ## convert canvas coordinates to zone coordinates
   ## zone: the zone
@@ -266,7 +274,7 @@ xy.to.zone.coords = function(zone, xy) {
 
   rp <- xy - GUI$plot.origin
   rbind(sqrt(apply(rp^2, 2, sum)) * GUI$mpp,
-    (90 - atan2(-rp[2,], rp[1,]) * 180 / pi - GUI$north.angle) %% 360)
+    (90 - atan2(-rp[2,], rp[1,]) * 180 / pi - GUI$north.angle - get.bearing.offset()) %% 360)
 }
 
 zone.coords.to.xy = function(zone, ra) {
@@ -279,7 +287,7 @@ zone.coords.to.xy = function(zone, ra) {
 
   ## Uses the current GUI plot window
 
-  th <- (90 - ra[, 2] - GUI$north.angle) * (pi / 180)
+  th <- (90 - ra[, 2] - GUI$north.angle - get.bearing.offset()) * (pi / 180)
   r <- r / GUI$mpp
   GUI$plot.origin + rbind(r * cos(th), r * sin(th))
 }
@@ -304,7 +312,7 @@ drag.zone = function(pc, ...) {
         
         if (info$type == "p" || info$type == "l") {
           ## for points and lines, we adjust the angle
-          new.angle <- (90 - atan2(-relpos[2], relpos[1]) * 180 / pi - zone$.geom()$north.angle) %% 360
+          new.angle <- (90 - atan2(-relpos[2], relpos[1]) * 180 / pi - zone$.geom()$offset.angle) %% 360
           if (info$index == 1 || (info$type == "p" && info$index == 2)) {
             zone$a[[2]][info$segno] <- round.angular.extent(new.angle - zone$a[[1]][info$segno])
           } else {
@@ -392,7 +400,7 @@ handle.context.menu.zone = function() {
   imin <- 1 + (zone$r[[2]][segno] < zone$r[[1]][segno])
   imax <- 3 - imin
   rhere <- sqrt(sum(relpos^2)) * zone$.geom()$mpp
-  ahere <- (90 - atan2(-relpos[2], relpos[1]) * 180 / pi - zone$.geom()$north.angle) %% 360
+  ahere <- (90 - atan2(-relpos[2], relpos[1]) * 180 / pi - zone$.geom()$offset.angle) %% 360
   keep.hilite <- FALSE
   reprocess <- FALSE
   switch(what,

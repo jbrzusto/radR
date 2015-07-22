@@ -218,6 +218,7 @@ update.zones = function() {
     RSS$class.mat[] <- RSS$CLASS.VAL$cold
     RSS$prev.class.mat[] <- RSS$CLASS.VAL$cold
   }
+  show.zones(show=NA)
 }
 
 do.update = function() {
@@ -394,7 +395,7 @@ show.zone.with.id = function(id, show=TRUE) {
   z$.id <- id
   z$.delproc <- delete.zone
   z$.reproc <- do.update
-  if (show) {
+  if (is.na(show) || show) {
     if (!isTRUE(z$.edit))
       z$.hilite <- rep(FALSE, length(z$r[[1]]))
     
@@ -405,7 +406,7 @@ show.zone.with.id = function(id, show=TRUE) {
     if (!GUI$plot.is.tk.image)
       gui.set.plot.is.tk.image(TRUE)
     
-    show.zone(GUI$plot, z, geom = function() list(mpp = GUI$mpp, north.angle=GUI$north.angle))
+    show.zone(GUI$plot, z, geom = function() list(mpp = GUI$mpp, offset.angle=GUI$north.angle + get.bearing.offset()), as.is=is.na(show))
   } else {
     hide.zone(GUI$plot, z)
   }
@@ -675,12 +676,11 @@ compile.zone = function(z, si) {
   
   rv <- matrix(integer(0), nrow = n <- length(z$r[[1]]), ncol=4)
   rps <- si$sample.dist * cos(si$antenna.angle[1] * pi / 180)
-  b0 <- si$bearing.offset %% 360.0
   for (i in 1:n) {
     s <- pmax(1, pmin(si$samples.per.pulse, 1 +
                       floor ((sort(c(z$r[[1]][i], z$r[[2]][i]))) / rps - si$first.sample.dist / si$sample.dist)))
     if (z$a[[2]][i] %% 360 != 0) {
-      p <- pmax(1, 1 + floor(((c(0, z$a[[2]][i]) + (z$a[[1]][i] + 180 / si$pulses) - b0) %% 360) * (si$pulses / 360)))
+      p <- pmax(1, 1 + floor(((c(0, z$a[[2]][i]) + (z$a[[1]][i] + 180 / si$pulses)) %% 360) * (si$pulses / 360)))
       ## if it's a range that includes the first and last pulses, then correct and rewrite it using negative indices
       if (p[2] < p[1])
         p <- - p[2:1] - c(1, 0)
@@ -738,6 +738,16 @@ reset.excluded = function(classmat) {
   ## reset class of samples from "excluded" to "cold"
   classmat[c(classmat[]) == RSS$CLASS.VAL$excluded] <- RSS$CLASS.VAL$cold
 }
+
+get.bearing.offset = function() {
+    ## get the bearing offset angle, or 0 if none specified
+    
+    if (is.null(RSS$scan.info) || is.null(RSS$scan.info$bearing.offset))
+        0
+    else
+        RSS$scan.info$bearing.offset
+}
+
 
 get.scan.info = function(si) {
   ## Return the compiled zone info
