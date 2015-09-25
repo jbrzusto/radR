@@ -1937,6 +1937,7 @@ gdb(SEXP x) {
 #ifndef Win32
 #define R_INTERFACE_PTRS 1
 #include <R_ext/eventloop.h>
+#include <signal.h>
 
 static void (* old_handler)(void);
 static int old_timeout;
@@ -1951,8 +1952,9 @@ void radR_fix_readline_problem(void) {
   // remove the tcltk-installed callback handler
   // this fixes the problem of readline being in a non-echo
   // state upon GUI-induced exit of radR
-  //  rl_callback_handler_remove();
+  rl_callback_handler_remove();
 }
+
 
 static void radRHandler(void)
 {
@@ -2450,6 +2452,7 @@ R_init_radR(DllInfo *info)
   */
 #ifndef Win32
   setenv("TZ", "GMT", 1);
+  signal(SIGSEGV, radR_fix_readline_problem);
 #endif
   tzset();  /* set to GMT time, we hope */
 }

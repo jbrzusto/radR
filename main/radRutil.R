@@ -707,7 +707,7 @@ rss.hook.is.active <- function(which) {
   sw <- substitute(which)
   if (is.name(sw) && sw == toupper(sw))
     which <- as.character(sw)
-  return (any(RSS$hooks[[which]] %$$% enabled))
+  return (any(as.logical(RSS$hooks[[which]] %$$% enabled)))
 }
 
 rss.enable.hook <- function(which, plugin.name="user", enable=TRUE)

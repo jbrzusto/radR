@@ -74,13 +74,15 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   numSamples = hdr->samples_per_line * hdr->num_output_lines;
   
   numDecoded = LZ4_decompress_safe(p + 128, (char *) EXTPTR_PTR(extptr), hdr->compressed_size, numSamples * sizeof(sample_t));
-  
+
+#ifdef RADR_DEBUG  
   printf("input: %p, output: %p, size:%d, decompsize: %d, samples_per_line:%d, num_output_lines: %d, numDecoded: %d\n", 
          p+128,
          (char *) EXTPTR_PTR(extptr),
          hdr->compressed_size,
          numSamples * sizeof(sample_t),         
          hdr->samples_per_line, hdr->num_output_lines, numDecoded);
+#endif
   /*
   if (numDecoded != numSamples * sizeof(sample_t))
     return ScalarLogical(0);

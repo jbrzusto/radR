@@ -1104,7 +1104,7 @@ rss.do.play.one.scan <- function()
   }
 }
 
-rss.init <- function (use.gui=TRUE) {
+rss.init <- function (use.gui=TRUE, event.loop=TRUE) {
   ## use.gui: should a GUI be loaded?
 
   ## install a custom error handler
@@ -1198,7 +1198,9 @@ rss.init <- function (use.gui=TRUE) {
   ## and does the appropriate work
 
   rss.gui(DELETE_MESSAGEBOX, "loading")
-  rss.install.event.loop()
+
+  if (event.loop)
+      rss.install.event.loop()
 
   ## start the main loop
   if (RSS$have.gui) {

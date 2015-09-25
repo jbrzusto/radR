@@ -30,44 +30,72 @@
 # 
 # NOTE: this file must be executed from the toplevel radR directory.
 
-RVERSION=2.5.1
-
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "" ]; then
     cat <<-EOF
-		rbatch runs process_one.R on a set of files; 
-		       e.g. process a bunch of blip movies to extract tracks
-		
-		usage:  rbatch [--no-progress] [--parm PARMFILE] FILE1 ... FILEN
-		
-		e.g.:   rbatch /array/data1/jbrzusto/data/CS*.bma
-		
-		Parameter overrides are taken from PARMFILE, if the --parms option is specified.
-		Specifying --no-progress prevents a running display of scans processed.
+rbatch:  run a radR script on a set of files.
+e.g. process a bunch of blip movies to extract tracks
+
+usage:  rbatch [--no-progress] [--parm PARMFILE] [--script SCRIPTFILE] SITE FILE1 ... FILEN
+
+e.g.:   rbatch --script scripts/inrad2blips.R  WS /media/radar/CansoData18/SGdata/2015-09-11/08
+
+SITE is a site code, used as the prefix for output filenames.
+FILE1 ... FILEN are either filenames or folder names, depending on the script
+
+Parameter overrides are taken from PARMFILE, if the --parms option is specified.
+Specifying --no-progress prevents a running display of scans processed.
+If the --script SCRIPTFILE is specified, SCRIPTFILE is used to control
+processing, rather than the default file 'process_one.R'
 	EOF
     exit 1;
 fi
 
-if [ "$1" == "--no-progress" ]; then 
-    shift
-    PROGRESS=""
-else 
-    PROGRESS="--show-progress"
+PROGRESS="--show-progress"
+SCRIPTFILE="main/process_one.R"
+PARMS=""
+DEBUG=""
+
+while (( 1 )); do
+    case "$1" in
+        --no-progress )
+            PROGRESS=""
+            shift ;;
+        --parm )
+            if [ ! -f "$2" ]; then
+                echo The parm file "$2" does not exist.
+                exit 1
+            fi
+            PARMS="--parm $2"
+            shift 2 ;;
+        --script )
+            SCRIPTFILE=$2
+            if [ ! -f "$SCRIPTFILE" ]; then
+                echo The parm file "$SCRIPTFILE" does not exist.
+                exit 1
+            fi
+            shift 2 ;;
+        --debug )
+            DEBUG="-d gdb"
+            shift;;
+        *)
+            break;;
+        esac
+done
+
+SITE=$1
+shift
+if [ "$SITE" == "" ]; then
+    echo You must specify a site code.
+    exit 2
 fi
 
-if [ "$1" == "--parms" -o "$1" == "--parm" ]; then 
-    shift
-    if [ ! -f "$1" ]; then
-	echo "The parm file '$1' does not exist"
-	exit 1;
-    fi;
-    PARMS="--parm $1"
-    shift
-else
-    PARMS=""
+if [ "$1" == "" ]; then
+    echo You have to specify some file or folder names.
+    exit 3
 fi
 
 for x in "$@"; do
-    R-$RVERSION --no-save --quiet --args --no-gui $PROGRESS --source main/process_one.R $PARMS "$x"
+    R $DEBUG --no-save --quiet --args --no-gui --no-eventloop $PROGRESS --source $SCRIPTFILE $PARMS $SITE "$x"
 done
 
 echo

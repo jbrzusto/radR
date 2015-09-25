@@ -146,30 +146,30 @@ list (
 ###
 ################################################################################
       
-      tracker = list (
-        ## are tracks written to the .CSV file?
+      ## tracker = list (
+      ##   ## are tracks written to the .CSV file?
 
-        save.to.csv = TRUE,
+      ##   save.to.csv = TRUE,
         
-        ## the date/time format to use for the CSV track output
-        ## file.  This must include the date and time formats
-        ## separated by a comma, in order to be consistent
-        ## with what this plugin outputs for each blip.
+      ##   ## the date/time format to use for the CSV track output
+      ##   ## file.  This must include the date and time formats
+      ##   ## separated by a comma, in order to be consistent
+      ##   ## with what this plugin outputs for each blip.
 
-        date.time.format = "%Y/%m/%d,%H:%M:%S",
+      ##   date.time.format = "%Y/%m/%d,%H:%M:%S",
 
-        ## Maximum allowed speed of an object (km/h).
-        ## Blips whose positions in time and space imply a speed
-        ## between them larger than this are not joined into
-        ## the same track.
+      ##   ## Maximum allowed speed of an object (km/h).
+      ##   ## Blips whose positions in time and space imply a speed
+      ##   ## between them larger than this are not joined into
+      ##   ## the same track.
         
-        track.max.speed = 100,
+      ##   track.max.speed = 100,
         
-        ## minimum number of blips in a track for it to be saved
+      ##   ## minimum number of blips in a track for it to be saved
 
-        track.min.blips = 4
+      ##   track.min.blips = 4
 
-        ),
+      ##   ),
 
 ################################################################################
 ###
@@ -178,33 +178,33 @@ list (
 ###
 ################################################################################
 
-      mfc = list (
+      ## mfc = list (
 
-        ## number of frames over which to "backtrack" in building
-        ## tracks
+      ##   ## number of frames over which to "backtrack" in building
+      ##   ## tracks
 
-        k = 2,
+      ##   k = 2,
 
-        ## relative weighting of directional coherence in gain
-        ## function (the other component of gain, which receives
-        ## 1 - alpha as weight, is relative proximity to predicted
-        ## location)
+      ##   ## relative weighting of directional coherence in gain
+      ##   ## function (the other component of gain, which receives
+      ##   ## 1 - alpha as weight, is relative proximity to predicted
+      ##   ## location)
 
-        alpha = 0.5,
+      ##   alpha = 0.5,
 
-        ## a small penalty added to the gain function for any
-        ## edge connecting blips in non-consecutive scans; this
-        ## is meant to prevent exclusion of blips from perfectly
-        ## straight-line tracks
+      ##   ## a small penalty added to the gain function for any
+      ##   ## edge connecting blips in non-consecutive scans; this
+      ##   ## is meant to prevent exclusion of blips from perfectly
+      ##   ## straight-line tracks
         
-        eps = 0.001,
+      ##   eps = 0.001,
 
-        ## the minimum gain (between 0 and 1) required for a blip
-        ## to be considered for joining a track
+      ##   ## the minimum gain (between 0 and 1) required for a blip
+      ##   ## to be considered for joining a track
 
-        min.gain = 0.9090909
+      ##   min.gain = 0.9090909
 
-        ),
+      ##   ),
 
 ################################################################################
 ###
@@ -214,86 +214,86 @@ list (
 ###
 ################################################################################
 
-      antenna = list (
+      ## antenna = list (
         
-        ## Antenna type.
-        ## This must be one of:
-        ##   "dish" - a parabolic dish
-        ##   "tbar" - an open-array T-bar antenna
+      ##   ## Antenna type.
+      ##   ## This must be one of:
+      ##   ##   "dish" - a parabolic dish
+      ##   ##   "tbar" - an open-array T-bar antenna
 
-        antenna.type = "dish",
+      ##   antenna.type = "dish",
         
-        ## Angle of the antenna axis above the horizontal, in degrees.
-        ## (should be 0 if type == "tbar")
+      ##   ## Angle of the antenna axis above the horizontal, in degrees.
+      ##   ## (should be 0 if type == "tbar")
 
-        antenna.angle = 40,
+      ##   antenna.angle = 40,
 
-        ## Horizontal aperture of the antenna, in degrees.  This is the
-        ## angular width of the instantaneous region "seen" by the
-        ## antenna.
+      ##   ## Horizontal aperture of the antenna, in degrees.  This is the
+      ##   ## angular width of the instantaneous region "seen" by the
+      ##   ## antenna.
 
-        antenna.aperture.h = 3,
+      ##   antenna.aperture.h = 3,
 
-        ## Vertical aperture of the antenna, in degrees.  This is the
-        ## angular height of the instantaneous region "seen" by the
-        ## antenna.  (should equal aperture.h if type == "dish")
+      ##   ## Vertical aperture of the antenna, in degrees.  This is the
+      ##   ## angular height of the instantaneous region "seen" by the
+      ##   ## antenna.  (should equal aperture.h if type == "dish")
         
-        antenna.aperture.v = 3,
+      ##   antenna.aperture.v = 3,
 
-        ## Geographic location of the radar.  This will be overridden by
-        ## any GPS information provided by the radar data, and is
-        ## optional.
+      ##   ## Geographic location of the radar.  This will be overridden by
+      ##   ## any GPS information provided by the radar data, and is
+      ##   ## optional.
 
-        ## latitude, in degrees North (negative for South of the equator)
+      ##   ## latitude, in degrees North (negative for South of the equator)
 
-        latitude = 43.5,
+      ##   latitude = 43.5,
         
-        ## longitude, in degrees West (negative for east of Greenwich)
+      ##   ## longitude, in degrees West (negative for east of Greenwich)
 
-        longitude = -65.7,
+      ##   longitude = -65.7,
         
-        ## elevation, in metres above sea level
+      ##   ## elevation, in metres above sea level
 
-        elevation = 50,
+      ##   elevation = 50,
 
-        ## bearing offset: an angle in degrees clockwise from N.
-        ## This is used for two purposes:
-        ## 1. For a stationary antenna, (i.e. one for which scan.info$bearing is always 0),
-        ##    this is the azimuth angle corresponding to the first pulse in each sweep.
-        ##
-        ## 2. For a moving antenna, this is the offset between the ship's axis
-        ##    (whose azimuth is reported in scan.info$heading) and the antenna's axis.
-        ##
-        ## In both cases, scan.info$heading + scan.info$bearing.offset will be
-        ## the compass angle corresponding to the first pulse in a scan.
+      ##   ## bearing offset: an angle in degrees clockwise from N.
+      ##   ## This is used for two purposes:
+      ##   ## 1. For a stationary antenna, (i.e. one for which scan.info$bearing is always 0),
+      ##   ##    this is the azimuth angle corresponding to the first pulse in each sweep.
+      ##   ##
+      ##   ## 2. For a moving antenna, this is the offset between the ship's axis
+      ##   ##    (whose azimuth is reported in scan.info$heading) and the antenna's axis.
+      ##   ##
+      ##   ## In both cases, scan.info$heading + scan.info$bearing.offset will be
+      ##   ## the compass angle corresponding to the first pulse in a scan.
 
-        bearing.offset = 0
+      ##   bearing.offset = 0
 
-        ),
+      ##   ),
 
 ################################################################################
 ###
 ###  declutter config (from plugins/declutter/declutter.conf.R)
 ###
 ################################################################################
-      declutter = list (
+      ## declutter = list (
 
-        ## minimum mean sample occupancy at which blip is treated as clutter.
-        ## For example, blip.cutoff = 0.01 means any blip having a mean sample
-        ## occupancy (across all its samples) greater than 1% is filtered out.
+      ##   ## minimum mean sample occupancy at which blip is treated as clutter.
+      ##   ## For example, blip.cutoff = 0.01 means any blip having a mean sample
+      ##   ## occupancy (across all its samples) greater than 1% is filtered out.
 
-        cutoff = 0.0030,
+      ##   cutoff = 0.0030,
 
-        ## the default file from which to load a clutter map
-        ## If this is NULL, the declutter plugin is disabled.
-        ## If this is not NULL, it should be a pathname in quotes
-        ## e.g. clutter.filename = "/radR/cluttermaps/my_site.clutter.Rdata"
-        ## and the declutter plugin will be enabled. (This won't force it
-        ## to be loaded, however, so make sure your radR installation is
-        ## set to load the declutter plugin by default.)
+      ##   ## the default file from which to load a clutter map
+      ##   ## If this is NULL, the declutter plugin is disabled.
+      ##   ## If this is not NULL, it should be a pathname in quotes
+      ##   ## e.g. clutter.filename = "/radR/cluttermaps/my_site.clutter.Rdata"
+      ##   ## and the declutter plugin will be enabled. (This won't force it
+      ##   ## to be loaded, however, so make sure your radR installation is
+      ##   ## set to load the declutter plugin by default.)
 
-        clutter.filename = NULL
-      ),
+      ##   clutter.filename = NULL
+      ## ),
 
 
 ################################################################################
@@ -304,5 +304,5 @@ list (
 ###
 ################################################################################
 
-      zonefile = "zones/default.zone.R"
+      ## zonefile = "zones/default.zone.R"
       )

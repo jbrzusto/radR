@@ -54,6 +54,7 @@ if (! file.exists(radR.binfile) ||
 ## Did the user specify --no-gui?
 
 use.gui <- is.na(match("--no-gui", commandArgs()))
+event.loop <- is.na(match("--no-eventloop", commandArgs()))
 
 ## Quietly load the strictenv strict environment class.  Don't warn
 ## about the masking of "base::%in%", since our replacement dispatches
@@ -79,4 +80,4 @@ if (use.gui) {
 library(lubridate)
 ## run the main radR loop, which also initializes the GUI, if any.
 
-rss.init(use.gui)
+rss.init(use.gui, event.loop)

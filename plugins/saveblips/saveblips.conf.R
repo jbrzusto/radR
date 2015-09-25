@@ -35,7 +35,7 @@ blip.filename = "blips.csv"
 ## whether to pop-up a plot of all blips
 ## when the pause button is hit
 
-plot.on.pause = TRUE 
+plot.on.pause = FALSE
 
 ## whether to plot range rings
 

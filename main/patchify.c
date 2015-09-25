@@ -986,7 +986,7 @@ get_active_runbuf (SEXP patchessxp)
 
   Free(new_index);
 
-  UNPROTECT(2);
+  UNPROTECT(1);
   
   return (rv);
 }

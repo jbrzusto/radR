@@ -317,7 +317,7 @@ globals = list (
     ## NULL on error
 
     ## make sure the archive is valid
-    if (!verify.blipmovie(port)) {
+    if (!port$is.sink && !verify.blipmovie(port)) {
       return(NULL)
     }
 
@@ -600,7 +600,7 @@ hooks = list(
 
   PUT_SCAN_DATA = list( enabled = FALSE, read.only = TRUE,
     f = function(bl, i) {
-      if (any(to.save) && RSS$num.blips > 0) {
+      if (any(as.logical(to.save)) && RSS$num.blips > 0) {
         runs <- .Call("get_active_runbuf", RSS$patch.buffer)
         if (!is.null(runs)) {
           if (to.save$blip.runbuf)
