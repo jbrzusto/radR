@@ -294,6 +294,7 @@ globals = list (
         fs = port$config$firstScan
         
         port$files = dir(port$config$folder, recursive=TRUE, pattern="-sweep\\.dat$", full.names=TRUE)
+	port$files = port$files[order(basename(port$files))]
         port$num.scans = length(port$files)
         port$ts = getFileTimestamp(basename(port$files))
         port$start.time <- port$ts[1]
