@@ -57,8 +57,8 @@ do.overrides = function(what, where, over, then.do=function(...){}, valid=names(
 ## does the user want a progress indicator?
 
 show.progress = !is.na(match("--show-progress", commandArgs()))
-do.csv = !is.na(match("--no-blips", commandArgs()))
-do.bm  = !is.na(match("--no-blipmovie", commandArgs()))
+do.csv = is.na(match("--no-blips", commandArgs()))
+do.bm  = is.na(match("--no-blipmovie", commandArgs()))
 
 if (! do.csv && ! do.bm)
     stop("Error: you specified --no-blips AND --no-blipmovie, which means I have nothing to do!")
