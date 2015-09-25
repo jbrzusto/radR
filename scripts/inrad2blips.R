@@ -16,17 +16,20 @@
 ##
 ################################################################################
 ##
-## inrad2blips.R:  process an inradarch archive and create a blips.csv file
+## inrad2blips.R:  process an inradarch archive and create a blips.csv and/or a blipmovie
 ##
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/inrad2blips.R SITE DIR1 ... DIRN
+##   rbatch [--no-progress] [--no-blips] [--no-blipmovie] [--parm PARMFILE] --script scripts/inrad2blips.R SITE DIR1 ... DIRN
 ##
 ## where SITE is a site code and DIR1 .. DIRN are folders of inradarch sweeps.  This
 ## script runs with a single DIRn parameter.
 ##
-## Blip output filenames will be blips_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS.csv
+## Blips output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_blips.csv
+## Blipmovie filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS.bm[.i]
+##
+## SITE can contain a path, e.g. /media/radar/output_data/CANV
 
 ## options(error=recover, warn=2) ## for debugging
 
@@ -54,6 +57,11 @@ do.overrides = function(what, where, over, then.do=function(...){}, valid=names(
 ## does the user want a progress indicator?
 
 show.progress = !is.na(match("--show-progress", commandArgs()))
+do.csv = !is.na(match("--no-blips", commandArgs()))
+do.bm  = !is.na(match("--no-blipmovie", commandArgs()))
+
+if (! do.csv && ! do.bm)
+    stop("Error: you specified --no-blips AND --no-blipmovie, which means I have nothing to do!")
 
 ## extract the dirname from the command line and verify
 ## it's a directory
@@ -106,7 +114,7 @@ rss.set.port(p)
 ## seek to the start of the first scan in the first run
 seek.scan(p, 1, 1)
 
-for (plug in c("saveblips", "blipmovie")) {
+for (plug in c(if (do.csv) "saveblips", if (do.bm) "blipmovie")) {
     if (!exists(toupper(plug))) {
         rss.load.plugin(plug)
         warning("The ", plug, " plugin was not loaded by default, so I loaded it.")
@@ -125,14 +133,20 @@ fob = sprintf("%s_%s_to_%s_blips.csv",
 
 fobm = sub(".csv$", ".bm", fob)
 
-po = BLIPMOVIE$get.ports()[[2]]
-## set the port for output
-rss.set.port(po, filename=fobm)
+if (do.bm) {
+    po = BLIPMOVIE$get.ports()[[2]]
+    ## set the port for output
+    rss.set.port(po, filename=fobm)
 
-RSS$recording = TRUE
+    RSS$recording = TRUE
+    cat("Will create blipmovie: ", fobm, "\n")
+}
 
-rss.enable.plugin("saveblips")
-SAVEBLIPS$blip.filename = fob
+if (do.csv) {
+    rss.enable.plugin("saveblips")
+    SAVEBLIPS$blip.filename = fob
+    cat("Will create blips file: ", fob, "\n")
+}
 
 ## Read parameters values from the file specified by
 ##
@@ -176,27 +190,14 @@ if (read.parms) {
                  valid=c(ls(RSS, pattern="^blip\\."), "use.blip.filter.expr")
                  )
 
-  if (length(x$antenna) > 0) {
-      cat("overriding antenna params")
-    e = as.strictenv(ANTENNA$parms)
-    do.overrides("antenna",
-                 e,
-                 x$antenna,
-                 function(n) {
-                   ## mark that we're overriding source antenna info for this parameter
-                   ANTENNA$override[match(n, names(ANTENNA$parms))] = TRUE
-                 })
-    for (p in names(e))
-      ANTENNA$parms[[p]] = e[[p]]
-  }
+  if (length(x$antenna) > 0)
+      ANTENNA$load.antenna.config(x$antenna)
 
   if (length(x$declutter) > 0) {
     if (! exists("DECLUTTER")) {
-      warning("You specified parameters for declutter, so I'm loading that plugin.\n(your radR installation does not load it by default)\n")
       rss.load.plugin("declutter")
     }
     if (! RSS$blip.filtering) {
-      warning("You specified parameters for declutter, so I'm setting blip.filtering to TRUE.\n")
       RSS$blip.filtering = TRUE
     }
     do.overrides("declutter",
@@ -217,7 +218,9 @@ if (read.parms) {
   }
 
   ## read in any zone file specifed
-
+    if (! exists("ZONE")) {
+      rss.load.plugin("zone")
+   }
   if (is.character(x$zonefile)) {
     f = x$zonefile[1]
     if (nchar(f) > 0) {
@@ -237,8 +240,10 @@ rss.add.hook("ONPAUSE", function(){
     cat(sprintf(rbatch.summary, format(round(tc$start.time[1])), format(round(RSS$scan.info$timestamp)), format(round(elap, 1))))
   }
   rss.do.stop()
-  RSS$recording = FALSE
-  shut.down(po)
+  if (do.bm) {
+      RSS$recording = FALSE
+      shut.down(po)
+  }
   q()
 })
 

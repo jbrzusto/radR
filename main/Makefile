@@ -23,6 +23,7 @@ RADR_SOURCE_FILES :=            \
 
 R_FILES := 			\
 	batchparm.R		\
+	batchparminrad.R	\
 	process_one.R		\
 	radR.conf.R             \
 	radRmain.R 		\
@@ -79,6 +80,7 @@ $(eval $(call DEF_INST_R_ALIAS,../.Rprofile,radR.Rprofile.R))
 ## We move the template batch parameter file into the toplevel directory
 
 $(eval $(call DEF_INST_R_ALIAS,../batchparm.R,batchparm.R))
+$(eval $(call DEF_INST_R_ALIAS,../batchparminrad.R,batchparminrad.R))
 
 $(eval $(AT_MAKEFILE_END))
 
