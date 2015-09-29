@@ -283,19 +283,26 @@ calc_nn_gain (t_mfc_problem *p, t_mfc_point *u, t_mfc_point *v, int cons_scan) {
   double dist = MAG(u->x - v->x, u->y - v->y, u->z - v->z);
   double rv;
 
+  if (fabs(v->x) > 10000 || fabs(u->x) > 10000 || fabs(u->t) < 1e9 || fabs(v->t) < 1e9)
+    printf("******* WARNING: likely wrong coordinate ordering in calc_nn_gain");
+
+  if (fabs(v->t - u->t) < 0.001) {
 #ifdef RADR_DEBUG
-  if (v->t == u->t)
     printf("******* WARNING: calc_nn_gain: got zero delta t");
 #endif
+    return GAIN_TO_INT(0.0);
+  }
   if (fabs(dist / (v->t - u->t)) > p->max_speed)
     return GAIN_TO_INT(0.0);
 
   rv = (1 - p->alpha) * (1 - dist / p->max_dist) - (cons_scan ? 0.0 : p->eps);
 
+  if (rv < 0) {
 #ifdef RADR_DEBUG
-  if (rv < 0)
     printf("******** Warning: negative gain = %g set to 0\n", rv);
 #endif
+    rv = 0.0;
+  }
 
   if (rv > 1.0) {
 #ifdef RADR_DEBUG
@@ -349,6 +356,9 @@ calc_gain (t_mfc_problem *p, t_mfc_state *state, t_mfc_point *u, t_mfc_point *v,
 
   if (fabs(dist_uv / (v->t - u->t)) > p->max_speed)
     return GAIN_TO_INT(0.0);
+
+  if (fabs(v->x) > 10000 || fabs(u->x) > 10000 || fabs(u->t) < 1e9 || fabs(v->t) < 1e9)
+    printf("******* WARNING: likely wrong coordinate ordering in calc_gain");
 
   // predict a new point position assuming constant velocity
 
@@ -405,12 +415,12 @@ calc_gain (t_mfc_problem *p, t_mfc_state *state, t_mfc_point *u, t_mfc_point *v,
   return GAIN_TO_INT(rv);
 }
 
-void
+int
 calc_gains (t_mfc_problem *p, SEXP env, int i1, int i2, int n, int *i2p, int *resptr, int resspan, int is_cons)
 {
   // calculate gains between a fixed point, possibly on a track, and a set of
   // other points.  Do this with user-defined R functions, if they exist, otherwise
-  // use the internal versions.
+  // use the internal versions.  Return the number of positive gains.
   //
   // p - pointer to the mfc problem instance
   // i1 - index within *p of the fixed point
@@ -429,6 +439,7 @@ calc_gains (t_mfc_problem *p, SEXP env, int i1, int i2, int n, int *i2p, int *re
   SEXP user_fun = (use_track ? p->R_gain_tp : p->R_gain_pp);
   int j;
   double *rp;
+  int num_pos = 0;
 
   if (user_fun != R_NilValue) {
       t_mfc_point *u;
@@ -466,7 +477,8 @@ calc_gains (t_mfc_problem *p, SEXP env, int i1, int i2, int n, int *i2p, int *re
       for (j = 0; j < n; ++j, resptr = (int *)(((char *) resptr) + resspan)) {
 	if (REAL(rv)[j] < 0.0 || REAL(rv)[j] > 1.0)
 	  error("MFC: gain.%cp returned %f, which is value outside the range 0.0 to 1.0", (use_track ? 't' : 'p'), REAL(rv)[j]);
-	*resptr = GAIN_TO_INT(REAL(rv)[j]);
+	if ((*resptr = GAIN_TO_INT(REAL(rv)[j])) > 0)
+          ++num_pos;
       }
       UNPROTECT(4 + use_track);
   } else {
@@ -476,14 +488,17 @@ calc_gains (t_mfc_problem *p, SEXP env, int i1, int i2, int n, int *i2p, int *re
       // isolated point:  we'll calculate point-to-point gains
       // use the internal nearest-neighbour gain function
       for (j = 0; j < n; ++j, resptr = (int *)(((char *) resptr) + resspan))
-	*resptr = calc_nn_gain(p, &MFC_X(p, i1), &MFC_X(p, i2p ? i2p[j] : i2 + j), is_cons);
+	if ((*resptr = calc_nn_gain(p, &MFC_X(p, i1), &MFC_X(p, i2p ? i2p[j] : i2 + j), is_cons)) > 0)
+          ++num_pos;
 
     } else {
       // first point is on a track:  calculate track-to-point gains
       for (j = 0; j < n; ++j, resptr = (int *)(((char *) resptr) + resspan))
-	*resptr = calc_gain(p, &MFC_STATE(p, i1), &MFC_X(p, i1), &MFC_X(p, i2p ? i2p[j] : i2 + j), is_cons);
+	if ((*resptr = calc_gain(p, &MFC_STATE(p, i1), &MFC_X(p, i1), &MFC_X(p, i2p ? i2p[j] : i2 + j), is_cons)) > 0)
+          ++num_pos;
     }
   }
+  return num_pos;
 }
 
 t_mfc_state 
@@ -527,7 +542,7 @@ calc_state (t_mfc_problem *p, t_mfc_point *u, t_mfc_state *ostate, t_mfc_point *
   return(ns);
 }
 
-#define MFC_COPY_EXTMAT(DST, SRC, MAT) {(*pensure_extmat)(&DST->MAT, SRC->MAT.rows, SRC->MAT.cols); memcpy((char *) DST->MAT.ptr, (char *) SRC->MAT.ptr, SRC->MAT.rows * SRC->MAT.cols * SRC->MAT.size);}
+#define MFC_COPY_EXTMAT(DST, SRC, MAT) {(*pensure_extmat)(&DST->MAT, SRC->MAT.rows, SRC->MAT.cols); memmove((char *) DST->MAT.ptr, (char *) SRC->MAT.ptr, SRC->MAT.rows * SRC->MAT.cols * SRC->MAT.size);}
 
 SEXP
 update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NOW, SEXP IS_PREVIEW)
@@ -559,6 +574,8 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   SEXP sexp, sexp2, sexp3; // SEXPs for use as parameters to R functions
   int i_s1; // index of first blip from previous scan; lets us tell whether a given blip is 
             // in the scan immediately before the new scan
+  
+  int num_pos; // number of positive-gain edges
 
   if (preview) {
     p2 = create_mfc_instance(p->k, p->alpha, p->eps, p->max_dist, p->max_speed, p->min_gain);
@@ -584,17 +601,17 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   }
   
   // if necessary, delete the first frame's worth of points
-
+  
   edges_dropped = 0;
-
+  
   // set internal copies of the R-level gain/state calculation functions
-
+  
   p->R_gain_pp = getAttrib(ep, MFC_GAIN_PP_ATTR);
   p->R_gain_tp = getAttrib(ep, MFC_GAIN_TP_ATTR);
   p->R_new_state = getAttrib(ep, MFC_NEW_STATE_ATTR);
-
+  
   if (p->nf == p->k) {
-
+    
     // If a point without a successor will be shifted out of the first frame,
     // end its track, if any.
 
@@ -614,13 +631,14 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // delete the first frame's points and associated data
 
     nkeep = p->np - MFC_N(p, 0); // number of points to keep (all but those in first frame)
-    memcpy(p->x.ptr,     ((t_mfc_point *) p->x.ptr)     + MFC_N(p, 0), nkeep * sizeof (t_mfc_point));
-    memcpy(p->state.ptr, ((t_mfc_state *) p->state.ptr) + MFC_N(p, 0), nkeep * sizeof (t_mfc_state));
-    memcpy(p->succ.ptr,  ((int *)         p->succ.ptr)  + MFC_N(p, 0), nkeep * sizeof (int));
-    memcpy(p->pred.ptr,  ((int *)         p->pred.ptr)  + MFC_N(p, 0), nkeep * sizeof (int));
-    memcpy(p->gain.ptr,  ((t_mfc_gain *)  p->gain.ptr)  + MFC_N(p, 0), nkeep * sizeof (t_mfc_gain));
-    memcpy(p->iblip.ptr, ((int *)         p->iblip.ptr) + MFC_N(p, 0), nkeep * sizeof (int));
-    memcpy(p->track.ptr, ((int *)         p->track.ptr) + MFC_N(p, 0), nkeep * sizeof (int));
+      
+    memmove(p->x.ptr,     ((t_mfc_point *) p->x.ptr)     + MFC_N(p, 0), nkeep * sizeof (t_mfc_point));
+    memmove(p->state.ptr, ((t_mfc_state *) p->state.ptr) + MFC_N(p, 0), nkeep * sizeof (t_mfc_state));
+    memmove(p->succ.ptr,  ((int *)         p->succ.ptr)  + MFC_N(p, 0), nkeep * sizeof (int));
+    memmove(p->pred.ptr,  ((int *)         p->pred.ptr)  + MFC_N(p, 0), nkeep * sizeof (int));
+    memmove(p->gain.ptr,  ((t_mfc_gain *)  p->gain.ptr)  + MFC_N(p, 0), nkeep * sizeof (t_mfc_gain));
+    memmove(p->iblip.ptr, ((int *)         p->iblip.ptr) + MFC_N(p, 0), nkeep * sizeof (int));
+    memmove(p->track.ptr, ((int *)         p->track.ptr) + MFC_N(p, 0), nkeep * sizeof (int));
 
     // adjust nf, np, n and first to account for deletion of first frame
 
@@ -641,11 +659,11 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 
     // adjust n, first to account for deletion of first frame
 
-    memcpy(p->n.ptr, ((int *) p->n.ptr) + 1, p->nf * sizeof(int));
+    memmove(p->n.ptr, ((int *) p->n.ptr) + 1, p->nf * sizeof(int));
     for (i = 1; i < p->nf; ++i) 
       MFC_FIRST(p, i) = MFC_FIRST(p, i-1) + MFC_N(p, i-1);
   }
-
+  
   // ensure storage for points and associated data
   
   (*pensure_extmat)(&p->x,     p->np + np, sizeof(t_mfc_point) / sizeof(t_mfc_coord));
@@ -703,6 +721,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   // allocate a new dag
   p->dag = create_dag(n, m);
 
+  num_pos = 0;
   // add edges to each node's edge list
   for (i = 0, k = p->dag.edges; i < n - np; ++i) {
     p->dag.nodes[i].e = k;
@@ -712,26 +731,47 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
       k->nh = MFC_SUCC(p, i);
       k->wt = MFC_GAIN(p, MFC_SUCC(p, i));
       ++k;
+      ++num_pos;
     }
     // now add a new edge from this point to each new point
     for (j = 0, ii = MFC_FIRST(p, p->nf - 1); j < np; ++j, ++ii, ++k)
       k->nh =  ii;
-
+    
     // calculate the gains from this point to the new points
-    calc_gains(p, TR, i, MFC_FIRST(p, p->nf - 1), np, NULL, &((k-np)->wt), sizeof(*k), i >= i_s1);
+    num_pos += calc_gains(p, TR, i, MFC_FIRST(p, p->nf - 1), np, NULL, &((k-np)->wt), sizeof(*k), i >= i_s1);
     p->dag.nodes[i].deg += np;
+    
+#ifdef RADR_DEBUG
+    {
+      t_edge *kk = k - np;
+      for (j = 0, ii = MFC_FIRST(p, p->nf - 1); j < np; ++j, ++kk, ++ii) {
+        if (kk->wt > 0)
+          printf("%d,%d,%d\n", MFC_IBLIP(p, i), MFC_IBLIP(p, ii), kk->wt);
+      }
+    }
+#endif
   }
-
   // the DAG is built; find a maximum path cover
 #ifdef RADR_DEBUG
-  printf("Doing max_path_cover on DAG with %d nodes (%d new) and %d edges.\n", p->dag.n, np, p->dag.m);
+  printf("Doing max_path_cover on DAG with %d nodes (%d new) and %d edges (%d have +ve gain).\n", p->dag.n, np, p->dag.m, num_pos);
 #endif
   // save the current pred and succ relationship 
-  memcpy(p->opred.ptr, p->pred.ptr, p->dag.n * sizeof(t_node_handle));
-  memcpy(p->osucc.ptr, p->succ.ptr, p->dag.n * sizeof(t_node_handle));
+  memmove(p->opred.ptr, p->pred.ptr, p->dag.n * sizeof(t_node_handle));
+  memmove(p->osucc.ptr, p->succ.ptr, p->dag.n * sizeof(t_node_handle));
   do_max_path_cover (& p->dag, (t_node_handle *) p->pred.ptr, (t_node_handle *) p->succ.ptr, &p->n_cover_edges);
 #ifdef RADR_DEBUG
+  printf("Done; found %d matches\n", p->n_cover_edges);
   printf("Done\n");
+  
+  printf("Cover:\n");
+  for (i = 0; i < p->dag.n; ++i) {
+    ii = MFC_SUCC(p, i);
+    if (ii != NO_NODE) {
+      printf("succ: %d,%d (%g,%g,%g,%g)->(%g,%g,%g,%g) = %d\n", MFC_IBLIP(p, i), MFC_IBLIP(p, ii), 
+             MFC_X(p, i).x,  MFC_X(p, i).y,  MFC_X(p, i).z,  MFC_X(p, i).t,
+             MFC_X(p, ii).x,  MFC_X(p, ii).y,  MFC_X(p, ii).z,  MFC_X(p, ii).t, p->dag.nodes[i].e[p->dag.nodes[i].mate].wt);
+    }
+  }
 #endif
 
   // inform the tracker plugin of new point->track assignments
@@ -769,7 +809,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	  // add the successor blip to this track
 	  PROTECT(sexp = ScalarInteger(MFC_IBLIP(p, ii)));
 	  PROTECT(sexp2 = ScalarInteger(MFC_TRACK(p, i)));
-	  
+
 	  MFC_TRACK(p, ii) = MFC_TRACK(p, i);
 	  call_R_function ("add.blip.to.track", TR, sexp, sexp2, NULL);
 	  UNPROTECT(2);
@@ -852,7 +892,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	if (ii != p->dag.nodes[i].e[j].nh)
 	  printf("****** Error: full dag: miscalculation of location of edge between nodes %d and %d\n", i, ii);
 #endif
-	MFC_GAIN(p, ii) = p->dag.nodes[i].e[j].wt;
+	MFC_GAIN(p, ii) = p->dag.nodes[i].e[j].wt;            
 	MFC_STATE(p, ii) = calc_state(p, &MFC_X(p, i), &MFC_STATE(p, i), &MFC_X(p, ii), TR);
 	PROTECT(sexp = ScalarInteger(MFC_TRACK(p, ii)));
 	PROTECT(sexp2 = ScalarReal(INT_TO_GAIN(MFC_GAIN(p, ii))));
@@ -1086,11 +1126,11 @@ gain_from_track_to_point (SEXP ep, SEXP trackpoint, SEXP info, SEXP point, SEXP 
 
   cons = LOGICAL(cons_scan)[0];
 
-  memcpy(p1.coords, REAL(trackpoint), MFC_NUM_COORDS * sizeof(double));
-  memcpy(p2.coords, REAL(point),      MFC_NUM_COORDS * sizeof(double));
+  memmove(p1.coords, REAL(trackpoint), MFC_NUM_COORDS * sizeof(double));
+  memmove(p2.coords, REAL(point),      MFC_NUM_COORDS * sizeof(double));
 
   if (LENGTH(info)) {
-    memcpy(s.vars, REAL(info), MFC_NUM_STATE_VARS * sizeof(double));
+    memmove(s.vars, REAL(info), MFC_NUM_STATE_VARS * sizeof(double));
     gain = calc_gain(p, &s, &p1, &p2, cons);
   } else {
     gain = calc_nn_gain(p, &p1, &p2, cons);

@@ -13,7 +13,7 @@
 ## These will be copied to the plugin's installation folder.  Any which end in .R will
 ## be checked for syntax.
 
-PLUGINS_TO_EXCLUDE := iris xenex usrp tilter
+PLUGINS_TO_EXCLUDE := iris xenex usrp tilter sqlitearch
 
 PLUGIN_NAMES := $(filter-out $(PLUGINS_TO_EXCLUDE),$(shell $(FIND) . -maxdepth 1 -type d -regex '^\./[a-zA-Z0-9_]+' -printf '%f\n'))
 

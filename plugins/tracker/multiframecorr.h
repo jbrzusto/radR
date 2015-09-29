@@ -37,8 +37,8 @@ typedef union {
   t_mfc_coord vars[MFC_NUM_STATE_VARS];
 } t_mfc_state;
 
-#define MFC_COPY_COORDS(dst, src)memcpy((double *) dst, (double *) src, MFC_NUM_COORDS * sizeof(double))
-#define MFC_COPY_STATE(dst, src) memcpy((double *) dst, (double *) src, MFC_NUM_STATE_VARS * sizeof(double))
+#define MFC_COPY_COORDS(dst, src)memmove((double *) dst, (double *) src, MFC_NUM_COORDS * sizeof(double))
+#define MFC_COPY_STATE(dst, src) memmove((double *) dst, (double *) src, MFC_NUM_STATE_VARS * sizeof(double))
 
 typedef struct {
   int 		nf; 		/* number of frames currently in this problem */

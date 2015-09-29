@@ -26,7 +26,7 @@
 
 ## Is this plugin enabled upon loading?
 
-enabled = FALSE
+enabled = TRUE
 
 ## where blips are saved, by default; this can include a path
 ## It is a basename:  extensions will be added to it.
@@ -104,7 +104,7 @@ track.max.speed = 100
 ## length of time for which a complete track is retained for
 ## display
 
-retain.complete.tracks.for = 30 
+retain.complete.tracks.for = 300
 
 ## minimum number of blips in a track for it to be saved
 
@@ -124,7 +124,7 @@ track.colour = c("#ff8100", "#ff8100", "#906048", "#c87024", "#ff0000", "#ffffff
 
 ## minimum number of blips in a track for it to be displayed
 
-min.blips.to.show = 4
+min.blips.to.show = 2
 
 ## format for popup window time
 

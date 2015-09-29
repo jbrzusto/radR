@@ -16,7 +16,7 @@
 ## number of frames over which to "backtrack" in building
 ## tracks
 
-k = 2
+k = 5
 
 ## relative weighting of directional coherence in gain
 ## function (the other component of gain, which receives
@@ -34,6 +34,6 @@ eps = 1e-3
 
 ## the minimum gain (between 0 and 1) required for a blip
 ## to be considered for joining a track
-## The value of 0.9090909090909 corresponds to "10" in log units.
+## The value of 0.7597 corresponds to "5" in log units.
 
-min.gain = 0.9090909090909
+min.gain = 0.7597

@@ -2246,7 +2246,6 @@ rss.alloc.patch.image <- function() {
   return(pi)
 }
 
-# ###.if $DEBUG
 callback.to.fun <- function(s) {
   ## return the R function represented by the tcl callback in s
   ## i.e. s is what is returned by e.g. tcl("bind", ".a", "<Button-1>")
@@ -2255,7 +2254,6 @@ callback.to.fun <- function(s) {
     return (.Call("int_wrapped_pointer_to_sexp", as.integer(s[2])))
   return(NULL)
 }
-# ###.endif
 
 make.env <- function(...) {
   ## make an environment from a single untagged list argument

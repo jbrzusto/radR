@@ -78,10 +78,10 @@ do_max_path_cover (t_DAG *dag, t_node_handle *pred, t_node_handle *succ, int *n_
   slack 	= Calloc(n, t_weight);
   slack_pred 	= Calloc(n, t_node_handle);
 
-
   t = 0;
   for(l = 0; l < n; l++) {
     pred[l] 	 = NO_NODE;
+    succ[l] 	 = NO_NODE;
     tree_pred[l] = NO_NODE;
     y_in[l] 	 = 0;
     slack[l] 	 = INF;
@@ -235,11 +235,12 @@ do_max_path_cover (t_DAG *dag, t_node_handle *pred, t_node_handle *succ, int *n_
   for (k=0; k < n; ++k) {
     for(ei=0; ei < nodes[k].deg; ++ei) {
       if (nodes[k].e[ei].wt < 0)
-	printf("Error: negative edge weight: %3d->%3d: w=%5d\n", k+1, 1 + nodes[k].e[ei].nh, nodes[k].e[ei].wt);
+	printf("Error: negative edge weight: %3d->%3d: w=%5d\n", k, 1 + nodes[k].e[ei].nh, nodes[k].e[ei].wt);
     }
   }
+#endif
 
-#if 0
+#ifdef RADR_DEBUG
   // dump the graph as received
   for (k=0; k < n; ++k) {
     for(l = 0, ei=0; l < n; l++) {
@@ -248,10 +249,10 @@ do_max_path_cover (t_DAG *dag, t_node_handle *pred, t_node_handle *succ, int *n_
       else
 	w = 0;
       if (w > 0)
-	printf("%3d->%3d: w=%5d\n", k+1, l+1, w);
+	printf("%3d->%3d: w=%5d\n", k, l, w);
     }
   }
-#endif
+
   // code to verify complementary slackness
   for (k=0; k < n; ++k) {
     if (y_out[k] < 0) 
@@ -280,11 +281,17 @@ do_max_path_cover (t_DAG *dag, t_node_handle *pred, t_node_handle *succ, int *n_
   // for each zero-weight edge.
   j = n;
   for (k=0; k < n; ++k) {
+    if (succ[k] == NO_NODE) {
+      nodes[k].mate = -1;
+      continue;
+    }
     for (ei=0; ei < nodes[k].deg; ++ei)
-      if (nodes[k].e[ei].nh == succ[k])
+      if (nodes[k].e[ei].nh == succ[k]) {
+        nodes[k].mate = ei;
 	break;
+      }
     if (ei == nodes[k].deg || nodes[k].e[ei].wt == 0) {
-      // node is matched by a zero-weight edge
+      // node is unmatched or matched by a zero-weight edge
       pred[succ[k]] = NO_NODE;
       succ[k] = NO_NODE;
       --j;

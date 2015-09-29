@@ -65,7 +65,7 @@ intpack (void * vdst, void * vsrc, int num, int src_bits, int src_size, int big_
 
   if (src_bits == 8 * src_size && (src_size == 1 || !big_endian)) {
     /* dispose of simple cases */
-    memcpy (dst, src, num * src_size);
+    memmove (dst, src, num * src_size);
     return TRUE;
   }
   if (src_bits > 8 * src_size)
@@ -204,7 +204,7 @@ intunpack (void * vdst, void * vsrc, int num, int src_bits, int dst_size, int bi
 
   if (src_bits == 8 * dst_size && (dst_size == 1 || !big_endian)) {
     /* dispose of simple cases */
-    memcpy (dst, src, num * dst_size);
+    memmove (dst, src, num * dst_size);
     return TRUE;
   }
   if (src_bits > 8 * dst_size)

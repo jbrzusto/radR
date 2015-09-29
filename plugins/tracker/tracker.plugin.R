@@ -695,7 +695,7 @@ gui.unhighlight.track = function(x, y=NULL) {
   }
   tkid <- gui.gid2tkid(gid)
   if (length(tkid) == 0) {
-    gui.print.cons("warning: canvas line item has no associated gui item:" %:% gid)
+    cat("warning: canvas line item has no associated gui item:" %:% gid, "\n")
     return()
   }
   tcl(GUI$plot, "itemconfigure", tkid, arrow="none", fill=track.colour[gui.tracks$state[gid]], width=1)
@@ -1123,12 +1123,6 @@ tracks.active.in.interval = function(t1, t2) {
 
 add.blip.to.track = function(i.blip, atid, expiry=0) {
   ## add the blip to the end of the given track object
-###.if $DEBUG
-  if (length(tracks[[atid]]$points) > 0)
-    gui.print.cons("Adding " %:% i.blip %:% " to " %:% atid)
-  else
-    gui.print.cons("Error: called add.blip.to.track with blip " %:% i.blip %:% " and empty track " %:% atid) 
-###.endif
   track <- tracks[[atid]]
   ## Note: "track" is an environment, so the following assignments
   ## are side effects of this function
@@ -1137,9 +1131,6 @@ add.blip.to.track = function(i.blip, atid, expiry=0) {
   track$state <- TS.ACTIVE
   if (update.plot)
     gui.blip.added.to.track(track)
-###.if $DEBUG
-  gui.print.cons("Done")
-###.endif
 }
 
 add.track.info = function(atid, gain, info) {
@@ -1154,9 +1145,6 @@ add.track.info = function(atid, gain, info) {
 start.new.track = function(i.blip, expiry=0) {
   ## start a new tracks with blip(s) and given properties
   ## return the track's index in list "tracks" (i.e. its atid)
-###.if $DEBUG
-  gui.print.cons("Starting " %:% (1+num.tracks) %:% " with " %:% paste(i.blip, collapse=","))
-###.endif
   num.tracks <<- num.tracks + 1
   track <- strictenv(
                      state         = if (length(i.blip) == 1) TS.NASCENT else TS.ACTIVE,
@@ -1181,9 +1169,6 @@ truncate.track.tail = function(atid, drop.blip.id) {
   ## nothing happens.
 
   ## record which tracks are being ended this scan
-###.if $DEBUG
-  gui.print.cons("Truncating from track atid=" %:% atid %:% " tail beginning at blip.id=" %:% drop.blip.id)
-###.endif
   
   pt <- tracks[[atid]]$points
   i <- which(pt == drop.blip.id)
@@ -1201,9 +1186,6 @@ truncate.track.tail = function(atid, drop.blip.id) {
     if (update.plot)
       gui.truncate.track.tail(atid, i)
   }
-###.if $DEBUG
-  gui.print.cons("Done")
-###.endif
 }
 
 end.tracks = function(atid=NULL, tid = NULL, drop.from.tail = 0) {
@@ -1221,9 +1203,6 @@ end.tracks = function(atid=NULL, tid = NULL, drop.from.tail = 0) {
     return()
 
   ## record which tracks are being ended this scan
-###.if $DEBUG
-  gui.print.cons("Ending track(s) with atid=" %:% paste(atid, collapse=","))
-###.endif
   if (is.null(tid))
     ## compute tid from atid
     tid <- tracks[atid]%$0%index
@@ -1262,9 +1241,6 @@ end.tracks = function(atid=NULL, tid = NULL, drop.from.tail = 0) {
   }
   ## remove the tracks from the active tracks list
   tracks[atid] <<- list(NULL)
-###.if $DEBUG
-  gui.print.cons("Done")
-###.endif
 } 
 
 end.expired.tracks = function(time.now) {
@@ -1325,9 +1301,6 @@ process.blips.from.one.scan = function() {
   i.new <- as.integer(seq(from=as.integer(num.blips + 1), length=as.integer(num.new.blips)))
   if (num.new.blips > 0)
     all.blips[i.new,] <<- new.blips
-###.if $DEBUG
-  print ("about to call process.new.blips with " %:% num.new.blips %:% " and i.new = " %:% paste(i.new, collapse=","))
-###.endif
   time.now <- rss.time.now()
   process.new.blips(new.blips, i.new, time.now)
 

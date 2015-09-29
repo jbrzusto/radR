@@ -20,6 +20,7 @@ typedef struct {
 typedef struct {
   int 		 deg; 		/* number of out-edges */
   t_edge 	*e; 		/* pointer to first outedge in array edges */
+  int            mate;          /* output: if node is in cover, index in e[] of the corresponding edge */
 } t_node;
 
 

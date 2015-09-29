@@ -13,8 +13,8 @@
 ## If compiled with -DRADR_DEBUG, both library functions check their
 ## answers by verifying dual feasibility and complementary slackness.
 
-dyn.load(paste("plugins/maxpathcover", .Platform$dynlib.ext, sep=""))
-dyn.load(paste("plugins/maxmatch", .Platform$dynlib.ext, sep=""))
+dyn.load(paste("plugins/tracker/maxpathcover", .Platform$dynlib.ext, sep=""))
+dyn.load(paste("plugins/tracker/maxmatch", .Platform$dynlib.ext, sep=""))
 doit <- function(SIZE, frac = 9/10, graph=FALSE) {
   c1 <<- complex(r=runif(SIZE), i=runif(SIZE))
   c1<<-c1[order(Re(c1))]

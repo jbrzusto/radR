@@ -11,7 +11,7 @@
 ## There is no ambiguity if all points in c1 have distinct nearest
 ## neighbours in c2, or if |c1|==|c2| and the graph is complete.
 
-dyn.load("plugins/maxmatch.so")
+dyn.load("plugins/tracker/maxmatch.so")
 SIZE1 <- 150
 SIZE2 <- 250
 c1 <- complex(r=runif(SIZE1), i=runif(SIZE1))

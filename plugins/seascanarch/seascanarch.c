@@ -1231,10 +1231,10 @@ int read_ungated_chunk(t_ssa *me) {
 
   if (me->buffered_chunk_index + 1 == me->chunk_index && me->buffered_chunk_index >= 0 ) {
     // save the last pulse, in case we need it when  gating
-    memcpy(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->axis_bytes, me->axis_bytes);
+    memmove(me->data_block.ptr, me->data_block.ptr + me->brh.AssociatedAzimuths * me->axis_bytes, me->axis_bytes);
     
     // save the last pulse's angle info
-    memcpy(me->angle_block.ptr, me->angle_block.ptr + me->brh.AssociatedAzimuths * sizeof(RSI_LUT), sizeof(RSI_LUT));
+    memmove(me->angle_block.ptr, me->angle_block.ptr + me->brh.AssociatedAzimuths * sizeof(RSI_LUT), sizeof(RSI_LUT));
     
     me->have_prev_chunk = TRUE;
   } else {
