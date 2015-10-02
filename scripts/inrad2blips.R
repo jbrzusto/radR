@@ -228,6 +228,7 @@ if (read.parms) {
         bail("The zone file ", f, " does not exist.")
       ZONE$load.zones(f)
     }
+    ZONE$enable(TRUE)
   }
 }
 
