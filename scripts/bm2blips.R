@@ -16,23 +16,19 @@
 ##
 ################################################################################
 ##
-## inrad2blips.R:  process an inradarch archive and create a blips.csv and/or a blipmovie and/or tracks files
+## bm2blips.R:  process a blipmovie and create a blips.csv file
 ##
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/inrad2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] SITE DIR1 ... DIRN
+##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/bm2blips.R OUTF BM1
 ##
-## where SITE is a site code and DIR1 .. DIRN are folders of inradarch sweeps.  This
-## script runs with a single DIRn parameter.
+## where BM1, BM2, ..., BMN are names of blipmovies (the .bm file) and OUTF is the path to the output
+## folder for blips.csv files
 ##
-## Blips output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_blips.csv
-## Blipmovie filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS.bm[.i]
-## Track output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_tracks.csv
-##
-## SITE can contain a path, e.g. /media/radar/output_data/CANV
+## Each output file is given the name of the blipmovie, except that ".bm" is replaced by "_blips.csv"
 
-## options(error=recover, warn=2) ## for debugging
+options(warn=1)
 
 bail = function(...) {
   print("ARGV is")
@@ -58,106 +54,31 @@ do.overrides = function(what, where, over, then.do=function(...){}, valid=names(
 ## does the user want a progress indicator?
 
 show.progress = !is.na(match("--show-progress", commandArgs()))
-do.csv = is.na(match("--no-blips", commandArgs()))
-do.bm  = is.na(match("--no-blipmovie", commandArgs()))
-do.tracks  = is.na(match("--no-tracks", commandArgs()))
-
-if (! do.csv && ! do.bm && ! do.tracks)
-    stop("Error: you specified --no-blips AND --no-blipmovie AND --no-tracks, which means I have nothing to do!")
 
 ## extract the dirname from the command line and verify
 ## it's a directory
 
 ARGV = commandArgs(trailingOnly = TRUE)
+
 n = length(ARGV)
 if (n < 2)
-    stop("Error: you need to specify sitename and directory")
+    stop("Error: you need to specify a blipmovie filename")
     
-folder = ARGV[n]
+outf = ARGV[n-1]
+bmname = ARGV[n]
 
-if (! file.exists(folder))
-    stop("Error: non-existent directory: ", folder)
+if (! file.exists(outf))
+    stop("Error: non-existent directory: ", outf)
 
-if (! file.info(folder)$isdir)
-    stop("Error: file specified instead of directoy: ", folder)
+if (! file.info(outf)$isdir)
+    stop("Error: file specified instead of directory: ", outf)
 
-site = ARGV[n - 1]
-
-if(show.progress)
-  cat(sprintf("\nProcessing inradarch dir %-63s\n", folder))
-
-## open the inradarch
-
-p = INRADARCH$get.ports()[[1]]
-
-config(p, folder=folder)
-start.up(p)
-
-## get the table of contents
-
-tc = get.contents(p)
-
-## fail if more than one run (lazy programmer)
-
-if (length(tc$num.scans) > 1)
-  bail("The file '", filename, "'\nhas more than one run, and rbatch can't handle this yet.  Tell jbrzusto@fastmail.fm")
-
-## set up scan counters
-rbatch.i = 0
-rbatch.n = tc$num.scans[1]
-
-## set up a progress reporting string
-rbatch.prog = "Scan: %-21s  Elapsed: %-11s  Left: %-11s\r"
-rbatch.summary = "Did from %-21s to %-21s in %-20s\n"
-
-## set the port as the source for further processing
-rss.set.port(p)
-
-## seek to the start of the first scan in the first run
-seek.scan(p, 1, 1)
-
-for (plug in c(if (do.csv) "saveblips", if (do.bm) "blipmovie", if (do.tracks) "tracker")) {
+for (plug in c("saveblips", "blipmovie")) {
     if (!exists(toupper(plug))) {
         rss.load.plugin(plug)
         warning("The ", plug, " plugin was not loaded by default, so I loaded it.")
     }
 }
-
-## set up output filenames
-
-TS = function(x) structure(x, class=c("POSIXt", "POSIXct"))
-
-fob = sprintf("%s_%s_to_%s_blips.csv",
-    site,
-    format(TS(tc$start.time[1]), "%Y-%m-%dT%H-%M-%S"),
-    format(TS(tc$end.time[1]), "%Y-%m-%dT%H-%M-%S")
-    )
-
-fobm = sub("_blips.csv$", ".bm", fob)
-ftrk = sub("_blips", "_tracks", fob)
-
-if (do.bm) {
-    po = BLIPMOVIE$get.ports()[[2]]
-    ## set the port for output
-    rss.set.port(po, filename=fobm)
-
-    RSS$recording = TRUE
-    cat("Will create blipmovie: ", fobm, "\n")
-}
-
-if (do.csv) {
-    rss.enable.plugin("saveblips")
-    SAVEBLIPS$blip.filename = fob
-    cat("Will create blips file: ", fob, "\n")
-}
-
-if (do.tracks) {
-    rss.enable.plugin("tracker")
-    TRACKER$track.filename <- sub(".csv", "", ftrk)
-    TRACKER$csv.filename <- ftrk
-    cat("Will create tracks file: ", ftrk, "\n")
-}
-
 
 ## Read parameters values from the file specified by
 ##
@@ -209,7 +130,7 @@ if (read.parms) {
       rss.load.plugin("declutter")
     }
     if (! RSS$blip.filtering) {
-      RSS$blip.filtering = TRUE
+        RSS$blip.filtering = TRUE
     }
     do.overrides("declutter",
                  DECLUTTER,
@@ -228,28 +149,6 @@ if (read.parms) {
                  })
   }
 
-  ## do any tracker overrides
-  
-    if (length(x$tracker) > 0)
-    do.overrides("tracker plugin",
-                 TRACKER,
-                 x$tracker,
-                 function(n) {
-                   if (is.function(TRACKER[[n]]))
-                     ## set the environment for any function parameters to the tracker plugin environment
-                     environment(TRACKER[[n]]) <- TRACKER
-                 })
-
-  if (length(x$mfc) > 0)
-    do.overrides("MFC tracker model",
-                 TRACKER$models$multiframecorr,
-                 x$mfc,
-                 function(n) {
-                   if (is.function(TRACKER$models$multiframecorr[[n]]))
-                     ## set the environment for any function parameters to the model's environment
-                     environment(TRACKER$models$multiframecorr[[n]]) <- TRACKER$models$multiframecorr
-                 })
-
   ## read in any zone file specifed
     if (! exists("ZONE")) {
       rss.load.plugin("zone")
@@ -264,6 +163,40 @@ if (read.parms) {
     ZONE$enable(TRUE)
   }
 }
+    
+p = BLIPMOVIE$get.ports()[[1]]
+config(p, filename=bmname)
+    
+start.up(p)
+
+## get the table of contents
+
+tc = get.contents(p)
+
+## fail if more than one run (lazy programmer)
+
+if (length(tc$num.scans) > 1)
+    bail("The file '", bmname, "'\nhas more than one run, and rbatch can't handle this yet.  Tell jbrzusto@fastmail.fm")
+
+## set up scan counters
+rbatch.i = 0
+rbatch.n = tc$num.scans[1]
+
+## set up a progress reporting string
+rbatch.prog = "Scan: %-21s  Elapsed: %-11s  Left: %-11s\r"
+rbatch.summary = "Did from %-21s to %-21s in %-20s\n"
+
+## set the port as the source for further processing
+rss.set.port(p)
+
+## seek to the start of the first scan in the first run
+seek.scan(p, 1, 1)
+
+fob = file.path(outf, sub(".bm$", "_blips.csv", basename(bmname)))
+
+rss.enable.plugin("saveblips")
+SAVEBLIPS$blip.filename = fob
+cat("Will create blips file: ", fob, "\n")
 
 ## give radR something to do when it finishes processing, namely to quit
 
@@ -274,10 +207,6 @@ rss.add.hook("ONPAUSE", function(){
     cat(sprintf(rbatch.summary, format(round(tc$start.time[1])), format(round(RSS$scan.info$timestamp)), format(round(elap, 1))))
   }
   rss.do.stop()
-  if (do.bm) {
-      RSS$recording = FALSE
-      shut.down(po)
-  }
   q()
 })
 
