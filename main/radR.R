@@ -23,10 +23,7 @@
 ##          to raise startup speed by lowering code parsing time.
 ##
 
-###.if $DEBUG
-### For debugging, we convert warnings to errors.
-options(warn = 2)
-###.endif
+options(warn = 1) ## emit warnings as we go.
 
 ## Load pre-parsed R function definitions.  First check whether
 ## any of the source files has changed since the last save of pre-parsed

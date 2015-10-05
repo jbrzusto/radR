@@ -597,7 +597,7 @@ rss.do.load.config <- function(name, into) {
 
   if (file.exists(update.file)) {
     rss.source.into(update.file, into)
-    file.remove(saved.update.file)
+    try(file.remove(saved.update.file))
     file.rename(update.file, saved.update.file)
     if (file.exists(conf.file)) {
       OLDLIST <- source(conf.file)$value
@@ -605,7 +605,7 @@ rss.do.load.config <- function(name, into) {
       for (i in names(OLDLIST))
         if (exists(i, into))
           assign(i, OLDLIST[[i]], into, inherits=FALSE)
-      file.remove(old.conf.file)
+      try(file.remove(old.conf.file))
       file.rename(conf.file, old.conf.file)
     }
     ## a copy of the conf file must exist in order to do

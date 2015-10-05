@@ -428,7 +428,7 @@ rss.init.vars <- function()
 
                     ## variables describing the latest scan
 
-                    have.valid = strictenv(
+                    have.valid = list(
                       bitmap         = FALSE,
                       scan.data      = FALSE,
                       stats          = FALSE,
@@ -440,7 +440,7 @@ rss.init.vars <- function()
                     ## variables describing the incoming scan
                     ## (so far, only a subset of have.valid entries are used)
 
-                    new.have.valid = strictenv(
+                    new.have.valid = list(
                       scan.data      = FALSE,
                       stats          = FALSE,
                       scores         = FALSE,

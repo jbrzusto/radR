@@ -1324,8 +1324,8 @@ process.new.blips = function(blips, i.blips, time.now) {
   ## time.now is the current time, which must be at least max(blips$t[i.blips])
 
   ## tell the model about any new blips (even if there are none)
-  
-  models[[current.model]]$update(TRACKER, blips, i.blips, time.now, RSS$previewing)
+  if (RSS$have.valid$patches)
+      models[[current.model]]$update(TRACKER, blips, i.blips, time.now, RSS$previewing)
 
 }
 

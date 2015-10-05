@@ -1874,7 +1874,7 @@ radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichs
   //        2: linear sample coordinate
   // 
   //   linearsxp == FALSE, blipnumsxp == TRUE
-  //      an n x 2 matrix with columns:
+  //      an n x 3 matrix with columns:
   //        1: patch number
   //        2: sample number
   //        3: pulse number
@@ -1902,13 +1902,22 @@ radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichs
       error ("radR_get_all_blips:  which.patches must be NULL or a logical vector with one item per patch");
     num_blip_samples = 0;
     enumerate_all_patches (image, &pf_count_samples, 0, LOGICAL(whichsxp));
+#ifdef RADR_DEBUG
+    printf("radR_get_all_blips: enumerated num_blip_samples = %d\n", num_blip_samples);
+#endif
   } else {
     // otherwise, the number of samples is already known
     num_blip_samples = image->run_info.num_active_cells;
+#ifdef RADR_DEBUG
+    printf("radR_get_all_blips: known num_blip_samples = %d\n", num_blip_samples);
+#endif
   }
   // set up static vars for the patch filter
 
   all_blips = allocMatrix(INTSXP, num_blip_samples, 2 + (do_blipnum ? 1 : 0) - (do_linear ? 1 : 0));
+#ifdef RADR_DEBUG
+  printf("radR_get_all_blips: allocated all_blips to %d, %d\n", num_blip_samples, 2 + (do_blipnum ? 1 : 0) - (do_linear ? 1 : 0));
+#endif
   blip_number = 0;
   sample_number = 0;
   num_cols = image->run_info.num_cols;
@@ -2001,15 +2010,15 @@ SEXP radR_remove_handler(void)
   if (!radR_installed)
     return FAIL_SEXP;  // fail silently
   
-  R_ReleaseObject(radR_handler_expr);
-  radR_handler_expr = NULL;
-
   
   if (R_PolledEvents != radRHandler) {
     return FAIL_SEXP; // fail silently: radR is not the last loaded handler
   }
   R_PolledEvents = old_handler;
   R_wait_usec = old_timeout;
+  R_ReleaseObject(radR_handler_expr);
+  radR_handler_expr = NULL;
+
   radR_installed = 0;
   return PASS_SEXP;
 }
