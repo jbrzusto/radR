@@ -8,7 +8,7 @@ function(x, i) {
   if (i < 0 || i > x$length)
     return (NULL)
   
-  offs <-  x$ndx$offs[i]
+  offs <-  c(x$ndx[i, 1])
   if (is.na(offs))
     return(NULL)
   
