@@ -1,5 +1,4 @@
 #!/bin/bash
-##  svn $Id: $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
 ##  Copyright (C) 2006, 2007, 2008 John Brzustowski        
@@ -19,16 +18,6 @@
 ##
 ################################################################################
 #
-# rbatch: run process_one.R on a set of files; 
-#         e.g. process a bunch of blip movies to extract tracks
-#
-# usage:  rbatch [--parm PARMFILE] FILE1 ... FILEN
-#
-# e.g.:   rbatch /array/data1/jbrzusto/data/CS*.bma
-#
-# Parameter overrides are taken from PARMFILE, if the --parms option is specified.
-# 
-# NOTE: this file must be executed from the toplevel radR directory.
 
 if [ "$1" == "--help" -o "$1" == "-h" -o "$1" == "" ]; then
     cat <<-EOF
@@ -53,6 +42,7 @@ fi
 PROGRESS="--show-progress"
 SCRIPTFILE="main/process_one.R"
 PARMS=""
+FOLDER=""
 DEBUG=""
 
 SCRIPT_OPTIONS=""
@@ -62,6 +52,14 @@ while (( 1 )); do
         --no-progress )
             PROGRESS=""
             shift ;;
+
+        --folder )
+            if [ ! -d "$2" ]; then
+                echo The folder "$2" does not exist or is a file.
+                exit 1
+            fi
+            FOLDER="--folder $2"
+            shift 2 ;;
         --parm )
             if [ ! -f "$2" ]; then
                 echo The parm file "$2" does not exist.
@@ -80,7 +78,7 @@ while (( 1 )); do
             DEBUG="-d gdb"
             shift;;
         *)
-            if [[ "$1" =~ --[-a-zA-Z0-9.=]* ]]; then 
+            if [[ "$1" =~ --[-a-zA-Z0-9.=_]* ]]; then 
                 SCRIPT_OPTIONS="$SCRIPT_OPTIONS$1 "
                 shift
             else
@@ -102,7 +100,8 @@ if [ "$1" == "" ]; then
 fi
 
 for x in "$@"; do
-    R $DEBUG --no-save --quiet --args --no-gui --no-eventloop $PROGRESS --source $SCRIPTFILE $SCRIPT_OPTIONS $PARMS $SITE "$x"
+    echo About to do R $DEBUG --no-save --quiet --args --no-gui --no-eventloop $PROGRESS --source $SCRIPTFILE $SCRIPT_OPTIONS $FOLDER $PARMS $SITE "$x"
+    R $DEBUG --no-save --quiet --args --no-gui --no-eventloop $PROGRESS --source $SCRIPTFILE $SCRIPT_OPTIONS $FOLDER $PARMS $SITE "$x"
 done
 
 echo

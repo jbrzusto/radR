@@ -134,9 +134,39 @@ if (!exists("TRACKER")) {
   warning("The tracker plugin was not loaded by default, so I loaded it.")
 }
 
+## Check for specification of an output folder
+##
+##   --folder FOUT
+##
+## on the command line.  If specified, output files will go to the specified
+## folder, rather than into the same folder as the input files.
+##
+
+fout = NULL
+
+i <-match("--folder", ARGV)
+if (!is.na(i)) {
+    fout <- ARGV[i+1]
+    if (!file.exists(fout)) {
+        dir.create(fout)
+    } else if (! file.info(fout)$isdir) {
+        bail("Specified folder is actually a file ",  fout)
+    }
+    read.parms <- TRUE
+}
+
 ## set up tracker output filenames
-TRACKER$track.filename <- paste(filename, "_tracks", sep="")
-TRACKER$csv.filename <- paste(TRACKER$track.filename, ".csv", sep="")
+track.filename <- paste(filename, "_tracks", sep="")
+csv.filename <- paste(track.filename, ".csv", sep="")
+
+## if user specified output folder, use that instead of same folder as input
+if (!is.null(fout)) {
+    track.filename = file.path(fout, basename(track.filename))
+    csv.filename = file.path(fout, basename(csv.filename))
+}
+TRACKER$set.track.filename(track.filename)
+TRACKER$csv.filename = csv.filename
+
 
 ## Read parameters values from the file specified by
 ##
@@ -156,6 +186,7 @@ if (!is.na(i)) {
       bail("Cannot read parameter file ",  f)
     read.parms <- TRUE
 }
+
 
 if (read.parms) {
   cat(sprintf("Reading parameter overrides from %s", f))
@@ -262,7 +293,7 @@ rss.add.hook("ONPAUSE", function(){
   if (show.progress) {
     s <- Sys.time()
     elap <- difftime(s, rbatch.stime)
-    cat(sprintf(rbatch.summary, format(round(tc$start.time[1], 1)), format(structure(round(RSS$scan.info$timestamp, 1), class="POSIXct")), format(round(elap, 1))))
+    cat(sprintf(rbatch.summary, format(round(tc$start.time[1], 1)), format(structure(round(as.numeric(RSS$scan.info$timestamp), 1), class="POSIXct")), format(round(elap, 1))))
   }
   q()
 })
@@ -275,7 +306,7 @@ if (show.progress) {
     s <- Sys.time()
     elap <- difftime(s, rbatch.stime)
     eta <- difftime(rbatch.stime + as.numeric(difftime(s, rbatch.stime, units="secs")) * rbatch.n / rbatch.i, s)
-    cat(sprintf(rbatch.prog, format(structure(round(RSS$scan.info$timestamp,1), class="POSIXct")), format(round(elap)), format(round(eta))))
+    cat(sprintf(rbatch.prog, format(structure(round(as.numeric(RSS$scan.info$timestamp),1), class="POSIXct")), format(round(elap)), format(round(eta))))
   })
 }
 
