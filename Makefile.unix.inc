@@ -1,5 +1,5 @@
 ###      (tell emacs this is a makefile script:     -*- Makefile -*- )
-### 
+###
 ### Unix-specific Makefile for radR
 ###
 ### You need a source tree in which you have compiled the version of R which you
@@ -15,7 +15,7 @@
 ###
 
 SHLIB_SUFFIX_unix = .so
-EXE_SUFFIX_unix = 
+EXE_SUFFIX_unix =
 CP = /bin/cp
 HEAD = /bin/head
 ## version of R you are building against
@@ -26,12 +26,12 @@ R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
 R = /usr/bin/R-$(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 RCMD = $(R) CMD
-BUILD_PLATFORM_LIBOPTS = 
+BUILD_PLATFORM_LIBOPTS =
 LOCAL_INSTALL_DIR=~/Desktop/radR
 RINC =-I/usr/src/R-$(R_VERSION)/include -I/usr/src/R-$(R_VERSION)/src/include
 
 BUILD_PLATFORM_CCOPTS = -march=k8
-BUILD_PLATFORM_DEP = 
+BUILD_PLATFORM_DEP =
 TARGET_PLATFORM_CONF_FILES = radR.unix.conf.R gui.unix.conf.R
 TARGET_PLATFORM_RADR_FILES = radR.xbm startup.unix.R
 
@@ -41,7 +41,7 @@ TARGET_PLATFORM_LIBOPTS=
 TCLTK_LIB = $(R_WINDOWS_HOME)/Tcl/bin/tcl84.dll $(R_WINDOWS_HOME)/Tcl/bin/tk84.dll $(R_WINDOWS_HOME)/Tcl/bin/tcl84.dll $(R_WINDOWS_HOME)/Tcl/bin/tk84.dll
 TCLTK_INC = -I/usr/src/tk8.4.15/generic -I/usr/src/tk8.4.15/win -I /usr/src/tcl8.4.15/generic -I /usr/src/tcl8.4.15/win
 RLIB = $(R_WINDOWS_HOME)/bin/R.dll
-NM = /usr/bin/i586-mingw32msvc-nm 
+NM = /usr/bin/i686-w64-mingw32-nm
 else
 TCLTK_LIB = -L/usr/lib -ltcl8.4 -ltk8.4
 TCLTK_INC = -I/usr/include/tcl8.4 -I/usr/include/tcl8.4/tk-private/generic  -I/usr/include/tcl8.4/tcl-private/generic
@@ -69,5 +69,3 @@ TAGS: FORCE
 
 weathergif$(SHLIB_SUFFIX): weathergif.c $(RADR_INC_FILES)  $(MAKEFILE_DEP)
 	$(CC) $(CCOPTS) $(RINC) $(TCLTK_INC) -o weathergif$(SHLIB_SUFFIX) weathergif.c $(TCLTK_LIB) -Wl,-rpath,. -Wl,-rpath,extmat/libs -Wl,-rpath,$(TCLTK_LIB) -lm -L. $(RLIB)  $(LIBOPTS)
-
-

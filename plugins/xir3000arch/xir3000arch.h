@@ -12,7 +12,7 @@ typedef enum {
   REC_TYPE_RLC_2 = 4,
   REC_TYPE_RLC_3 = 5,
   REC_TYPE_RLC_4 = 6,
-  
+  REC_TYPE_RLC_5 = 7  // not sure what this means, but it's new as of Jan 2017
 } t_recording_type;
 
 
@@ -23,7 +23,7 @@ typedef enum {
 #define XIR3_ACTUAL_SAMPLES_PER_PULSE       506
 #define XIR3_STANDARD_PULSES_PER_SWEEP     1024
 #define XIR3_DEFAULT_SAMPLE_RATE       54000000 // rate of the A/D clock
-#define XIR3_TICK_RATE                 20000000 // rate of the clock used to indicate pulse start times 
+#define XIR3_TICK_RATE                 20000000 // rate of the clock used to indicate pulse start times
 
 #ifdef Win32
 #define MS_STRUCT_PREFIX __attribute__((__packed__, __ms_struct__))
@@ -33,7 +33,7 @@ typedef enum {
 #define MS_STRUCT_POSTFIX
 #endif
 
-// flags for validity of data returned by sensors 
+// flags for validity of data returned by sensors
 
 //#pragma ms_struct on
 
@@ -91,9 +91,9 @@ typedef struct MS_STRUCT_PREFIX {
   double MagDeviation;
   double TrueTrackGround;
   double MagnTrackGround;
-  /* Removed to make structure have observed size (see below) 
+  /* Removed to make structure have observed size (see below)
   double Reserved01; // not in documentation, but in CANStar.h
-  */ 
+  */
   double SpeedWater;
   double SpeedGround;
   double DriftSpeed_Water;
@@ -117,8 +117,8 @@ typedef struct MS_STRUCT_PREFIX {
   // this is not documented; it brings the structure
   // up to the 240 byte length seen in actual files
 
-  int UnusedPadding; 
-  
+  int32_t UnusedPadding;
+
   double AntennaMagnetronCurrent;
   double AntennaRMonitor;
   int AntennaState;
@@ -186,7 +186,7 @@ typedef struct MS_STRUCT_PREFIX {
 
 // MS FILETIMEs are 64 bit counts of 100 nanosecond intervals since Jan 1, 1601
 // How many such intervals separate the UTC time origin from the MS FILETIME origin?
-// according to R (version 2.10.1, *not* version 2.5.1): 
+// according to R (version 2.10.1, *not* version 2.5.1):
 //
 //  > -as.numeric(ISOdatetime(1601, 1, 1, 0, 0, 0, tz="UTC")) * 1e7
 //  [1] 1.16444736e+17

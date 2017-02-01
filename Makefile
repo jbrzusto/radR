@@ -1,5 +1,5 @@
 ###
-### Makefile for radR - requires gnu make version at least 3.80 
+### Makefile for radR - requires gnu make version at least 3.80
 ###
 ### *** To build on Windows, make sure to use the Rtools package, available
 ###     from the web, and the cygwin environment, which has the required >= 3.80
@@ -43,11 +43,11 @@ BIN_DIST_FILE := $(BIN_DIST_NAME).zip
 ifeq ($(BUILD_PLATFORM),windows)
 ## Note: there must be a symbolic link from /cygwin to / as seen from the cygwin file
 ## tree, so that the following will work in both mingw and cygwin file spaces, as it must.
-## (FIXME: get this Makefile working with the mingw Make, so that all filenames are 
+## (FIXME: get this Makefile working with the mingw Make, so that all filenames are
 ## in the mingw file space!)
 TOPLEVEL_PATH_PREFIX = /cygwin
 else
-TOPLEVEL_PATH_PREFIX = 
+TOPLEVEL_PATH_PREFIX =
 endif
 
 #############################################################
@@ -93,7 +93,7 @@ VERSION := $(if $(VERSION),$(VERSION),PRODUCTION)
 
 # One of the following should be specified on the command line
 # e.g. make BITS_PER_SAMPLE=8
-# 
+#
 # The default is BITS_PER_SAMPLE=12
 #
 # BITS_PER_SAMPLE = 8
@@ -118,9 +118,9 @@ CC_TO_USE=gcc
 STRIP=/usr/bin/strip
 else
 ## target platform is windows, build platform is unix
-CC_TO_USE=i586-mingw32msvc-gcc -b i586-mingw32msvc
+CC_TO_USE=i686-w64-mingw32-gcc
 RADR_INSTALL_DIR := $(RADR_TOPLEVEL_DIR)/install_windows
-STRIP=/usr/bin/i586-mingw32msvc-strip
+STRIP=/usr/bin/i686-ming586-mingw32msvc-strip
 endif
 endif
 
@@ -132,7 +132,7 @@ CC_BCHECK_DEBUG=/usr/src/gcc-3.4.4-bounds-checking/gcc/xgcc
 CC_BCHECK_PRODUCTION=$(CC_BCHECK_DEBUG)
 CC_PROFILE=$(CC_DEBUG)
 
-R_WINDOWS_HOME=/home/john/.wine/drive_c/Program\ Files/R/R-2.5.1
+R_WINDOWS_HOME=/home/src/R-2.5.1_windows
 
 ## commands
 CP      = /bin/cp
@@ -195,7 +195,7 @@ RPP_OPTS_BCHECK_PRODUCTION='DEBUG=0'
 ###                                                       ###
 #############################################################
 ##MAKEFILE_DEP = Makefile $(BUILD_PLATFORM_MAKEFILE)
-MAKEFILE_DEP = 
+MAKEFILE_DEP =
 
 $(eval $(AT_MAKEFILE_START))
 
@@ -244,7 +244,7 @@ local_install: radR_all radR_toplevel
 PLUGIN_NAMES := $(shell $(FIND) plugins -maxdepth 1 -type d -regex '^plugins/[a-zA-Z0-9_]+' -printf '%f\n')
 
 define create_plugin_target
-$(1): 
+$(1):
 	$(MYMAKE) plugins $(1)
 endef
 
@@ -255,10 +255,10 @@ $(foreach plugin, $(PLUGIN_NAMES), $(eval $(call create_plugin_target, $(plugin)
 PACKAGE_NAMES := $(shell $(FIND) packages -maxdepth 1 -type d -regex '^packages/[a-zA-Z0-9_]+' -printf '%f\n')
 
 define create_package_targets
-$(1): 
+$(1):
 	$(MYMAKE) packages $(addprefix $(RADR_PACKAGE_INSTALL_DIR)/, $(1))
 
-$(1)_clean: 
+$(1)_clean:
 	$(MYMAKE) packages $(1)_clean
 endef
 
@@ -278,10 +278,10 @@ protos:
 
 ## unix
 SHLIB_SUFFIX_unix = .so
-EXE_SUFFIX_unix = 
+EXE_SUFFIX_unix =
 SHELL_SCRIPT_SUFFIX_unix = .sh
 
-## windows 
+## windows
 SHLIB_SUFFIX_windows = .dll
 EXE_SUFFIX_windows = .exe
 SHELL_SCRIPT_SUFFIX_windows = .bat
@@ -329,7 +329,7 @@ clean:	install_clean subdirs_clean
 
 clean_all: clean packages_clean
 
-conf_clean: 
+conf_clean:
 	rm -f $(RADR_INSTALL_DIR)/main/*.conf.update.R
 	rm -f $(RADR_INSTALL_DIR)/main/*.conf.R
 	rm -f $(RADR_INSTALL_DIR)/main/*.RData               ## unused so far
@@ -353,7 +353,7 @@ reinstall:  FORCE
 $(SUBDIRS_CLEAN):
 	$(MYMAKE) $(subst _clean,,$@) clean
 
-# bkup_wiki: 
+# bkup_wiki:
 # 	wget -nH -P wikibackup -r -np -R "index.php?*,Special:*,Template:*,User:*" -X "editor,attachments,skins" http://radr.wiki.com
 
 CHANGELOG: FORCE
@@ -381,7 +381,7 @@ upload_stable: binary source_dist CHANGELOG_STABLE
 	$(SSH) $(SCP_UPLOAD_USER) /bin/rm -f $(SCP_UPLOAD_DIR)/LATEST_STABLE_VERSION_IS*; \
 	$(SCP) CHANGELOG_STABLE 00README.TXT LATEST_STABLE_VERSION_IS* $(SCP_UPLOAD_DEST)
 
-utils/bmdebug$(EXE_SUFFIX): utils/bmdebug.c 
+utils/bmdebug$(EXE_SUFFIX): utils/bmdebug.c
 	$(CC) $(CCOPTS) utils/bmdebug.c -o utils/bmdebug$(EXE_SUFFIX) $(RINC) -lm
 
 # sscan$(EXE_SUFFIX): sscan.c sscan.h
@@ -390,29 +390,29 @@ utils/bmdebug$(EXE_SUFFIX): utils/bmdebug.c
 
 # ######## what follows is for testing and is not part of radR
 
-# ## In order to create unix structs matching the 
+# ## In order to create unix structs matching the
 # ## MS-Windows versions of the seascan-related structures, we create
 # ## the file myIDLTYPES.H using the findoffsets.awk script and
 # ## the findoffsets.c stub
 # ##
 # ##   NOTE!! the following two cases are not dealt with automatically
 # ##   (the first is possibly a bug in the offsetof operator,
-# ##   the second is due to my own laziness in not having findoffsets deal 
+# ##   the second is due to my own laziness in not having findoffsets deal
 # ##   correctly with end-of-struct padding), and must be edited
 # ##   in the file myIDLTYPES.H to look like this:
 # ##
-# ## typedef struct _ARCHIVE_LABEL { 
-# ##   char SystemName[80]; // set as Version 3 - MRI data tape, see below 
-# ##   time_t TimeStamp;   // initial time stamp, used for recognition 
+# ## typedef struct _ARCHIVE_LABEL {
+# ##   char SystemName[80]; // set as Version 3 - MRI data tape, see below
+# ##   time_t TimeStamp;   // initial time stamp, used for recognition
 # ##   MS_STRUCT_FILLER(4b, 4);    <--- insert this line manually
-# ##   LARGE_INTEGER directoryPosition; // used for disk recording to locate directory 
-# ## } MS_STRUCT  ARCHIVE_LABEL;  
+# ##   LARGE_INTEGER directoryPosition; // used for disk recording to locate directory
+# ## } MS_STRUCT  ARCHIVE_LABEL;
 # ##
 # ## typedef struct _DISK_DIRECTORY_ENTRY {
 # ##   LARGE_INTEGER Position; // queried from storage device
 # ##   time_t TimeStamp;    // copied from DataHeader.Time in current image
 # ##   MS_STRUCT_FILLER(10, 4);  <--- insert this line manually
-# ## } MS_STRUCT  DISK_DIRECTORY_ENTRY; 
+# ## } MS_STRUCT  DISK_DIRECTORY_ENTRY;
 # ##
 # # myIDLTYPES.H: findoffsets.exe
 # # 	./findoffsets.exe > myIDLTYPES.H
@@ -442,7 +442,5 @@ utils/bmdebug$(EXE_SUFFIX): utils/bmdebug.c
 # # arch$(EXE_SUFFIX): arch.c libClient12.a
 # # 	$(CC) -Wall  -g   -o arch$(EXE_SUFFIX) arch.c -L. -lClient12 -lgdi32 $(RLIB) "-Ic:/Program Files/R/R-2.3.0/include"
 
-# # test$(SHLIB_SUFFIX): test.c $(RADR_INC_FILES) 
+# # test$(SHLIB_SUFFIX): test.c $(RADR_INC_FILES)
 # # 	$(CC) $(CCOPTS) $(RINC) $(TCLTK_INC) -o test$(SHLIB_SUFFIX) test.c  -Wl,-rpath,. -Wl,-rpath,extmat/libs -Wl,-rpath,$(TCLTK_LIB) -lm -L. $(RLIB)  $(LIBOPTS)
-
-
