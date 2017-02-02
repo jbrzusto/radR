@@ -11,7 +11,7 @@ ifeq (unix,$(BUILD_PLATFORM))
 ifeq (unix,$(TARGET_PLATFORM))
 BINARY_PACKAGE_SUFFIX = _1.0_R_unix.tar.gz
 else
-BINARY_PACKAGE_SUFFIX = _1.0_R_i586-mingw32msvc.tar.gz
+BINARY_PACKAGE_SUFFIX = _1.0_R_i686-mingw32msvc.tar.gz
 endif
 else
 BINARY_PACKAGE_SUFFIX = _1.0.zip
@@ -63,7 +63,7 @@ $(foreach PKG,$(RADR_PACKAGES),$(eval $(call BINARY_BUILD_RULE,$(PKG))))
 
 ## rule for making the installed packages from its binary archive
 
-ifeq (unix,$(BUILD_PLATFORM)) 
+ifeq (unix,$(BUILD_PLATFORM))
 define INSTALL_PACKAGE_RULE
 $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR)/, $$(addsuffix $(BINARY_PACKAGE_SUFFIX),$(1)))
 	-mkdir -p $(RADR_PACKAGE_INSTALL_DIR); \
@@ -73,7 +73,7 @@ $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR
 
 endef
 else
- ifeq (xc,$(BUILD_PLATFORM)) 
+ ifeq (xc,$(BUILD_PLATFORM))
 define INSTALL_PACKAGE_RULE
 $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR)/, $$(addsuffix $(BINARY_PACKAGE_SUFFIX),$(1)))
 	-mkdir -p $(RADR_PACKAGE_INSTALL_DIR); \
@@ -108,5 +108,3 @@ $(foreach PKG,$(RADR_PACKAGES),$(eval $(call INSTALL_PACKAGE_RULE,$(PKG))))
 #	    $(addsuffix /*$(SHLIB_SUFFIX_unix),$(RADR_PACKAGES)) \
 #	    $(addsuffix /*$(SHLIB_SUFFIX_windows),$(RADR_PACKAGES))
 #	rm -rf $(INSTALLED_RADR_PACKAGES) $(
-
-
