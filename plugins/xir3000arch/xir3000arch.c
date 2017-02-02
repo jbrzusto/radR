@@ -72,8 +72,10 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
       // if pulses were dropped and the current pulse is *not* the first pulse, replicate
       // the previous pulse to fill in the gaps
         if (dat && np_found > 0) {
+          /* if (np_found < ph4->index) */
+          /*   printf("Replicating prior pulse %d %d times\n", np_found, ph4->index - np_found); */
           while (np_found < ph4->index) {
-            memcpy (dat, dat - spp, spp);
+            memcpy (dat, dat - spp, spp * sizeof(t_sample));
             dat += spp;
             ++np_found;
           }
@@ -106,6 +108,7 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
 	}
 	shift = ri - segi->rangeind;
 	if (shift > 0) {
+          /* printf("Coarsening using shift=%d\n", shift); */
 	  // This pulse has a smaller range than the final data.
 	  // Luckily, the ranges are all related by factors of a power of 2,
 	  // so we can do quick arithmetic to coarsen the data
@@ -139,8 +142,10 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
         // if this is the first pulse and  pulses were dropped before this one, duplicate
         // this one to fill in the missing ones.
         if (ph4 && np_found == 0) {
+          /* if (np_found < ph4->index) */
+          /*   printf("Replicating first pulse %d times\n", ph4->index); */
           while (np_found < ph4->index) {
-            memcpy (dat, dat - spp, spp);
+            memcpy (dat, dat - spp, spp * sizeof(t_sample));
             dat += spp;
             ++np_found;
           }
@@ -208,8 +213,10 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
   }
   // regardless of which format, replicate the final pulse (if necessary) to fill the buffer
   if (dat) {
+    /* if (np_found < np) */
+    /*   printf("Replicating last pulse %d %d times\n", np_found, np - np_found); */
     while (np_found < np) {
-      memcpy (dat, dat - spp, spp);
+      memcpy (dat, dat - spp, spp * sizeof(t_sample));
       dat += spp;
       ++np_found;
     }
