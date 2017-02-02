@@ -1,0 +1,1 @@
+i686-w64-mingw32-gcc -DBITS_PER_SAMPLE=12 -I ../../packages/extmat/src -I/home/src/R-2.5.1_windows/include -I ../../include -I /home/src/R-2.5.1_windows/ xir3000arch.c -shared -o xir3000arch.dll /home/src/R-2.5.1_windows/bin/R.dll
