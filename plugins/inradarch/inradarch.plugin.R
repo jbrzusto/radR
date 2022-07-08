@@ -343,7 +343,7 @@ getFileTimestamp = function(f) {
     ## proj     ID           boot   ts                    
 
     parts = strsplit(f, "-", fixed=TRUE)
-    return(ymd_hms(lapply(parts, function(x) paste(x[4:8], collapse="-"))))
+    return(ymd_hms(lapply(parts, function(x) paste(tail(x, 6)[1:5], collapse="-"))))
 }
 
 ## what a table of contents looks like, initially
