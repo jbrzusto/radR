@@ -16,7 +16,7 @@
 
 
 ##           INRADARCH   PLUGIN
-##                                                         
+##
 ##  Read scans from a folder of .dat files written by the SG inrad client
 
 ##
@@ -33,16 +33,16 @@ getSweep = function(f, port) {
     ##!@param port; port whose scan.data variable will store compressed data
     ##
     ##!@ returns sweepHeader list
-    
+
     buf = port$scan.data = readBin(f, raw(), n=file.info(f)$size)
     pos = 1
-    
+
     GI = function() {
         val = readBin(buf[pos+0:3], integer(), size=4, n=1)
         pos <<- 4 + pos
         return (val)
     }
-    
+
     GS = function(n) {
         val = readBin(buf[pos+(0:(n-1))], character())
         pos <<- 4 + n;
@@ -91,7 +91,7 @@ getSweep = function(f, port) {
 get.ports = function() {
 
     rv <- list()
-    
+
     make.port <- function(name, id, is.source, is.sink) {
         structure(strictenv(
             name = name,
@@ -114,7 +114,7 @@ get.ports = function() {
             duration = 0L,                    ## how long the folder lasts, in seconds
             si = NULL,                        ## scan info
             files = NULL,                     ## full paths to all files in archive
-            num.scans = 0L, 
+            num.scans = 0L,
             ts = NULL  ## timestamps of files, parsed from names
             ## (N.B. these are receipt times, always just
             ## after the end of the sweep true sweep
@@ -153,7 +153,7 @@ get.menus = function() {
 }
 
 globals = list (
-    
+
     as.character.inradarch = function(x, ...) {
         sprintf("radR interface port: %s: %s: %s",
                 MYCLASS,
@@ -161,14 +161,14 @@ globals = list (
                 if (is.null(x$config$folder)) "(no folder)" else x$config$folder
                 )
     },
-    
+
     print.inradarch = function(x, ...) {
         ## print a description of this port
         cat (as.character(x) %:% "\n")
     },
 
     config.inradarch = function(port, ...) {
-        
+
         opts <- list(...)
         if (length(opts) != 0) {
             for (opt in names(opts)) {
@@ -186,11 +186,11 @@ globals = list (
         }
         return(port$config)
     },
-    
+
     get.contents.inradarch = function(port, ...) {
         return(port$contents)
     },
-    
+
     end.of.data.inradarch = function(port, ...) {
         ## return TRUE if there is no data left to be read
         ## on this port (e.g. if the end of a tape run has been hit)
@@ -199,40 +199,40 @@ globals = list (
 
     get.scan.info.inradarch = function(port, ...) {
         ## gets the header information for the next scan
-        
+
         port$cur.scan = port$cur.scan + 1
-        
+
         SH = getSweep(port$files[port$cur.scan], port)
 
         port$si <- list(pulses = SH$num_output_lines,
-                        
+
                         samples.per.pulse = SH$samples_per_line,
-                        
-                        bits.per.sample = 12, ## with USRP-E100 version
-                        
+
+                        bits.per.sample = 8 * (SH$data_size / (SH$samples_per_line * SH$num_output_lines)),
+
                         timestamp = structure(SH$time_stamp_seconds + SH$time_stamp_useconds / 1e6, class=class(Sys.time())),
-                        
+
                         duration = SH$scan_duration / 1e3,
 
                         sample.dist = SH$range_per_sample / 1e5,
-                        
+
                         first.sample.dist = SH$start_range / 1e3,
-                        
+
                         bearing = SH$heading,
-                        
+
                         orientation = +1,
-                        
+
                         is.rectangular = FALSE,
 
                         adc.gain = SH$adc_gain,
 
                         adc.offset = SH$adc_offset
-                        
+
                         )
 
         return(port$si)
     },
-    
+
     get.scan.data.inradarch = function(port, extmat, ...) {
         ## copies the data for the current scan into the extmat
         ## the data have already been read by get.scan.info
@@ -241,17 +241,17 @@ globals = list (
             return (NULL)
 
         dim <- c(port$si$samples.per.pulse, port$si$pulses)
-        
+
         if (is.null(dim))
             stop("calling get.scan.data when RSS$scan.info has NULL dimension info")
-        
+
         dim(extmat) <- dim
         dim(RSS$class.mat) <- dim
         dim(RSS$score.mat) <- dim
 
         if (!isTRUE(.Call("decompress_sweep", port$scan.data, pointer(extmat))))
             stop("problem decompressing sweep")
-        
+
         return(extmat)
     },
 
@@ -281,7 +281,7 @@ globals = list (
     start.up.inradarch = function(port, ...) {
         ## determine the archive contents
         ## frame interval
-        
+
         ## The contents will be treated as a single run.
         ##
         ## Returns a one-row dataframe with three elements:
@@ -292,7 +292,7 @@ globals = list (
         id <- rss.gui("POPUP_MESSAGEBOX", "Scanning folder for radar sweeps", "Please wait while I scan the specified folder for radar data.  This will take a while on large drives.")
         f = port$config$
         fs = port$config$firstScan
-        
+
         port$files = dir(port$config$folder, recursive=TRUE, pattern="-sweep\\.dat$", full.names=TRUE)
 	port$files = port$files[order(basename(port$files))]
         port$num.scans = length(port$files)
@@ -317,7 +317,7 @@ globals = list (
         ## resource consumption by this port
         ## eg. stopping digitization and playback,
         ## closing files, etc.
-        
+
         ## drop the current file data
         port$start.time <- NULL
         port$scan.data <- NULL
@@ -329,7 +329,7 @@ globals = list (
         ## changing play state.
         return(NULL)
     }
-    
+
     )  ## end of globals
 
 hooks = list (
@@ -340,7 +340,7 @@ getFileTimestamp = function(f) {
 
     ## sample filename:
     ## Canso3-2313BBBK3402-0000021-2015-06-11T08-51-46.137Z-sweep.dat
-    ## proj     ID           boot   ts                    
+    ## proj     ID           boot   ts
 
     parts = strsplit(f, "-", fixed=TRUE)
     return(ymd_hms(lapply(parts, function(x) paste(tail(x, 6)[1:5], collapse="-"))))
@@ -355,4 +355,3 @@ empty.TOC = list(
 
 ## the one and only port
 my.port = NULL
-

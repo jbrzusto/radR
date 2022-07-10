@@ -1,12 +1,12 @@
-/* 
-   
+/*
+
 decompressInrad.c - extract gated data from an lz4-compressed inrad image
 
 (C) 2015, John Brzustowski
 Licence: GPL V2+
 
 */
-  
+
 #include <lz4.h>
 #include <stdint.h>
 #include "radRmodule.h"
@@ -72,21 +72,32 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   hdr = (bscan_info_record*) p;
 
   numSamples = hdr->samples_per_line * hdr->num_output_lines;
-  
+  if (hdr->compressed_size == 0) {
+    hdr->compressed_size = LENGTH(rawvec) - 128;
+  }
   numDecoded = LZ4_decompress_safe(p + 128, (char *) EXTPTR_PTR(extptr), hdr->compressed_size, numSamples * sizeof(sample_t));
 
-#ifdef RADR_DEBUG  
-  printf("input: %p, output: %p, size:%d, decompsize: %d, samples_per_line:%d, num_output_lines: %d, numDecoded: %d\n", 
+  //#ifdef RADR_DEBUG
+  printf("input: %p, output: %p, size:%d, decompsize: %lu, samples_per_line:%d, num_output_lines: %d, numDecoded: %d\n",
          p+128,
          (char *) EXTPTR_PTR(extptr),
          hdr->compressed_size,
-         numSamples * sizeof(sample_t),         
+         numSamples * sizeof(sample_t),
          hdr->samples_per_line, hdr->num_output_lines, numDecoded);
-#endif
-  /*
-  if (numDecoded != numSamples * sizeof(sample_t))
-    return ScalarLogical(0);
-  */
+  //#endif
+  if (numDecoded != numSamples * sizeof(sample_t))  {
+    if (numDecoded == numSamples) {
+      // samples in source are 1-byte, so expand them in-place
+      uint8_t *src = ((uint8_t *) EXTPTR_PTR(extptr)) + numSamples - 1;
+      sample_t *dst = ((sample_t *) EXTPTR_PTR(extptr)) + numSamples - 1;
+      int i;
+      for (i = 0; i < numSamples; ++i) {
+        *dst-- = *src--;
+      }
+    } else {
+      return ScalarLogical(0);
+    }
+  }
 
   return ScalarLogical(1);
 }
@@ -100,7 +111,7 @@ void
 R_init_inradarch(DllInfo *info)
 {
   /* Register routines, allocate resources. */
-  
+
   R_registerRoutines(info, NULL, inradarch_call_methods, NULL, NULL);
   //  R_useDynamicSymbols(info, FALSE);
 }
