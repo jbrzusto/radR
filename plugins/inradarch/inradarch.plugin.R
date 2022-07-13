@@ -81,7 +81,7 @@ getSweep = function(f, port) {
         longitude            = GI(), ## +/- degrees.decimal * 1e7
         altitude             = GI(), ## mm from datum
         pl_mode              = GI(), ## pulse length table entry record number
-        pl_name              = GS(2)
+        pl_name              = GS(16)
         )
 
     return(sweepHeader)
