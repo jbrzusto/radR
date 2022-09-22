@@ -282,7 +282,7 @@ rss.try <- function(expr) {
 ## a function for resaving config information
 ## as is found in radR.conf.R and gui.conf.R
 
-rss.rewrite.config <- function(filename, x, backup=paste("#", filename, sep=""), outfile=filename, allow.new=FALSE)
+rss.rewrite.config <- function(filename, x, backup=paste(filename, "#", sep=""), outfile=filename, allow.new=FALSE)
 {
   ## Rewrite a configuration file with the
   ## elements from list x.
