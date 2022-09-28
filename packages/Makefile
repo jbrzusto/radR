@@ -44,7 +44,7 @@ ifeq (unix,$(TARGET_PLATFORM))
 	$(RCMD) check $(addsuffix $(SOURCE_PACKAGE_SUFFIX),$(1))
 	$(RM) -rf $(1).Rcheck
 endif
-	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) INSTALL -l $(RADR_PACKAGE_INSTALL_DIR)/ --build $(1)
+	export R_PLATFORM=$(TARGET_PLATFORM) TARGET_PLATFORM=$(TARGET_PLATFORM); $(RCMD) INSTALL --no-docs -l $(RADR_PACKAGE_INSTALL_DIR)/ --build $(1)
 
 $(1)_clean:
 	$(RM) -rf $(1).Rcheck $(addprefix $(RADR_PACKAGE_DIR)/,$(addsuffix $(BINARY_PACKAGE_SUFFIX), $(1))) \
@@ -63,7 +63,7 @@ $(foreach PKG,$(RADR_PACKAGES),$(eval $(call BINARY_BUILD_RULE,$(PKG))))
 
 ## rule for making the installed packages from its binary archive
 
-ifeq (unix,$(BUILD_PLATFORM)) 
+ifeq (unix,$(BUILD_PLATFORM))
 define INSTALL_PACKAGE_RULE
 $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR)/, $$(addsuffix $(BINARY_PACKAGE_SUFFIX),$(1)))
 	-mkdir -p $(RADR_PACKAGE_INSTALL_DIR); \
@@ -73,7 +73,7 @@ $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR
 
 endef
 else
- ifeq (xc,$(BUILD_PLATFORM)) 
+ ifeq (xc,$(BUILD_PLATFORM))
 define INSTALL_PACKAGE_RULE
 $$(addprefix $(RADR_PACKAGE_INSTALL_DIR)/,$(1)): $$(addprefix $(RADR_PACKAGE_DIR)/, $$(addsuffix $(BINARY_PACKAGE_SUFFIX),$(1)))
 	-mkdir -p $(RADR_PACKAGE_INSTALL_DIR); \
@@ -108,5 +108,3 @@ $(foreach PKG,$(RADR_PACKAGES),$(eval $(call INSTALL_PACKAGE_RULE,$(PKG))))
 #	    $(addsuffix /*$(SHLIB_SUFFIX_unix),$(RADR_PACKAGES)) \
 #	    $(addsuffix /*$(SHLIB_SUFFIX_windows),$(RADR_PACKAGES))
 #	rm -rf $(INSTALLED_RADR_PACKAGES) $(
-
-
