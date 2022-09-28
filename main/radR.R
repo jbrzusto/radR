@@ -57,6 +57,10 @@ event.loop <- is.na(match("--no-eventloop", commandArgs()))
 ## about the masking of "base::%in%", since our replacement dispatches
 ## to it.
 library("strictenv", lib.loc = radR.package.dir, warn.conflicts=FALSE)
+.S3method("[[<-", "strictenv", "[[<-.strictenv")
+.S3method("[<-", "strictenv", "[<-.strictenv")
+.S3method("[", "strictenv", "[.strictenv")
+.S3method("[[", "strictenv", "[[.strictenv")
 
 ## load the extmat package.
 library("extmat",    lib.loc = radR.package.dir, warn.conflicts=FALSE)
