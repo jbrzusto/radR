@@ -57,7 +57,7 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   // returns TRUE if decompression succeeded and uncompressed data
   // match size advertised in header; FALSE otherwise
 
-  unsigned char *p;
+  char *p;
   bscan_info_record *hdr;
   int numSamples;
   int numDecoded;
@@ -68,7 +68,7 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   if (LENGTH(rawvec) < 128)
     return ScalarLogical(0);
 
-  p = (unsigned char *) &RAW(rawvec)[0];
+  p = (char *) &RAW(rawvec)[0];
   hdr = (bscan_info_record*) p;
 
   numSamples = hdr->samples_per_line * hdr->num_output_lines;
