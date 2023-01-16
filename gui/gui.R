@@ -64,7 +64,7 @@ gui.plugin.loaded <- function(plugin, manually=FALSE) {
   ## goes under the plugins menu.
 
   ## The plugin-specified main menu goes wherever its $tcl.menu.path specifies.
-  ## The sources and sinks menus, if any, are added to the "From:" and "To: 
+  ## The sources and sinks menus, if any, are added to the "From:" and "To:
   ## buttons on the player.
 
   ## get the list of menus for this plugin
@@ -190,7 +190,7 @@ gui.no.source <- function() {
   TCL(".play.play1 configure -state disabled")
   TCL(".play.toend configure -state disabled")
   TCL(".play.tostart configure -state disabled")
-  
+
   ## empty the playlist and re-insert into the play window
   TCL("destroy .play.playlist")
   gui.create.menu.button(".play.playlist", c(), null.label="No table of contents found.")
@@ -228,7 +228,7 @@ gui.plugin.unloaded <- function(plugin) {
     for (i in rev(gui.menu.inds(m)))
       if (substr(tclchar(m, "entrycget", i, "-label"), 1, nchar(plugin$name))[1] == plugin$name)
         tcl(m, "delete", i)
-    
+
   ## recreate the plugin-loader list
   tcl("destroy", ".cmd.plugins.load")
   gui.menu.from.list(".cmd.plugins.load", title="Load a plugin", gui.plugin.loader.list())
@@ -244,7 +244,7 @@ gui.plugin.unloaded <- function(plugin) {
 
 gui.create.command.menu <- function() {
   ## create the command menu that is invoked by right-clicking in the plot window
-  
+
   if ("1" == TCL("winfo exists .cmd"))
     return(TRUE)
 
@@ -393,7 +393,7 @@ gui.do.zoom <- function(f, relative=TRUE) {
   }
 
   gui.new.parm(mpp, mpp)
-  
+
   ## adjust the plot origin so that the same data point is in the
   ## centre of the window
 
@@ -469,10 +469,10 @@ gui.get.cons <- function(append.to.history=TRUE) {
     prev.prompt <- "1.0"
   if (is.na(next.prompt <- tclchar(GUI$cons, "tag", "nextrange", "prompt", "insert")[1]))
     next.prompt <- "end-1c"
-  
+
   text <- tclvalue(tcl(GUI$cons, "get", prev.prompt, next.prompt))
-                   
-  if (append.to.history) 
+
+  if (append.to.history)
     gui.append.to.history(text)
   return(text)
 }
@@ -491,14 +491,14 @@ gui.eval.cons <- function(code) {
       gui.put.cons("\n")
     }
   })
-  
+
   if (identical("try-error", class(try.res))) {
     err <- geterrmessage()
     if (nchar(err) > 0 && exists("gui.put.cons"))
       gui.put.cons("\n" %:% gsub("^[^:]*: ", "", err), type="error")
   }
 }
-          
+
 gui.append.to.history <- function(txt) {
   ## add the line to the console history
   if (nchar(txt) > 0 && (length(GUI$console.history) == 0 || !identical(tail(GUI$console.history, 1), txt))) {
@@ -522,7 +522,7 @@ gui.move.in.history <- function(delta = -1) {
   txt <- gui.get.cons(FALSE)
   if (GUI$console.history.index <= length(GUI$console.history))
     GUI$console.history[GUI$console.history.index] <- txt
-  
+
   i <- GUI$console.history.index + delta
   if (delta == 0 || i < 1 || i > length(GUI$console.history) + 1)
     return()
@@ -530,7 +530,7 @@ gui.move.in.history <- function(delta = -1) {
   if (GUI$console.history.index > length(GUI$console.history) && delta < 0) {
     ## save the current line
     GUI$console.current.line <- gui.get.cons(append.to.history=FALSE)
-  } 
+  }
   gui.put.cons(if (i <= length(GUI$console.history)) GUI$console.history[i] else GUI$console.current.line, type="input", is.output=FALSE)
   GUI$console.history.index <- i
 }
@@ -543,14 +543,14 @@ gui.console.at.last.prompt <- function() {
   return (identical(tclchar(GUI$cons, "tag", "prevrange", "prompt", "insert")[2], tclchar(GUI$cons, "index", "insert"))
           && length(tclchar(GUI$cons, "tag", "nextrange", "prompt", "insert")) == 0)
 }
-  
+
 gui.create.cons.window <- function() {
 
   ## FIXME: we change some key bindings for the "Text" bindtag, even though we really only want
   ## to do this for the console window.  Unfortunately, I haven't yet figured out how
   ## to add a "break" to an R function call in a binding script, which is what we'd
   ## to do to override the default "Text" key bindings with bindings on ".cons.text"
-  
+
   if (!Tclbool("winfo exists .cons")) {
     TCL('toplevel .cons; wm withdraw .cons')
     tcl("text", GUI$cons, font=GUI$console.font, cursor="xterm", wrap="char", width=GUI$console.line.width)
@@ -574,7 +574,7 @@ gui.create.cons.window <- function() {
       else
         TCL(gsub("%W", W, GUI$old.Text.KeyPressUp.binding))
     })
-        
+
     tcl("bind", "Text", "<KeyPress-Down>", function(W) {
       if (gui.console.at.last.prompt())
         gui.move.in.history(+1)
@@ -597,7 +597,7 @@ gui.create.cons.window <- function() {
       tcl(W, "mark", "set", "insert", prev.prompt)
       tcl(W, "see", "insert")
     })
-      
+
 
     ## bind END to start of line (i.e. move back to last prompt or start of buffer)
     tcl("bind", "Text", "<KeyPress-End>", function(W) {
@@ -614,7 +614,7 @@ gui.create.cons.window <- function() {
         tcl(W, "see", "insert")
       }
     })
-      
+
     gui.put.cons(RSS$splash.text, type="splash")
   }
   tcl("wm", "protocol", ".cons", "WM_DELETE_WINDOW",
@@ -636,7 +636,7 @@ gui.create.plot.window <- function() {
     tcl("bind", ".plot.frame", "<Map>", gui.continue.create.plot.window)
     tcl("update", "idletasks"); Sys.sleep(0.1)
     GUI$plot.dim <- gui.parse.geometry(GUI$windows$.plot$geometry)
-    
+
     tcl("bind", ".plot.frame", "<Expose>",
            function(x, y, w, h) {
              if (!GUI$plot.is.tk.image) {
@@ -679,7 +679,7 @@ gui.create.plot.window <- function() {
   ## make the range rings and compass items
   gui.create.range.rings()
   gui.create.compass()
-  
+
 }
 
 
@@ -688,7 +688,7 @@ gui.continue.create.plot.window <- function() {
   gui.set.plot.window(TCL("winfo id .plot.frame"))
   gui.set.plot.is.tk.image(GUI$plot.is.tk.image, force=TRUE)
 }
-  
+
 gui.set.plot.window.as.group.leader <- function() {
   ## set the plot window to be the group leader:
   ## iconifying it and showing it will do the same
@@ -758,7 +758,7 @@ gui.show.pointer.info <- function(plot.coords = GUI$last.pointer.coords)
       tcl(GUI$info, "configure", text="INTERNAL ERROR: a PLOT_CURSOR_MOVED\nhook function is returning a non-character")
     } else if (all(nchar(text) == 0)) {
       tcl("place", GUI$info, x=-1, y=-1, anchor="se")
-    } else {      
+    } else {
       ## use non-emtpy strings in the odd/even slots of text as the plot-window popup / clipboard contents
       ## but if the clipboard entry is empty, copy the popup window contents to the clipboard too
       view.text <- text[c(TRUE, FALSE)]
@@ -766,7 +766,7 @@ gui.show.pointer.info <- function(plot.coords = GUI$last.pointer.coords)
 ##      clip.text[nchar(clip.text) == 0] <- view.text[nchar(clip.text) == 0]
       view.text <- view.text[nchar(view.text) > 0]
       clip.text <- clip.text[nchar(clip.text) > 0]
-                        
+
       tcl(GUI$info, "configure", text=paste(view.text, collapse="\n"))
       if (length(clip.text) > 0)
         gui.set.clipboard(clip.text)
@@ -791,7 +791,7 @@ gui.set.clipboard <- function(x) {
   tcl("clipboard", "clear")
   tcl("clipboard", "append", paste(x, collapse=GUI$clipboard.element.separator) %:% GUI$clipboard.element.terminator)
 }
-  
+
 gui.select.file.for.port <- function(port, init.dir) {
   ## FIXME
   ## pop up a file selection dialog for a port having is.file == TRUE
@@ -838,7 +838,7 @@ gui.select.folder.for.port <- function(port, init.dir) {
     return (TRUE)
   }
   return(FALSE)
-}   
+}
 
 gui.create.port.folder.selector <- function(port) {
   ## create a closure whose job is to select a folder for a
@@ -851,7 +851,7 @@ gui.create.port.folder.selector <- function(port) {
 gui.port.label <- function(port) {
   ## return the label to be used in source/sink menus and labels for
   ## a port.  Should only be called if port$is.file is TRUE
-  
+
   class(port)[1] %:% ": " %:% config(port)$filename
 }
 
@@ -868,7 +868,7 @@ gui.activate.named.file.port <- function() {
     menu <- ".play.source.menu"
   } else {
     menu <- ".play.sink.menu"
-  }    
+  }
   if (tclvalue("lastgroup" %:% menu) != tclvalue("group" %:% menu)) {
     tcl("set", "lastgroup" %:% menu, tclvalue("group" %:% menu))
     rss.set.port(port, filename=filename)
@@ -878,7 +878,7 @@ gui.activate.named.file.port <- function() {
 gui.set.run <- function(i, ...) {
   ## set the current run to i
   RSS$current.run <- i
-  
+
   ## resetting the slider to the start
   ## also causes a seek to there
 
@@ -888,7 +888,7 @@ gui.set.run <- function(i, ...) {
     config(RSS$source, start.time = as.numeric(tc$start.time[i]))
   }
   gui.reset.slider(new.source = TRUE)
-}      
+}
 
 gui.set.port <- function(port)
 {
@@ -925,8 +925,8 @@ gui.set.port <- function(port)
     tcl(label.widget, "configure", text=label)
   } else {
     tcl(label.widget, "configure", text=port$name)
-  }    
-    
+  }
+
   if (port$is.source) {
     can.play <- TRUE
     show.toc <- port$has.toc
@@ -941,14 +941,14 @@ gui.set.port <- function(port)
       }
       ## toc found, so replace the playlist menu with an entry
       ## appropriate to the contents of this port
-      
+
       TCL("destroy .play.playlist")
-      
+
       ## A function to seek to the first scan of a given run
       ## and set the slider appropriately.  This function
       ## will be called each time an item in the playlist
       ## menu is selected
-      
+
       if (!show.toc) {
         gui.create.menu.button(".play.playlist", c(), null.label="No table of contents found.")
       } else {
@@ -1029,10 +1029,10 @@ gui.reset.slider <- function(new.source=FALSE) {
   ## because tcl will not.  This is required in case
   ## we have changed to a different run (i.e. a different
   ## item from the playlist has been selected)
-  
+
 ###.if $DEBUG
   print("Resetting slider.")
-###.endif  
+###.endif
 
   if (isTRUE(RSS$source$is.seekable) || new.source) {
     force <- 1 == Tclint(".play.slider get")
@@ -1051,7 +1051,7 @@ gui.new.slider.pos <- function() {
   RSS$new.scan.index <- Tclint(".play.slider get")
 ###.if $DEBUG
   print("New scan index is " %:% RSS$new.scan.index)
-###.endif  
+###.endif
 
 }
 
@@ -1103,7 +1103,7 @@ gui.create.play.window <- function () {
          place configure .play.sourcelabel -x 50 -y 5 -relwidth 0.5 -width -50
          place configure .play.sink -y 0 -relx 0.5
          place configure .play.sinklabel -relx 0.5 -x 50 -y 5 -relwidth .5 -width -50
-         place configure .play.playlist -x   0 -relwidth 1.0 -rely 0.333 
+         place configure .play.playlist -x   0 -relwidth 1.0 -rely 0.333
          place configure .play.play     -x   2 -rely 1 -anchor sw -y -2
          place configure .play.play1    -x  27 -rely 1 -anchor sw -y -2
          place configure .play.pause    -x  52 -rely 1 -anchor sw -y -2
@@ -1165,7 +1165,7 @@ gui.create.blip.window <- function () {
                                rss.process.scan(filter.noise = TRUE, put.scan = FALSE, calculate.scores = FALSE,
                                              convert.scan = TRUE, is.preview = TRUE)
                            })
-    
+
     g.bsf <- tcl("labelframe", ".blip.stats", labelwidget=".blip.blipping", padx=6)
 
     g.ls <- gui.create.gauge(".blip.stats", "learning scans", c(0, 100),
@@ -1223,7 +1223,7 @@ gui.create.blip.window <- function () {
                                rss.process.scan(put.scan = FALSE, calculate.scores = FALSE,
                                              convert.scan = TRUE, is.preview = TRUE)
                            })
-    
+
     g.cs <- gui.create.gauge(".blip.stats", "hot score threshold low", c(-128, 128),
                            GUI$coldscore.spinner.increment,
                            RSS$blip.score.threshold[2],
@@ -1241,7 +1241,7 @@ gui.create.blip.window <- function () {
                              rss.defer.assign(cell.dims, c(x, RSS$cell.dims[2]), RSS)
                              rss.restart.learning()
                            })
-    
+
     g.ch <- gui.create.gauge(".blip.stats", "pulses per cell", c(1, 128),
                            1,
                            RSS$cell.dims[2],
@@ -1258,7 +1258,7 @@ gui.create.blip.window <- function () {
                   rss.defer.assign(blip.use.diags, tclboolvar("blip.diag"), RSS)
                   if (RSS$play.state < RSS$PS$PLAYING)
                     rss.process.scan(put.scan = FALSE, calculate.scores = FALSE, convert.scan = TRUE, is.preview = TRUE)
-                })          
+                })
 
     g.aw <- tcl("checkbutton", ".blip.aweight",
                 anchor="w",
@@ -1268,7 +1268,7 @@ gui.create.blip.window <- function () {
                   rss.defer.assign(blip.area.weighting, tclboolvar("blip.aweight"), RSS)
                   if (RSS$play.state < RSS$PS$PLAYING)
                     rss.process.scan(put.scan = FALSE, calculate.scores = FALSE, convert.scan = TRUE, is.preview = TRUE)
-                })          
+                })
 
 
     g.bpfilt <- tcl("checkbutton", ".blip.filtering",
@@ -1283,7 +1283,7 @@ gui.create.blip.window <- function () {
                     rss.process.scan(put.scan = FALSE, calculate.scores = FALSE,
                                          classify.samples = FALSE, convert.scan = TRUE, is.preview = TRUE)
                 })
-    
+
     g.bpf <- tcl("labelframe", ".blip.patches", labelwidget=".blip.filtering", padx=6)
 
     g.nslo <- gui.create.gauge(".blip.patches", "min blip samples", c(2, 50000),
@@ -1329,7 +1329,7 @@ gui.create.blip.window <- function () {
                                                     calculate.scores = FALSE, classify.samples = FALSE,
                                                     convert.scan = TRUE, is.preview = TRUE)
                            })
-    
+
     g.anglo <- gui.create.gauge(".blip.patches", "min angular span", c(0, 1024),
                            GUI$minangles.spinner.increment,
                            RSS$blip.angular.minmax[1],
@@ -1418,7 +1418,7 @@ gui.create.blip.window <- function () {
 
     if (RSS$blip.filtering)
       tcl(g.bpfilt, "select")
-    
+
     ## set the initial value for blip.updatestats
     if (RSS$update.stats.while.blipping)
       tcl(g.us, "invoke")
@@ -1429,7 +1429,7 @@ gui.create.blip.window <- function () {
 
     if (RSS$use.blip.filter.expr)
       tcl(g.useexpr, "select")
-    
+
     tcl("pack", g.fn, g.bl, g.ls, g.rsl, g.us, g.exblp, g.k, g.hs, g.cs, g.cw, g.ch, g.nslo, g.nshi, g.alo, g.ahi,
         g.anglo, g.anghi, g.radlo, g.radhi, g.di, g.bsf, g.aw, g.bpf, g.useexpr, g.filtexpr, side="top", fill="x")
   }
@@ -1459,7 +1459,7 @@ gui.compass.bmdata <- "#define compass_width 16
                        0x00, 0x00, 0xc0, 0x03, 0x40, 0x00, 0x81, 0x08, 0x00, 0x05, 0x00, 0x22,
                        0x08, 0x51, 0x84, 0x88, 0x02, 0x10, 0x40, 0x22, 0x20, 0x24, 0x10, 0x38,
                        0x08, 0x02, 0x04, 0x01, 0x82, 0x00, 0x01, 0x10 };"
-  
+
 gui.rangering.bmdata <- "#define rrbm_width 16
                          #define rrbm_height 16
                          static unsigned char rrbm_bits[] = {
@@ -1494,7 +1494,7 @@ gui.create.palette.widget <- function(class.name, row, label, gamma.incr) {
                             rss.realize.class.palette(class)
                             gui.class.palette.changed(class)
                           })
-  
+
   tcl("canvas", grad, width=128, height=16, borderwidth=0, relief="flat")
   tcl("image", "create", "photo", img, width=128, height=16)
   tcl(grad, "create", "image", 0, 0, image=img, anchor="nw")
@@ -1541,7 +1541,7 @@ gui.create.pctl.window <- function() {
          grid configure .pctl.palettelab  -row 0 -column 3
          grid configure .pctl.spectrumlab -row 0 -column 2
          grid configure .pctl.gammalab    -row 0 -column 1")
-    
+
     i <- 1
     for (type in c("Blip", "Hot", "Cold", "Other", "Excluded")) {
       gui.create.palette.widget(tolower(type), i, type, GUI$class.palette.gamma.increment[[i]])
@@ -1559,7 +1559,7 @@ gui.create.pctl.window <- function() {
         })
     if (GUI$range.rings.enabled)
       tcl(".pctl.rangeringenabled", "select")
-    
+
     tcl("image", "create", "bitmap", "::img::pctlrangeringbm",
         data=gui.rangering.bmdata, maskdata=gui.bkgd.bmmask,
         foreground = GUI$range.ring.colour, background = "black")
@@ -1667,7 +1667,7 @@ gui.create.pctl.window <- function() {
                      width = 5)
 
     tcl("label", ".pctl.modelabel", text="Plot data: ")
-    
+
     gui.create.menu.button(".pctl.mode", names(RSS$plot.data.sources),
                            set.fun = function(m, ...) {
                              src <- RSS$plot.data.sources[[m]]
@@ -1684,16 +1684,16 @@ gui.create.pctl.window <- function() {
                            })
 
     tcl(".pctl.mode.menu", "invoke", match(RSS$plot.data.source, RSS$plot.data.sources) - 1)
-        
+
     if (GUI$plot.enabled)
       tcl(".pctl.showplot", "select")
 
     if (GUI$plot.is.tk.image)
       tcl(".pctl.tkplot", "select")
-    
+
     if (GUI$compass.enabled)
       tcl(".pctl.compass", "select")
-    
+
     tcl("wm", "iconbitmap", ".pctl", GUI$application.icon)
     .Tcl(paste(
          "grid configure .pctl.bkgdlab           -row", i + 1, "-column 0 -columnspan 2 -sticky w;",
@@ -1711,7 +1711,7 @@ gui.create.pctl.window <- function() {
          "grid configure .pctl.mode              -row", i + 4, "-column 3 -sticky w;",
          "grid configure .pctl.tkplot            -row", i + 5, "-column 0 -columnspan 3 -sticky w;"
     ))
-    
+
   }
   tcl("wm", "protocol", ".pctl", "WM_DELETE_WINDOW",
       function(){
@@ -1723,7 +1723,7 @@ gui.set.class.display <- function(class.name, enab=TRUE) {
   if (enab != RSS$show.class[[class.name]])
     tcl(".pctl." %:% class.name %:% "enabled", "invoke")
 }
-  
+
 gui.set.class.palette <- function(class.name, palette.name, gamma = RSS$class.gamma[[class.name]]) {
   tcl(".pctl." %:% class.name %:% "chooser.menu", "invoke", palette.name %:% "*")
   tcl(gam <- ".pctl." %:% class.name %:% "gam.spin", "set", gamma - tclreal(gam, "cget", "-increment"))
@@ -1778,10 +1778,10 @@ gui.xlat.tcl.colour <- function(colour) {
     colour <- "#" %:% paste(sprintf("%02x", floor(tclint("winfo", "rgb", ".", colour) / 256)), collapse="")
   return(colour)
 }
-  
+
 gui.class.palette.changed <- function(class) {
   ## update the gui palette controls to mark a change in the palette
-  ## for the given sample class.  
+  ## for the given sample class.
   ## This happens when a user does one of these things:
   ##  - edits the palette currently selected for class
   ##  - selects a different palette for class
@@ -1818,8 +1818,8 @@ gui.create.range.rings <- function() {
     ## do not use a dash= option here, because tk sets the line width to a positive value, which is
     ## extremely slow on my X server.  In any case, there is an X11 bug in XDrawArc (see xbug.c) which
     ## causes corrupt drawing of large-radius rings.
-    
-    tcl(GUI$plot, "create", "oval", origin[1] - delta, origin[2] - delta, origin[1] + delta, origin[2] + delta, outline=GUI$range.ring.colour, tags=c("ring", "pan", "zoom", "antenna", "zoom_arc"), width=1, fill="", state=if (GUI$range.rings.enabled) "normal" else "hidden")
+
+    tcl(GUI$plot, "create", "oval", origin[1] - delta, origin[2] - delta, origin[1] + delta, origin[2] + delta, dash=".", outline=GUI$range.ring.colour, tags=c("ring", "pan", "zoom", "antenna", "zoom_arc"), width=1, fill="", state=if (GUI$range.rings.enabled) "normal" else "hidden")
   }
 }
 
@@ -1845,7 +1845,7 @@ gui.enable.range.rings <- function(enab=TRUE) {
 
 gui.visible.compass.angle <- function() {
   ## return the smallest compass angle divider which is visible
-  ## i.e., a tail of the vector GUI$compass.angular.spacing 
+  ## i.e., a tail of the vector GUI$compass.angular.spacing
   radius <- GUI$compass.radius
   ## FIXME: this lab.size should be the maximum dimension of the string "000" in pixels
   lab.size <- 30
@@ -1901,14 +1901,14 @@ gui.compass.translated <- function(coords) {
 }
 
 gui.create.compass <- function() {
-  
+
   rps <- rss.planar.rps()
   radius <- GUI$compass.radius
   if (length(radius) == 0 || !is.finite(radius))
     radius <- 250
   if (radius > 0) {
     ## remember the plot geometry at the time the compass was created
-  
+
     GUI$prev.plot.geom <- GUI[c("mpp", "plot.origin", "north.angle")]
 
     tcl(GUI$plot, "delete", "compass")
@@ -1992,13 +1992,13 @@ gui.set.plot.is.tk.image <- function(is.tk = TRUE, force=FALSE) {
   }
   gui.update.plot.window()
 }
-    
+
 gui.update.plot.window <- function(reconv=TRUE) {
   ## update the offscreen plot bitmap
   ## This is used to refresh
   ## the window when parts are exposed, or to force
   ## plotting of new data.
-  ## if reconv is true, we do a scan-conversion 
+  ## if reconv is true, we do a scan-conversion
 
   if (! .Call("have_plot_window", PACKAGE = GUI.PACKAGE))
     return()
@@ -2011,7 +2011,7 @@ gui.update.plot.window <- function(reconv=TRUE) {
                                            geom = if (is.null(GUI$image.geom)) c(0, 0, dim(RSS$pix.mat)) else GUI$image.geom)
     if (GUI$plot.is.tk.image)
       .Call("radR_image_extmat_changed", RSS$pix.mat)
-  
+
     if (RSS$have.valid$bitmap) {
       gui.plot.range.rings()
       gui.plot.compass()
@@ -2039,7 +2039,7 @@ gui.create.port.file.selector <- function(port) {
 
   return(function() gui.select.file.for.port(port, GUI$default.dir))
 }
-    
+
 gui.enable.controls <- function (which, enable=TRUE) {
   switch(which,
          blip.finding = {
@@ -2061,7 +2061,7 @@ gui.finalize <- function() {
   rm(list=ls(pattern="^gui\\.", .GlobalEnv), pos=.GlobalEnv)
 
   ## close tcl windows
-  
+
   for (w in TCL("winfo children ."))
     try(tcl("destroy", w), silent=TRUE)
 
@@ -2075,12 +2075,12 @@ gui.finalize <- function() {
 ##   ## uninstall the tcltk event handler so that
 ##   ## we can uninstall the radR event handler
 ##   ## to which it chains
-  
+
 ##   switch(.Platform$OS.type,
 ##          unix = .C("delTcl"),
 ##          windows = .C("tcltk_end")
 ##          )
-  
+
 ##   cat("Unloaded tcltk\n")
 
 ##   ## define a diagnostic tcl function to alert to post-unload use
@@ -2104,7 +2104,7 @@ GUI.init <- function() {
   ## set up some tcl functions
   rss.source.tcl("gui/guicanvas.tcl")
   rss.source.tcl("gui/datepick.tcl")
-    
+
   GUI <<- strictenv (
                      ## set up GUI variables
                      ## many of these are set later, and we are just
@@ -2124,19 +2124,19 @@ GUI.init <- function() {
                      marked.point                  = NULL,
                      located.line.endpoint         = NULL,
                      menu.title.to.tcl.part        = list(),
-                     
+
                      menu.title.to.tcl.path        = list(
                        "radR menu"                 = ".cmd",
                        "Plugins"                   = ".cmd.plugins",
                        "Load a plugin"             = ".cmd.plugins.load",
                        "Sources"                   = ".play.source.menu",
                        "Sinks"                     = ".play.sink.menu"),
-                     
+
                      menu.tcl.name                 = list(
                        main                        = ".cmd",
                        sources                     = ".play.source.menu",
                        sinks                       = ".play.sink.menu"),
-                     
+
                      mouse.in.plot                 = FALSE,
                      new.parm.values               = list (),
                      new.parm.values               = NULL,
@@ -2165,16 +2165,16 @@ GUI.init <- function() {
 
                      PARENT = .GlobalEnv
                      )
-  
+
   ## set default coordinate transforms
   gui.set.coord.tx()
 
   ## append configuration information
-  
+
   rss.load.config("gui/gui", GUI)
 
   ## set the console history index to the first available slot
-  
+
   GUI$console.history.index <- length(GUI$console.history) + 1
 
   ## inform tcl of defaults
@@ -2241,7 +2241,7 @@ gui.restore.window.settings <- function() {
   }
   gui.set.plot.window.as.group.leader()
 }
-    
+
 gui.mousewheel.redirector <- function(W, X, Y, D) {
   ## redirect a mousewheel event to the window
   ## actually under the cursor
@@ -2267,7 +2267,7 @@ gui.parm.to.option = list (
   ## corresponding option name for the "event" command.  This is to
   ## allow us to "forward" parameter substitutions from a real event
   ## to a virtual one.
-  
+
   "%a" = "-above %a",
   "%B" = "-borderwidth %B",
   "%b" = "-button %b",
@@ -2294,7 +2294,7 @@ gui.parm.to.option = list (
   "%y" = "-y %y",
   "%%" = "%"
   )
-  
+
 gui.sub.event.parms <- function(x) {
   ## for each "%"-parameter in the character vector x, perform
   ## substitution so that the resulting string can be used as the
@@ -2315,7 +2315,7 @@ gui.sub.event.parms <- function(x) {
 
 gui.setup.bindings <- function() {
   ## create various general event bindings
-  
+
   if (GUI$redirect.mousewheel.events.to.children) {
     ## rebind the appropriate toplevel event so that a
     ## MouseWheel event (possibly with shift or ctrl)
@@ -2338,7 +2338,7 @@ gui.setup.bindings <- function() {
       tcl("bind", w, "<<MouseWheel>>", gui.mousewheel.translator)
 
     ## In text widgets, paste should remove CR/LF (since our console is dumb about that)
-    ## We do this 
+    ## We do this
 ##     tcl("bind", "Text", "<<Paste>>", function(W) {
 ##       .Tcl("set tmpclip [clipboard get]")
 ##       txt <- tclvalue("tmpclip")
@@ -2352,11 +2352,11 @@ gui.setup.bindings <- function() {
 
   }
 
-  ## load customizable event bindings 
+  ## load customizable event bindings
 
   bindings <- rss.load.config("gui/gui.bindings")
   ## loop over all virtual events (to which something might be bound)
-  
+
   for (virt in ls(bindings)) {
     ## loop over each window binding for this event
 
@@ -2377,7 +2377,7 @@ gui.setup.bindings <- function() {
         ## and the bindings are applied to items on the canvas given by the tags
         ## of s.
 
-        event.parms <- "%X %Y %x %y %s" 
+        event.parms <- "%X %Y %x %y %s"
         if (is.list(seqs)) {
           tcl(win, "bind", names(seqs)[j], s[[1]], paste("event generate %W <<", virt, ">> ", gui.sub.event.parms(event.parms), sep=""))
         } else if (substring(s, 1, 7) == "command") {
@@ -2389,14 +2389,14 @@ gui.setup.bindings <- function() {
           tcl("bind", win, parts[[1]], paste("event generate %W <<", virt, ">> ", gui.sub.event.parms(paste(event.parms, paste(parts[-1], collapse=" "))), sep=""))
         }
       }
-      
+
       ## Create a function that dispatches through GUI$event.list[[n]] at run time
       ## the trick is to present the call to bind() with a function having the
       ## same formals as GUI$event.list[[n]] so that the correct tcl '%' substitutions
       ## are carried forward.  Moreover, we bind this function to an appropriate symbol
       ## in the global environment so that it can be manipulated (e.g. dispatched to
       ## by code that wants to install its own handler)
-      
+
       f <- rss.make.closure(function() {
         ff <- names(formals(GUI$event.list[[virt]]))
         ff <- ff[!ff == "..."]
@@ -2442,7 +2442,7 @@ gui.file.dialog <- function(mode, title, types, init.file, on.done)
   ##          title = "Open an image file",
   ##          types = list(".gif" = "GIF images", ".*" = "All files"),
   ##          init.file = "c:/My Documents/mypic.gif",
-  ##          on.done = function(f) print("You chose " %:% paste(f, collapse=",")) 
+  ##          on.done = function(f) print("You chose " %:% paste(f, collapse=","))
   ##          )
 
   ## fill in default values; for convenience, we treat NULLs the same as missings
@@ -2460,7 +2460,7 @@ gui.file.dialog <- function(mode, title, types, init.file, on.done)
 
   ## save the current focus
   focus.win <- tcl("focus")
-  
+
   if (mode != "open.dir") {
     ## if initial file is a directory, append "." to it to prevent
     ## the following dialogues from opening in the parent directory.
@@ -2506,7 +2506,7 @@ gui.locate.point <- function (title=NULL, msg=NULL, timeout=30, keys=c("Escape",
   ##
   ## If no key is hit within the specified timeout,
   ## return NULL.
-  
+
   plot <- ".plot"
 
   tcl("after", timeout * 1000,
@@ -2535,7 +2535,7 @@ gui.locate.point <- function (title=NULL, msg=NULL, timeout=30, keys=c("Escape",
     msg.id <- gui.popup.message(title=title, msg=msg, time.to.live=timeout)
   else
     msg.id <- NULL
-  
+
   while(is.null(GUI$key.hit)) {
     tcl("update")
   }
@@ -2572,7 +2572,7 @@ gui.locate.line <- function (title, msg, timeout=120) {
   lol <- "locateline"
 
   GUI$located.line.endpoint <- 0
-  
+
   tcl(GUI$plot, "create", "line", rep(gui.plot.window.centre(), 2), tags=c(lol, "pan", "zoom", "rotate"), fill=GUI$locate.line.colour)
 
   msg.id <- gui.popup.message(title=title, msg=msg %:% "\nKeys:  Tab=switch between endpoints;  Space=finish;  Escape=cancel", time.to.live=timeout)
@@ -2584,7 +2584,7 @@ gui.locate.line <- function (title, msg, timeout=120) {
                  tcl(GUI$plot, "coords", lol, old)
                  return(NULL)
                })
-               
+
   repeat {
     pt <- gui.locate.point(timeout=timeout, keys=c("Tab", "Escape", "space"))
     if (pt$key != "Tab")
@@ -2650,10 +2650,10 @@ gui.enter.key.release <- function(W, x, y, X, Y, s) {
 gui.get.event.list <- function() {
   strictenv(
             SCAN_ADVANCE =
-            
+
             function(...) {
               ## Advance the slider up one or to a source-specified index.
-              
+
               if (isTRUE(RSS$source$is.seekable)) {
                 if ("new.index" %in% names(RSS$source) && !is.na(RSS$source$new.index))
                   tcl(".play.slider", "set", RSS$source$new.index)
@@ -2668,15 +2668,15 @@ gui.get.event.list <- function() {
                 }
               }
             },
-                        
+
             SET_PROGRESS_MAX =
             function(x)
             {
               TCL(".play.slider configure -to $x")
             },
-            
+
             RESET_PROGRESS           = gui.reset.slider,
-            
+
             CREATE_WINDOWS           = gui.create.windows,
 
             RESTORE_WINDOW_SETTINGS  = gui.restore.window.settings,
@@ -2690,9 +2690,9 @@ gui.get.event.list <- function() {
             SAVE_CONFIG              = gui.save.config,
 
             CONFIRM_QUIT             = gui.confirm.quit,
-            
+
             HAVE_PLUGINS             = gui.create.plugin.menu,
-            
+
             PLUGIN_LOADED            = gui.plugin.loaded,
 
             PLUGIN_UNLOADED          = gui.plugin.unloaded,
@@ -2734,7 +2734,7 @@ gui.get.event.list <- function() {
             },
 
             ZOOM_TO_PATCH = gui.zoom.to.patch,
-            
+
             PLOT_TO_DEFAULT_VIEW = function() {
               old.mpp <- gui.parm(mpp)
               gui.new.parm(mpp, GUI$default.mpp)
@@ -2796,7 +2796,7 @@ gui.get.event.list <- function() {
             START_PLOT_DRAG = function(x, y){
               GUI$drag.origin <- as.integer(c(x, y))
             },
-           
+
             END_PLOT_DRAG = function(x, y) {
               new.coords <- as.integer(c(x, y))
               if (!is.null(GUI$drag.origin) && !all(GUI$drag.origin == new.coords) ) {
@@ -2818,7 +2818,7 @@ gui.get.event.list <- function() {
                 gui.show.pointer.info(gui.root.to.win.coords(as.integer(c(X, Y))))
               }
             },
-              
+
             END_INFO_WIN_DRAG = function(X, Y) {
               new.coords <- as.integer(c(X, Y))
               if (!is.null(GUI$drag.origin) && !all(GUI$drag.origin == new.coords) ) {
@@ -2867,7 +2867,7 @@ gui.get.event.list <- function() {
             SET_POINTER_INFO = function(s) {
               tcl(GUI$info, "configure", text=s)
             },
-            
+
             START_PLAY = function(..., user.generated = FALSE) {
               TCL(" .play.play configure -state disabled
                        .play.play1 configure -state disabled
@@ -2945,7 +2945,7 @@ gui.get.event.list <- function() {
               x <- - as.integer(x) / GUI$mousewheel.step
               .Tcl(".play.slider set [expr [.play.slider get] +" %:% x %:%"]")
             },
-            
+
             SCROLL_TEXT_WINDOW = function(W, x) {
               tcl(W, "yview", "scroll", - round(as.integer(x) / GUI$mousewheel.step * 5), "units")
             },
@@ -2953,7 +2953,7 @@ gui.get.event.list <- function() {
             MARK_PLOT_POINT = function(x, y) {
               rss.call.hooks(RSS$MARK_PLOT_POINT_HOOK, GUI$tx.plot.to.spatial(as.integer(c(x, y))))
             },
-              
+
             ## a do-nothing event (for effectively deleting tcl default bindings)
             IGNORE = function(...) {},
 
@@ -2988,7 +2988,7 @@ gui.get.event.list <- function() {
             POPUP_NEW_MENU = gui.popup.new.menu,
 
             DESTROY_MENU = gui.destroy.menu,
-            
+
             PARENT = .GlobalEnv ## not an event
             )
 }
