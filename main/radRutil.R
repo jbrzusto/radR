@@ -1590,7 +1590,7 @@ q <- function(force=FALSE) {
 
   ## fix a readline bug that leaves the terminal in a non-echoing state
   if (.Platform$OS.type == "unix")
-    .Call("radR_fix_readline_problem")
+     suppressWarnings(.Call("radR_fix_readline_problem"))
 
   ## restore the original q() function and remove .Last()
   rss.old.q.function(save="no", runLast=FALSE)
