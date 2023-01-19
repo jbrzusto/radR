@@ -36,15 +36,15 @@ as.real = as.double
 rss.handle.error <- function(extra.msg = "", last.dump=NULL) {
   old.handler <- options()$error
   old.warn.level <- options()$warn
-  
+
   options(error = expression(NULL)) ## avoid recursive handler invocation
   options(warn = 0)
   files <- list("")
   ## determine where errors should go
   ## If no enabled GUI exists, we'll dump the error to the normal print console
 
-  dump.to.GUI <- identical(TRUE, GUI$enabled) && identical(TRUE, GUI$errors.logged.to.console) 
-  
+  dump.to.GUI <- identical(TRUE, GUI$enabled) && identical(TRUE, GUI$errors.logged.to.console)
+
   ## if logging to a file is enabled, output to the error log file
   if (RSS$log.errors.to.file) {
     if (is.null(RSS$error.log.connection))
@@ -58,15 +58,15 @@ rss.handle.error <- function(extra.msg = "", last.dump=NULL) {
     dump <- ""
   else
     paste(capture.output(last.dump), collapse="\n")
-  
+
   dump <- paste(dump, paste(capture.output(traceback()), collapse="\n"), sep="\n")
   msg <- paste(extra.msg, geterrmessage(), sep="")
   warn <- capture.output(warnings())
   if (!identical(warn, "NULL"))
     msg <- paste(msg, "Warnings:\n", paste(warn, collapse="\n"), "\n", sep="")
-  
+
   ## dump to appropriate places
-  
+
   for (f in files) {
     cat(paste(format(Sys.time()), ":  ", msg, dump, "\n", sep=""), file = f)
     if (!is.null(RSS$source))
@@ -96,7 +96,7 @@ rss.handle.error <- function(extra.msg = "", last.dump=NULL) {
 
   ## re-install this handler
   options(error = old.handler)
-  options(warn = old.warn.level) 
+  options(warn = old.warn.level)
 }
 
 
@@ -132,12 +132,12 @@ rss.sleep <- function(ms) {
   ## sleep for ms milliseconds
   .Call("radR_sleep", ms)
 }
-  
+
 rss.process.UI.events <- function() {
   ## give up a time slice to allow GUI/tcltk events to be processed
   switch(.Platform$OS.type,
          ## on windows, because the event loop runs forever in the foreground,
-         ## we need to allow for processing events 
+         ## we need to allow for processing events
          windows = {
            .Call("radR_process_UI_events")
          },
@@ -176,25 +176,25 @@ rss.get.and.set <- function(var, val, env=.GlobalEnv) {
   ## regexpr match: x is a regexpr, y is a character vector
   ## Function returns a character vector with the first match of x for
   ## each element of y where one is found.
-  
+
   m <- regexpr(x, y, perl=TRUE)
   found <- m > 0
   mstart <- m[found]
   mlen <- attr(m, "match.length")[found]
   return(substring(y[found], mstart, mstart + mlen - 1))
 }
-  
+
 "%~-%" <- function(y, x) {
   ## regexpr match and remove: x is a regexpr, y is a character vector
   ## Returns those elements of y which have a match for x,
   ## but removes the portion matching x.
   ## Useful for e.g. finding the right hand sides of all strings like "NominalHz = ..."
   ## in a file.
-  
+
   gsub(x, "", grep(x, y, value=TRUE), perl=TRUE)
 }
-  
-  
+
+
 ## list slice operators:  get/set a named slice of a list
 ## pull out a named item from each element of a list
 ## the items in the list can be lists or environments
@@ -278,7 +278,7 @@ rss.try <- function(expr) {
   options(error=handler)
   return(rv)
 }
-  
+
 ## a function for resaving config information
 ## as is found in radR.conf.R and gui.conf.R
 
@@ -286,7 +286,7 @@ rss.rewrite.config <- function(filename, x, backup=paste(filename, "#", sep=""),
 {
   ## Rewrite a configuration file with the
   ## elements from list x.
-  ## 
+  ##
   ## filename must be the name of a file from
   ## which the list in x was originally read
   ## using source():
@@ -311,7 +311,7 @@ rss.rewrite.config <- function(filename, x, backup=paste(filename, "#", sep=""),
   ## occurs while writing the new file,
   ## the old one is restored (although the
   ## old backup file is destroyed).
-  
+
   lines <- readLines(filename)
   try(file.remove(backup))
   ## fail if we can't make a backup copy
@@ -330,9 +330,9 @@ rss.rewrite.config <- function(filename, x, backup=paste(filename, "#", sep=""),
   type[grep("^[ \t]+\\)[ \t]*,?(#.*)?[ \t]*$", lines)] <- 3
 
   ## in case there are compound items in the file which are not present in the
-  ## data, we mark all potential compound item lines 
+  ## data, we mark all potential compound item lines
   type[grep("^[ \t]*[a-zA-Z._0-9]+[ \t]*=[ \t]*(list|strictenv)[ \t]*\\(", lines)] <- 4
-  
+
   ## it's recursive to properly handle lists
 ##  cat("list ( ## DO NOT MODIFY THIS LINE\n", file=out)
   do.recursive.rewrite.config(out, lines, i=1, type, x, level=1, allow.new=allow.new)
@@ -375,31 +375,31 @@ do.recursive.rewrite.config <- function(out, lines, i, type, x, level, allow.new
   ## create a regexp for searching for lines which begin named elements of
   ## the list x, using the symbol form of the name (i.e. possibly surrounded by
   ## backquotes)
-  
+
   nm <- char.lapply(names(x), as.symbol)
   rx <- paste('^[ \t]*(', paste(gsub("\\.", "\\.", nm),
                                 collapse="|"), ')[ \t]*=', sep="")
 
   delim <- if(level > 1) ",\n" else " \n"
-  
+
   ## use the unbackquoted form of the name for the rest
-  
+
   nm <- names(x)
 
   ## if we're allowing new items, keep track of which
   ## items from x have been written
   if (allow.new)
     written <- structure(rep(FALSE, length(nm)), names=nm)
-  
+
   ## mark lines beginning with "elementname = " which
   ## are assumed to begin definitions of the corresponding
   ## element of the list
-  
+
   type[grep(rx, lines)] <- 1
 
   ## mark the spot for erasing the trailing comma (0 means none)
   last.comma <- 0
-  
+
   ## loop through lines in the file
 
   indent <- paste(rep(" ", 4 + 2 * level), collapse="")
@@ -442,7 +442,7 @@ do.recursive.rewrite.config <- function(out, lines, i, type, x, level, allow.new
       ## an object which no longer needs configuration, and skip its information.
       ## The only instance of this is for the "windows"
       ## item in gui.conf.R, which represents open windows.
-      
+
       ## FIXME: TERRIBLE KLUDGE!!! if this item is a "list (" or "strictenv (",
       ## we skip lines until we find a ")" line at the correct indentation.
       ## Really, we should replace all this R code with a modified version of the
@@ -454,7 +454,7 @@ do.recursive.rewrite.config <- function(out, lines, i, type, x, level, allow.new
       goal.len <- nchar(goal)   ## we compare only to the correct length, since the line might end in a comma
       while (i <= length(lines) && (type[i] != 3 || substr(lines[i], 1, goal.len) != goal))
         i <- i + 1
-      
+
     } else if (type[i] == 3) {
       ## end of list reached, we are done at this level
       ## but we do want to skip this line
@@ -464,14 +464,14 @@ do.recursive.rewrite.config <- function(out, lines, i, type, x, level, allow.new
       if (allow.new && any(!written)) {
 ###.if $DEBUG
         print(sprintf("Before newwrite, i=%d and length(lines)=%d\n", i, length(lines)))
-###.endif        
-        for (j in nm[!written]) 
+###.endif
+        for (j in nm[!written])
           last.comma <- do.recursive.newwrite.config(out, j, x[[j]], level)
 ###.if $DEBUG
         print(sprintf("After newwrite, i=%d and length(lines)=%d\n", i, length(lines)))
 ###.endif
       }
-      
+
       break
     }
     i <- i+1
@@ -497,7 +497,7 @@ do.recursive.newwrite.config <- function(out, name, x, level, delim=",\n") {
   ##         ),
   ##
   ## and return the location of the last comma output
-  
+
   indent <- paste(rep(" ", 4 + 2 * level), collapse="")
   cat(paste(indent, capture.output(as.symbol(name)), " = ", sep=""), file=out)
   if (any(class(x) == c("list", "strictenv"))) {
@@ -519,8 +519,8 @@ do.recursive.newwrite.config <- function(out, name, x, level, delim=",\n") {
   cat(delim, file=out)
   return (last.comma)
 }
-      
-    
+
+
 rss.save.config <- function(object, name=NULL, filename=NULL, allow.new=FALSE) {
   ## save configuration info from an object back into
   ## appropriate files; If the object is NULL, as
@@ -562,7 +562,7 @@ rss.load.config <- function(filebase.name, into=strictenv(PARENT=.GlobalEnv)) {
   rss.do.load.config(filebase.name %:% "." %:% .Platform$OS.type, into)
   return(into)
 }
-  
+
 rss.do.load.config <- function(name, into) {
   ## read a configuration file and return the object
   ## name (XXX): is the basename for the file (possibly including a leading
@@ -587,7 +587,7 @@ rss.do.load.config <- function(name, into) {
   ## The file XXX.conf.update.R is renamed so that the update only occurs once.
   ##
   ## into: the environment or strictenv into which the config is to be loaded
-  ## 
+  ##
   ## Returns 'into', with new assignments made from the file contents, as required.
   ##
   conf.file <- name %:% ".conf.R"
@@ -619,7 +619,7 @@ rss.do.load.config <- function(name, into) {
   return(into)
 }
 
-### 
+###
 ### functions for R hooks
 ###
 
@@ -668,13 +668,13 @@ rss.add.hook <- function(which, plugin.name, hook, enabled=TRUE, read.only=TRUE)
     }
   } else if (is.function(hook)) {
     hook <- list(enabled=enabled, read.only=read.only, f=hook)
-  }    
+  }
 
   RSS$hooks[[which]][[plugin.name]] <- hook
-  
+
   ## sort the functions on this hook so that readonly ones come first
   ## (but otherwise, the order is preserved)
-  
+
   RSS$hooks[[which]] <- RSS$hooks[[which]][order(RSS$hooks[[which]] %$0% read.only, decreasing=TRUE)]
   return (TRUE)
 }
@@ -703,7 +703,7 @@ rss.hook.is.active <- function(which) {
 
   ## which:  a literal string consisting of the characters A-Z and "_",
   ## or a character expression
-  
+
   sw <- substitute(which)
   if (is.name(sw) && sw == toupper(sw))
     which <- as.character(sw)
@@ -716,7 +716,7 @@ rss.enable.hook <- function(which, plugin.name="user", enable=TRUE)
 
   ## which:  a literal string consisting of the characters A-Z and "_",
   ## or a character expression
-  
+
   sw <- substitute(which)
   if (is.name(sw) && sw == toupper(sw))
     which <- as.character(sw)
@@ -738,7 +738,7 @@ rss.call.plugin.hook <- function(which, plugin, ...) {
   ## particular plugin, if it is defined and enabled.  Used instead of
   ## rss.call.hooks when the values of "..."  should vary depending on
   ## which plugin's hook function is being called.
-  
+
   hook <- RSS$hooks[[which]][[plugin]]
   if (!is.null(hook) && hook$enabled)
     hook$f(...)
@@ -746,7 +746,7 @@ rss.call.plugin.hook <- function(which, plugin, ...) {
 
 rss.call.hooks <- function(which, ...) {
   ## For each plugin that has a function defined and enabled
-  ## for the hook of type "which", 
+  ## for the hook of type "which",
   ## call it with the passed parameters.
   ## The entire vector of hook return values is
   ## returned.
@@ -768,7 +768,7 @@ rss.call.hooks.accum <- function(which, par) {
   ## Returns a vector corresponding to the last non-NULL
   ## value returned by an enabled hook function, or par
   ## of there are none.
-  
+
   for (hook in RSS$hooks[[which]])
     if (hook$enabled && !is.null(hook$f) && !is.null(par2<-hook$f(par)))
       par <- par2
@@ -804,12 +804,12 @@ rss.gui <- function(event, ...) {
 ## This requires the command "handle SIGINT noprint nostop pass" in gdb
 
 gdb <- function(x) {
-  
+
   .Call("gdb", x)
 }
 
 ## Functions for dealing with actions that should be deferred until we
-## start processing the next scan.  This is to avoid race conditions 
+## start processing the next scan.  This is to avoid race conditions
 ## caused by interleaving of GUI events vs scan processing (which only
 ## happens under windows) and GUI events vs threaded get.data (which happens
 ## on both platforms).
@@ -819,7 +819,7 @@ gdb <- function(x) {
 ##   a scan; this would lead to a scan processed with a parameter set that
 ##   was changed at an undetermined point, leaving a poorly defined data matrix.
 ##
-## - the user turns off blip-finding while a thread is doing get.data; 
+## - the user turns off blip-finding while a thread is doing get.data;
 ##   this will zero out the class matrix, but when the getter thread completes,
 ##   it will still process the scan and classify the samples, leaving junk
 ##   in the class matrix for the subsequent unclassified scans.
@@ -842,7 +842,7 @@ gdb <- function(x) {
 ##
 ##   rss.do.defers() Perform deferred assignments, calls, and evals in the
 ##             same order in which they were deferred
-## 
+##
 ## Deferred calls and evals can themselves call rss.defer.*(); these 2nd
 ## order deferrals will be evaluated after all 1st order deferrals have been evaluated.
 ## 2nd order deferrals can call rss.defer.*() to create 3rd order deferrals, and so on.
@@ -871,7 +871,7 @@ rss.defer.call <- function(x) {
   ## arguments to the call in x are evaluated immediately
   ## (To also defer argument evaluation, use rss.defer.eval() instead)
   ## The deferral is until the next call to rss.do.defers()
-  
+
   if (RSS$play.state >= RSS$PS$PLAYING) {
     x <- substitute(x)
     if (mode(x) != "call")
@@ -889,13 +889,13 @@ rss.defer.eval <- function(x, env=.GlobalEnv) {
   ## defer the evaluation of expression x in environment env
   ## Any symbols in x must be available in env.
   ## The deferral is until the next call to rss.do.defers()
-  
+
   if (RSS$play.state >= RSS$PS$PLAYING)
     RSS$defers <- c(RSS$defers, call("eval", substitute(x), envir=env))
   else
     eval(x, env)
 }
-  
+
 rss.do.defers <- function() {
   ## evaluate any deferred assignments, calls, and evals
   ## Some of these might themselves generate deferrals, so
@@ -913,7 +913,7 @@ rss.do.defers <- function() {
     rss.call.hooks(RSS$UPDATE_PARMS_HOOK)
   }))
 }
-  
+
 
 rss.finalize <- function(save.config=TRUE) {
   try ({
@@ -934,7 +934,7 @@ rss.finalize <- function(save.config=TRUE) {
 
     for (plugin.name in rev(RSS$plugins))
       rss.unload.plugin(plugin.name, save.config)
-    
+
     if (exists("gui.finalize"))
       gui.finalize()
 
@@ -951,7 +951,7 @@ rss.install.event.loop <- function()
 
          ## On Windows, we do nothing.  The event loop is called
          ## with run.once = FALSE, and runs forever, calling
-         ## rss.process.UI.events() at each iteration       
+         ## rss.process.UI.events() at each iteration
          windows = {}
          )
 }
@@ -1014,7 +1014,7 @@ undebug <- function(f=NULL) {
   if (!is.null(f))
     rss.original.undebug(f)
 }
-  
+
 rss.set.method.envs <- function (obj, env)
 {
   ## for every function that is an item of obj or
@@ -1030,7 +1030,7 @@ rss.set.method.envs <- function (obj, env)
     }
   }
   return(obj)
-}     
+}
 
 rss.load.palettes <- function() {
   ## load all available palette files
@@ -1066,7 +1066,7 @@ rss.realize.class.palette <- function(class) {
   if (is.null(pal <- RSS$palettes[[pal.name]]))
     stop("unknown palette name: '" %:% pal.name %:% "'")
 
-  # rss.realize.palette returns an 
+  # rss.realize.palette returns an
   RSS$palette.mat[,class] <- rss.realize.palette(pal, gamma, rss.plot.data.source.signed(), RSS$plot.is.tk.image)
 }
 
@@ -1103,7 +1103,7 @@ rss.realize.palette <- function(pal, gamma, signed=FALSE, tkPixelLayout = FALSE)
   ## The realized palette is returned as an rgbint vector,
   ## which is actually a real vector so that 0x80000000 can be represented
   ## without any NA problems.
-  
+
   rgb <- rss.tclcolour.to.rgbmat(pal$colours, alpha=pal$alpha)
   if (!signed) {
     max.col <- 2 ^ RSS$pixel.data.bits - 1
@@ -1116,7 +1116,7 @@ rss.realize.palette <- function(pal, gamma, signed=FALSE, tkPixelLayout = FALSE)
     ## in increasing order
     ## - colours for negative values go in the second half of the palette
     ## in decreasing order
-    
+
     max.col <- 2 ^ (RSS$pixel.data.bits - 1) - 1
     points.out <- rss.gamma.scurve(c(0.5 + (0:max.col) / max.col / 2, (0:max.col) / max.col / 2), gamma)
   }
@@ -1125,7 +1125,7 @@ rss.realize.palette <- function(pal, gamma, signed=FALSE, tkPixelLayout = FALSE)
   b <- as.integer(round(rss.lin.interp (pal$points, rgb[,3], points.out)))
   alpha <- as.integer(round(rss.lin.interp (pal$points, rgb[,4], points.out)))
   return(rss.rgbmat.to.rgbint(cbind(r, g, b, alpha), tkPixelLayout))
-}  
+}
 
 rss.palette.changed <- function(pal.name) {
   ## Given that the named palette has changed, update
@@ -1184,7 +1184,7 @@ rss.rgbmat.to.rgbint <- function(rgbm, for.tk = FALSE) {
   if (for.tk) {
     rgbm[,3] * as.integer(65536) + rgbm[,2] * as.integer(256) + rgbm[,1] + alpha
   } else {
-    rgbm[,1] * as.integer(65536) + rgbm[,2] * as.integer(256) + rgbm[,3] + alpha 
+    rgbm[,1] * as.integer(65536) + rgbm[,2] * as.integer(256) + rgbm[,3] + alpha
   }
 }
 
@@ -1208,7 +1208,7 @@ rss.rgbmat.blend <- function(rgbm, bg) {
                 ))
 }
 
-  
+
 
 rss.get.plugin.list <- function() {
   ## Get the list of available radR plugins
@@ -1224,7 +1224,7 @@ rss.get.plugin.list <- function() {
   ##  $version = the plugin version
   ##
   ## The list is saved in RSS$available.plugins
-  
+
   files <- dir(path = RSS$plugin.pathlist, pattern="\\.plugin\\.R$", recursive=TRUE, full.names=TRUE)
   rv <- list()
   for (f in files) {
@@ -1281,14 +1281,14 @@ rss.load.object.and.config <- function(filename, into = new.env(hash=TRUE, paren
   ## is TRACKER, not .GlobalEnv.  So set the parent.env() to
   ## .GlobalEnv, on the assumption that after load()ing the object
   ## back in, the caller will take care of setting its parent.env
-  
+
   if (!identical(saved.parent <- parent.env(into), .GlobalEnv))
     parent.env(into) <- .GlobalEnv
   save(list="into", file=pp)
   parent.env(into) <- saved.parent
   return(into)
 }
-  
+
 rss.load.plugin <- function(plugin.name, manually=TRUE) {
   ## load a plugin identified by plugin.name
   ## This will be an index into the list returned by rss.get.plugin.list()
@@ -1326,7 +1326,7 @@ rss.load.plugin <- function(plugin.name, manually=TRUE) {
 ###  environment.
 ###
 ###  rss.set.method.envs(plugin, plugin)
-  
+
   ## for each item in the plugin's "globals" list,
   ## install that item globally.
 
@@ -1357,9 +1357,9 @@ rss.load.plugin <- function(plugin.name, manually=TRUE) {
   ## is installed in the global environment under its upper-cased name
   ## WARNING: any changes made to the variable "plugin" within
   ## this function will have no effect on the global plugin object
-  
+
   RSS$plugins <- c(RSS$plugins, plugin.name)
-  
+
   ## remove this plugin from the available list
   RSS$available.plugins[[plugin.name]] <- NULL
 
@@ -1387,7 +1387,7 @@ rss.load.plugin <- function(plugin.name, manually=TRUE) {
 rss.enable.plugin <- function(plugin.name, enable = TRUE) {
   ## enable this plugin
   ## i.e. enable all hooks set by this plugin
-  
+
   ## is plugin loaded?
   if (! plugin.name %in% RSS$plugins)
     return (FALSE)
@@ -1403,12 +1403,12 @@ rss.enable.plugin <- function(plugin.name, enable = TRUE) {
 }
 
 rss.disable.plugin <- function(plugin.name) {
-  ## disable this plugin 
+  ## disable this plugin
   rss.enable.plugin(plugin.name, FALSE)
 }
 
 rss.unload.plugin <- function(plugin.name, save.config=TRUE) {
-  
+
   if (! plugin.name %in% RSS$plugins)
     stop("rss.unload.plugin: plugin '" %:% plugin.name %:% "' is not loaded")
   plugin <- get(toupper(plugin.name), envir=.GlobalEnv)
@@ -1428,20 +1428,20 @@ rss.unload.plugin <- function(plugin.name, save.config=TRUE) {
   ## to the list of available ones
   RSS$available.plugins[[plugin.name]] <- as.strictenv(plugin[c("name", "plugin.label", "plugin.file", "version")], PARENT=.GlobalEnv)
   RSS$plugins <- RSS$plugins[RSS$plugins != plugin.name]
-  
+
   ## update the GUI to reflect this
   rss.gui(PLUGIN_UNLOADED, plugin)
 
   ## drop the source and sink if they belong to the corresponding plugin class
-  
+
   if (inherits(RSS$source, plugin.name))
     rss.set.no.port("source")
-  
+
   if (inherits(RSS$sink, plugin.name))
     rss.set.no.port("sink")
 
   ## call the plugin's unload function (if any)
-  
+
   if ("unload" %in% plugin)
     try(plugin$unload(save.config), silent=TRUE)
 
@@ -1461,7 +1461,7 @@ rss.get.shared.constants <- function() {
   lines <- readLines("main/radRshared.h")
 
   ## The types for large data matrices
-  
+
   typedefs <- grep("^#define T_[A-Z_]*_TYPE", lines, value=TRUE)
   typenames <- tolower(gsub("(^#define T_)|(_TYPE .*$)", "", typedefs, perl=TRUE))
   typetypes <- gsub("(^#define[A-Z_ \t]*)|([ \t]*(//.*)?$)", "", typedefs, perl=TRUE)
@@ -1476,7 +1476,7 @@ rss.get.shared.constants <- function() {
   RSS %$% pixel.data.bits <- as.integer(strsplit(grep("^#define T_PIXEL_DATA_BITS", lines, value=TRUE), "[ \t]+")[[1]][3])
   RSS %$% score.bits <- as.integer(strsplit(grep("^#define T_SCORE_BITS_USED", lines, value=TRUE), "[ \t]+")[[1]][3])
   RSS %$% score.scale <- 2 ^ as.integer(strsplit(grep("^#define T_SCORE_FRACTIONAL_BITS", lines, value=TRUE), "[ \t]+")[[1]][3])
-  
+
   ## The error codes
   e<-list()
   lapply(strsplit(grep("^#define RADR_ERROR", lines, value=TRUE), "[ \t]+"),
@@ -1518,7 +1518,7 @@ rss.get.shared.constants <- function() {
   ##
 
   RSS$hooks <- strictenv()
-  
+
   lapply(strsplit(grep("#define RADR_HOOK", lines, value=TRUE), "[ \t]+"),
          function(x) {
            hookname <- sub("RADR_HOOK_", "", x[2])
@@ -1557,7 +1557,7 @@ rss.make.closure <- function(f, vars, parent=.GlobalEnv) {
 }
 
 
-## replace the quit function 
+## replace the quit function
 rss.old.q.function <- q
 
 q <- function(force=FALSE) {
@@ -1581,7 +1581,7 @@ q <- function(force=FALSE) {
     }
     ## time to quit, call any installed hooks
     rss.call.hooks(RSS$ONEXIT_HOOK)
-    
+
   }, silent=TRUE)
   ## call the builtin quit function, which in turn
   ## will call the .Last function
@@ -1591,14 +1591,14 @@ q <- function(force=FALSE) {
   ## fix a readline bug that leaves the terminal in a non-echoing state
   if (.Platform$OS.type == "unix")
     .Call("radR_fix_readline_problem")
-  
+
   ## restore the original q() function and remove .Last()
   rss.old.q.function(save="no", runLast=FALSE)
 }
 
 ## create the function to shut down radR on exit
-  
-.Last <<- function() {
+
+.Last = function() {
   rss.finalize(RSS$save.config)
 }
 
@@ -1609,7 +1609,7 @@ rss.patch.at.sample.pulse <- function(s, p) {
   ## The first column of the matrix is the sample, the second is the pulse.
   ## and n is the number of samples in the patch.
   ## (returns NULL if there is no such patch)
-  
+
   ## If p is missing, s is assumed to be a vector providing both coordinates.
   ## The returned coordinate matrix can be used directly to index
   ## external matrices such as the scan mat:
@@ -1618,7 +1618,7 @@ rss.patch.at.sample.pulse <- function(s, p) {
   ## attr(, "index")[1] : the index of the patch within all patches from this scan
   ## attr(, "index")[2] : if this patch is a blip, the index of the blip within all
   ##                      blips from this scan, otherwise 0.
-  
+
   if (!missing(p))
     s <- c(s, p)
 
@@ -1693,13 +1693,13 @@ rss.sp.to.sph <- function(s, p, meta = RSS$scan.info) {
   ## Uses metadata in meta.
   if (!missing(p))
     s <- cbind(s, p)
-  with(meta, 
+  with(meta,
     cbind(r = first.sample.dist + sample.dist * (s[,1] - 0.5),
           theta = (bearing + bearing.offset) + orientation * (s[, 2] - 1) * (360 / pulses),
           phi = antenna.angle[1])
        )
 }
-  
+
 rss.blip.perim <- function(blip, spatial=TRUE, num.pulses = RSS$scan.info$pulses, dr = rss.planar.rps()) {
   ## blip is an n x 2 matrix of
   ## sample locations, column 1 is sample slot,
@@ -1717,14 +1717,14 @@ rss.blip.perim <- function(blip, spatial=TRUE, num.pulses = RSS$scan.info$pulses
   ## in the same units.  if spatial==FALSE, no value for dr is required
   ## we assume that sample 1 spans the range [orig, dr], sample 2 the range [orig+dr, orig+2*dr],
   ## and so on, where orig is RSS$scan.info$first.sample.dist
-  
+
   num.samples <- dim(blip)[1]
 
   if (spatial) {
     dtheta <- 2 * pi / num.pulses
     orig <- RSS$scan.info$first.sample.dist
   }
-  
+
   ## get the total perimeter of all samples
 
   all.sample.perim <- if (spatial) {
@@ -1735,32 +1735,32 @@ rss.blip.perim <- function(blip, spatial=TRUE, num.pulses = RSS$scan.info$pulses
 
   ## now compute the "total" perimeter accounted for by edges
   ## between adjacent samples
-  
+
   ## a big number, larger than one plus the max possible pulse or sample #
-  
+
   big.num <- max(blip) + 2
 
   ## sort the blip array samplewise, then pulsewise
-  
+
   sample.by.sample <- blip[order(blip[,2], blip[,1]),]
 
   ## if the patch straddles the zero azimuth, we duplicate its last pulse
   ## but give it pulse # 0 so that it appears adjacent to pulse # 1
 
-  if (any(blip[,2] == num.pulses) && any(blip[,2] == 1)) 
+  if (any(blip[,2] == num.pulses) && any(blip[,2] == 1))
     blip <- rbind(blip, cbind(blip[blip[,2] == num.pulses, 1], 0))
-    
+
   pulse.by.pulse <- blip[order(blip[,1], blip[,2]),]
 
   ## linearize the sample slot and pulse numbers so that adjacent
   ## samples differ by one in the appropriate vector
-  
+
   lin.sample.nums <- sample.by.sample[,1] + big.num * sample.by.sample[,2]
   lin.pulse.nums  <- pulse.by.pulse  [,2] + big.num * pulse.by.pulse  [,1]
 
   int.edge.perim <- if (spatial) {
     radial.int.edges <- which(diff(lin.sample.nums) == 1)
-    dtheta * (dr * sum(sample.by.sample[radial.int.edges, 1]) + orig * length(radial.int.edges)) + 
+    dtheta * (dr * sum(sample.by.sample[radial.int.edges, 1]) + orig * length(radial.int.edges)) +
       dr * sum(diff(lin.pulse.nums) == 1)
   } else {
     sum(diff(lin.sample.nums) == 1) + sum(diff(lin.pulse.nums) == 1)
@@ -1768,7 +1768,7 @@ rss.blip.perim <- function(blip, spatial=TRUE, num.pulses = RSS$scan.info$pulses
 
   ## the perimeter is the sum of all sample perimeters minus twice the
   ## lengths of internal edges
-  
+
   return(all.sample.perim - 2 * int.edge.perim)
 }
 
@@ -1829,7 +1829,7 @@ rss.summarize.patches <- function(patches, area.weighting = TRUE) {
 
   if (dim(patches)[1] == 0)
     return(data.frame())
-  
+
   info             <- RSS$scan.info
   scan.date        <- as.numeric(info$timestamp)
   max.sample.value <- 2 ^ info$bits.per.sample - 1
@@ -1846,33 +1846,33 @@ rss.summarize.patches <- function(patches, area.weighting = TRUE) {
     pn <- 2
     blip.num <- as.factor(rep(1, dim(patches)[1]))
   }
-  
+
   ## grab raw sample values for all tracks; drop=FALSE in case there's only one row in patches
-  
+
   value <- RSS$scan.mat[patches[, sn:pn, drop=FALSE]]
-  
+
   ## Because a sample at close range represents a smaller
   ## area of coverage than one at longer range,
   ## we weight all samples according to their range.
 
   ## area of each blip in "virtual sectors"
   weight <- as.vector(tapply(patches[, sn], blip.num, sum))
-  
+
   ## area of each blip in square metres
   area <- weight * area.conversion
-  
+
   ## intensity will be from 0 to 1 and is absolute, not z-scored
   int <- as.vector(tapply(value * patches[, sn], blip.num, sum) / weight / max.sample.value)
 
   ## convert the nominal angles to radians; pulse 1 is centred at info$bearing + info$bearing.offset
-  
+
   theta <- pi / 2 - info$orientation * (patches[, pn] - 1) * dtheta + (info$bearing + info$bearing.offset) * (pi / 180)
 
   ## calculate the range of the sample midpoint, in samples
   axial.range <- (info$first.sample.dist / info$sample.dist + patches[, sn] - 0.5)
-  
+
   ## x = easting, y = northing, z = elevation
-  
+
   rps <- rss.planar.rps()
   x <- axial.range * cos(theta) * rps
   y <- axial.range * sin(theta) * rps
@@ -1880,7 +1880,7 @@ rss.summarize.patches <- function(patches, area.weighting = TRUE) {
 
   if (area.weighting) {
     ## centroid is area-weighted x, y, and z coordinates:
-    
+
     x <- as.vector(tapply(x * patches[, sn], blip.num, sum) / weight)
     y <- as.vector(tapply(y * patches[, sn], blip.num, sum) / weight)
     z <- as.vector(tapply(z * patches[, sn], blip.num, sum) / weight) + RSS$scan.info$elevation
@@ -1901,7 +1901,7 @@ rss.summarize.patches <- function(patches, area.weighting = TRUE) {
   ## bind all calculated columns together into a data frame
   return(data.frame(t, x, y, z, area, int, row.names=NULL))
 }
-  
+
 rss.set.palette <- function(class, rgb) {
   ## set the palette for class to rgb
   ## "class" is 1..RSS$num.sample.classes
@@ -1960,12 +1960,12 @@ rss.convert.scan <- function(reconv,
     else if (is.null(RSS$pix.mat))
       RSS$pix.mat <- extmat("pixels of scan-converted data" , type=RSS$types$pixel, dim=RSS$default.pix.mat.dim)
   }
-    
+
 
   ## if required to paint the background and the PAINT_BACKGROUND
   ## hook doesn't return any TRUE values, paint the pixel matrix
   ## with background colour
-  
+
   if (paint.background && !any(rss.call.hooks(RSS$PAINT_BACKGROUND_HOOK)))
     RSS$pix.mat[NOTRIGGER=TRUE] <- rss.tclcolour.to.rgbint(RSS$pix.mat.background, RSS$plot.is.tk.image)
 
@@ -2014,7 +2014,7 @@ rss.plot.data.source <- function() {
   ## return the current plot data source
   ## ensuring that the appropriate data are
   ## present
-  
+
   switch(RSS$plot.data.source,
          score.mat = {
            if (RSS$have.valid$scores)
@@ -2028,7 +2028,7 @@ rss.plot.data.source <- function() {
 }
 
 rss.plot.data.source.bit.shift <- function() {
-  
+
   ## for the current plot data source, returns a pair (x, y)
   ## where x is the number of bits to right-shift the data value to
   ## get the pixel value, and y is the number of bits to left-shift the
@@ -2126,7 +2126,7 @@ rss.read.file.as.raw <- function(f) readBin(f, "raw", file.info(f)$size)
 ## get the path to a foreign file
 
 rss.get.foreign.path <- function(path, title, keep.basename=FALSE) {
-  ## 
+  ##
   ## Find the location of a foreign file, prompting the user if we can't find it.
   ## Return the location, or NULL if the user cancelled.
   ##
@@ -2150,7 +2150,7 @@ rss.get.foreign.path <- function(path, title, keep.basename=FALSE) {
                        init.file = path)
   if (length(new.path) < 1 || nchar(new.path)[1] == 0)
     return(NULL)
-  
+
   if (keep.basename) {
     new.path.keep <- sub(basename(new.path), basename(path), new.path, fixed=TRUE)
     if (new.path.keep != new.path) {
@@ -2159,7 +2159,7 @@ rss.get.foreign.path <- function(path, title, keep.basename=FALSE) {
                buttons=c("Yes", "No"))
       if (resp == 2)
         return (NULL)
-      
+
       if (file.exists(new.path.keep)) {
         resp <- rss.gui(POPUP_DIALOG, title="Overwrite File?",
                          msg="The file '" %:% new.path.keep %:% "'\n already exists.  Should I overwrite it?",
@@ -2184,7 +2184,7 @@ rss.validate.parms <- function(valid.names, valid.vals, ...) {
   ##
   ## Returns: if .ERRLAB is missing, a list with only the valid NAME=VALUE pairs.  If a NAME is repeated,
   ##             it appears only once, with the last VALUE.
-  ##          if .ERRLAB is given, and all assignments are valid, then the list of assignments; 
+  ##          if .ERRLAB is given, and all assignments are valid, then the list of assignments;
   ##             otherwise, an error is generated for the first invalid assignment
   ##
   ## A parameter assignment NAME=VALUE is valid if:
@@ -2200,12 +2200,12 @@ rss.validate.parms <- function(valid.names, valid.vals, ...) {
   ## Note: parameter names are matched exactly, not partially.
 
   parms <- list(...)
-  .ERRLAB <- parms[".ERRLAB"][[1]]  
+  .ERRLAB <- parms[".ERRLAB"][[1]]
   parms[".ERRLAB"] <- NULL
   ## unpack the parms if a single list was provided
   if (length(parms) == 1 && is.list(parms[[1]]))
     parms <- parms[[1]]
-  
+
   rv <- list()
   for (p in seq(along = parms)) {
     name <- names(parms)[p]
@@ -2259,7 +2259,7 @@ make.env <- function(...) {
   ## make an environment from a single untagged list argument
   ## or from a set of tagged arguments.
   ## The tags (or names of the list) become the symbol names in the environment.
-  
+
   e <- new.env()
   v <- list(...)
   if (!length(names(v)))
@@ -2344,7 +2344,7 @@ rss.file.info.macro <- function(string, filename)
            error = function(e) {
              fi <- file.info("")  ## this returns a list of NA
            })
-    
+
   string <- gsub("%SIZE%", fi$size, string)
   string <- gsub("%DATE%", fi$mtime, string)
   return(string)
