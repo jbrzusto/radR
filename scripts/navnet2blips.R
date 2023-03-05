@@ -102,7 +102,6 @@ start.up(p)
 
 ## set up scan counters
 rbatch.i = 0
-rbatch.n = tc$num.scans[1]
 
 ## set up a progress reporting string
 rbatch.prog = "Scan: %-21s  Elapsed: %-11s  Left: %-11s\r"
@@ -117,42 +116,6 @@ for (plug in c(if (do.csv) "saveblips", if (do.bm) "blipmovie", if (do.tracks) "
         warning("The ", plug, " plugin was not loaded by default, so I loaded it.")
     }
 }
-
-## set up output filenames
-
-TS = function(x) structure(x, class=c("POSIXt", "POSIXct"))
-
-fob = sprintf("%s_%s_to_%s_blips.csv",
-    site,
-    format(TS(tc$start.time[1]), "%Y-%m-%dT%H-%M-%S"),
-    format(TS(tc$end.time[1]), "%Y-%m-%dT%H-%M-%S")
-    )
-
-fobm = sub("_blips.csv$", ".bm", fob)
-ftrk = sub("_blips", "_tracks", fob)
-
-if (do.bm) {
-    po = BLIPMOVIE$get.ports()[[2]]
-    ## set the port for output
-    rss.set.port(po, filename=fobm)
-
-    RSS$recording = TRUE
-    cat("Will create blipmovie: ", fobm, "\n")
-}
-
-if (do.csv) {
-    rss.enable.plugin("saveblips")
-    SAVEBLIPS$blip.filename = fob
-    cat("Will create blips file: ", fob, "\n")
-}
-
-if (do.tracks) {
-    rss.enable.plugin("tracker")
-    TRACKER$track.filename <- sub(".csv", "", ftrk)
-    TRACKER$csv.filename <- ftrk
-    cat("Will create tracks file: ", ftrk, "\n")
-}
-
 
 ## Read parameters values from the file specified by
 ##
@@ -260,18 +223,16 @@ if (read.parms) {
   }
 }
 
-## give radR something to do when it finishes processing, namely to quit
-
-rss.add.hook("ONPAUSE", function(){
+rbatch.stime = NULL
 
 ## if the user requested a progress indicator, provide a hook for that
 
-  rss.add.hook("DONE_SCAN", "rbatch", function(...) {
+rss.add.hook("DONE_SCAN", "rbatch", function(...) {
     rbatch.i <<- 1 + rbatch.i
     s = Sys.time()
-    elap = difftime(s, rbatch.stime)
+    elap = difftime(s, rbatch.stime, units="secs")
     if (show.progress) {
-        cat(sprintf(rbatch.prog, format(round(RSS$scan.info$timestamp)), format(round(elap)), ifelse(duration > 0, duration - elap, Inf))
+        cat(sprintf(rbatch.prog, format(round(RSS$scan.info$timestamp)), format(round(elap)), format(ifelse(duration > 0, duration - elap, Inf))))
     }
     if (duration > 0) {
         if (elap >= duration) {
@@ -283,16 +244,46 @@ rss.add.hook("ONPAUSE", function(){
             q()
         }
     }
-    })
-}
-
-## mark the start time
-rbatch.stime = Sys.time()
+})
 
 ## pretend we hit play
 RSS$new.play.state = RSS$PS$PLAYING
 
 RSS$event.loop.sleeptime = 0
+
+## set up output filenames
+
+rbatch.stime = Sys.time()
+fob = file.path(folder, sprintf("%s_%s_blips.csv",
+    site,
+    format(rbatch.stime, "%Y-%m-%dT%H-%M-%S")
+    ))
+
+fobm = sub("_blips.csv$", ".bm", fob)
+ftrk = sub("_blips", "_tracks", fob)
+
+if (do.bm) {
+    po = BLIPMOVIE$get.ports()[[2]]
+    ## set the port for output
+    rss.set.port(po, filename=fobm)
+
+    RSS$recording = TRUE
+    cat("Will create blipmovie: ", fobm, "\n")
+}
+
+if (do.csv) {
+    rss.enable.plugin("saveblips")
+    SAVEBLIPS$blip.filename = fob
+    cat("Will create blips file: ", fob, "\n")
+}
+
+if (do.tracks) {
+    rss.enable.plugin("tracker")
+    TRACKER$track.filename <- sub(".csv", "", ftrk)
+    TRACKER$csv.filename <- ftrk
+    cat("Will create tracks file: ", ftrk, "\n")
+}
+
 
 ## start the event loop
 go()
