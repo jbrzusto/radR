@@ -39,7 +39,7 @@ get_tcl_interp(SEXP win) {
   dispPtr = TkGetDisplayList();
   if (dispPtr == NULL)
     return R_NilValue;
-  
+
   hPtr = Tcl_FindHashEntry(&dispPtr->winTable, (char *) (long long) INTEGER(AS_INTEGER(win))[0]);
   if (hPtr == NULL)
     return R_NilValue;
@@ -61,9 +61,9 @@ delete_plot_pixmap() {
   pix_mat.rows = pix_mat.cols = pix_mat.slop = 0;
 }
 
-void 
+void
 ensure_plot_pixmap(short width, short height) {
-  // make sure there is a shared memory XImage of the 
+  // make sure there is a shared memory XImage of the
   // correct size to hold the plot
   // this is boilerplate from various X documentation
   // FIXME: check return values of calls for errors; don't reallocate shared
@@ -138,7 +138,7 @@ repaint_plot_window(SEXP coords) {
   // coords should be left, top, width, height
 
   short left, top, width, height;
-  
+
   if (plot_win_attr.map_state != IsViewable)
     return PASS_SEXP;
 
@@ -245,7 +245,7 @@ plot_compass(SEXP centre, SEXP ticklengths, SEXP north_angle, SEXP radius, SEXP 
 
   XSetForeground(plot_display, plot_gc, (red << 16) | (green << 8) | blue);
   XSetLineAttributes(plot_display, plot_gc, 0, LineSolid, CapButt, JoinMiter);
-  
+
   for (i = 0; i < 3; ++i) {
     XQueryTextExtents(plot_display, XGContextFromGC(plot_gc), dummylabs[i], i+1, &tmp, &tmp, &tmp, &labdims);
     labwidth[i] = labdims.width;
@@ -279,7 +279,7 @@ plot_compass(SEXP centre, SEXP ticklengths, SEXP north_angle, SEXP radius, SEXP 
       XDrawString(plot_display, plot_pixmap, plot_gc, ex, ey, lab_buf, nchar);
     }
   }
-		
+
   UNPROTECT(5);
   return PASS_SEXP;
 }
@@ -299,7 +299,7 @@ x_error_handler(Display *disp, XErrorEvent *evt) {
 #ifdef RADR_DEBUG
   strcpy(x_error_buff, "unixgui got X11 error: ");
   XGetErrorText(disp, evt->error_code, x_error_buff + strlen(x_error_buff), X_ERR_BUFF_LEN - strlen(x_error_buff) - 1);
-  error(x_error_buff);
+  // JMB 2023  error(x_error_buff);
 #endif
   return(0);
 }
@@ -345,4 +345,3 @@ R_unload_unixgui(DllInfo *info)
   XSetIOErrorHandler(old_x_io_err_handler);
   XCloseDisplay (plot_display);
 }
-
