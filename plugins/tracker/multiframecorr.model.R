@@ -97,7 +97,7 @@ update = function(TR, blips, i.blips, time.now, is.preview) {
   ## The maximum possible distance between two detected points depends on the beam cone shape.
   ## For antenna.angle >= 60 degrees, the maximum distance between two detectable points is just the maximum range.
   ## Otherwise, it is the distance across the beam circle.
-  
+
   max.dist <<- with(RSS$scan.info,
                     if (antenna.angle[1] >= 60)
                       sample.dist * samples.per.pulse + first.sample.dist
@@ -135,7 +135,7 @@ gain.from.track.to.point = function(coords1, state, coords2, is.consec) {
   ## is.consec is TRUE if coords1 and coords2 are from consecutive scans,
   ## FALSE otherwise.
   ## This is only used to get a gain to display in the pointerinfo window.
-  
+
   on.track <- length(state) > 0
   user.fun <- attr(mfcp, if (on.track) "gain.tp" else "gain.pp")
   if (is.null(user.fun)) {
@@ -239,7 +239,7 @@ select = function() {
 deselect = function() {
 }
 
-load = function() {           
+load = function() {
   rss.dyn.load("maxmatch", in.dir.of = plugin.file)
   rss.dyn.load("maxpathcover", in.dir.of = plugin.file)
   rss.dyn.load("multiframecorr", in.dir.of = plugin.file)
@@ -283,7 +283,7 @@ gain.pp = function (u, v, is.cons) {
   dist <- sqrt(apply((v[1:3, , drop=FALSE] - u[1:3]) ^ 2, 2, sum))
 
   rv <- (1 - alpha) * (1 - dist / max.dist) - (!is.cons) * eps
-  
+
   ## If the implied speed between two points is larger than
   ## track.max.speed, force it to zero, which will effectively bar
   ## this point/point pair from being matched.  Note: track.max.speed
@@ -316,15 +316,15 @@ gain.tp = function (u, v, state, is.cons) {
   ##     its starting location, velocity, and the elapsed time.
   ##     Note: the order of coords in rows of all.blips is t, x, y, z
   ##     The ornate notation in equation 4 of [1] can be reduced to this:
-  
+
   ##     Let u be the position of a point observed in frame i
   ##     Let w be the predicted position in frame j > i of the object represented by that point
   ##     Let v be the position of a point observed in frame j > i
-  
+
   ##     The gain function g3(u, v, w) is given by
-  
+
   ##     alpha * (0.5 + (w-u).(v-u)/(2|w-u||v-u|)) + (1-alpha) * (1 - |v-w|/(2*max.range))
-  
+
   ##     where | | is vector magnitude and . is dot product
 
   uxyz <- u[1:3]
@@ -349,18 +349,18 @@ gain.tp = function (u, v, state, is.cons) {
   ## a prediction outside the radar coverage area, is replaced by 0.0
 
   g1 <- pmax(0.0, 1 - sqrt(apply((w - vxyz) ^ 2, 2, sum)) / max.dist)
-  
+
   ## the "directional coherence" gain component
   ## i.e. (1 + the cosine of the turning angle) / 2
 
   g2 <- 0.5 + apply((w - uxyz) * (vxyz - uxyz), 2, sum) / (2 * sqrt(apply((w - uxyz) ^ 2, 2, sum)) * dist)
-  
+
   ## the actual gain, with possible penalties
   rv <- alpha * g2 + (1 - alpha) * g1  - (!is.cons) * eps
 
   ## set out-of-bounds gains to zero, ensuring this track / blip pairing
   ## will not be made
-  
+
   rv[(rv < min.gain) | too.fast] <- 0.0
 
   return (rv)
@@ -372,7 +372,7 @@ new.state = function (u, state, v) {
   ##
   ## This function is called in an environment with the multiframe model as an enclosing
   ## environment; it corresponds to the function multiframecorr.c: calc_state_internal()
-  
+
 
   ## u: previous location of target
   ## state: state of target at location u
@@ -382,10 +382,10 @@ new.state = function (u, state, v) {
 
   ## Just calculate the apparent velocities in x, y, and z
   ## (the 4th coordinate is t)
-  
+
   return ((v[1:3]-u[1:3]) / (v[4]-u[4]))
 }
-  
+
 ## plugin-level variables
 
 max.dist = 100       ## maximum distance between a pair of points visible in radar;  == 2 * radar range (in m)
@@ -393,4 +393,3 @@ mfcp = NULL          ## EXTPTR for the c-level MFC problem instance
 use.gain.pp = NULL   ## R function for point-to-point gain calculation
 use.gain.tp = NULL   ## R function for track-to-point gain calculation
 use.new.state = NULL ## R function for calculating target's new state from old position, old state, and new position
-
