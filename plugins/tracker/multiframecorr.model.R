@@ -149,7 +149,8 @@ gain.from.track.to.point = function(coords1, state, coords2, is.consec) {
 }
 
 set.max.speed = function(x) {
-  .Call("set_max_speed", mfcp, x / 3.6, PACKAGE="multiframecorr")
+    if (!is.null(mfcp))
+        .Call("set_max_speed", mfcp, x / 3.6, PACKAGE="multiframecorr")
 }
 
 set.gain.pp = function(f) {
