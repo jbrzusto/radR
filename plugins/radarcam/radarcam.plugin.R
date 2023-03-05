@@ -146,7 +146,6 @@ get.sweep <- function() {
     )
     samples.per.pulse <<- hdr$samples_per_line
     num.pulses <<- hdr$num_output_lines
-    print(hdr)
     ## accumulate the full data matrix, possibly reading multiple times from the fifo
     i = 0
     n = samples.per.pulse * num.pulses
@@ -156,7 +155,6 @@ get.sweep <- function() {
             part = readBin(rcpipe, integer(), n, signed=FALSE, size=1)
             intbuf = c(intbuf, part)
             n = n - length(part)
-            Sys.sleep(0.00001)
         }, silent=TRUE)
     }
     dat <<- matrix(intbuf, samples.per.pulse, num.pulses)
@@ -224,7 +222,6 @@ globals = list (
 
                         )
 
-        print(port$si)
         return(port$si)
   },
 
