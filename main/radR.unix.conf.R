@@ -23,7 +23,7 @@
 ## This is a character vector, and an element "NAME"
 ## will cause the files "NAME.conf.R" and "NAME.plugin.R" to be loaded
 
-plugins.to.load = c("inradarch", "zone", "blipmovie", "antenna", "tracker", "bliptrails", "help", "comments", "saveblips", "pointerinfo", "generic", "seascanarch", "rawarch", "underlay", "genblips", "gifmovie")
+plugins.to.load = c("radarcam", "inradarch", "zone", "blipmovie", "antenna", "tracker", "bliptrails", "help", "comments", "saveblips", "pointerinfo", "generic", "seascanarch", "rawarch", "underlay", "genblips")
 
 ## A file to be source()'d after radR and plugins are loaded but before
 ## the event loop is installed.
