@@ -1,7 +1,7 @@
 /* svn $Id: patchify.c 671 2010-10-08 18:47:29Z john $
 
    radR : an R-based platform for acquisition and analysis of radar data
-   Copyright (C) 2006-2009 John Brzustowski        
+   Copyright (C) 2006-2009 John Brzustowski
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
    If compile-time flag PATCH_BACKGROUND_MODE is defined, the image is treated
    as background (i.e. cells with background_val) vs foreground
    (all other cells).  In PATCH_BACKGROUND_MODE, patches consist of contiguous
-   non-background cells. 
+   non-background cells.
 
    Compiled from various changes I made to fragstats in 1998 to have it
    run-length-encode images and perform patch extraction and statistics
@@ -89,7 +89,7 @@ t_dim_2 num_patch_runs;
 int
 ensure_image (t_image image)
 {
-  // ensure that the various image-related buffers hold enough space to 
+  // ensure that the various image-related buffers hold enough space to
   // compress an image with size num_rows by num_cols; and mark
   // the structure as empty
 
@@ -98,7 +98,7 @@ ensure_image (t_image image)
   image->run_info.num_runs = 0;
   return TRUE;
 }
-  
+
 void
 free_image (t_image image)
 {
@@ -109,7 +109,7 @@ free_image (t_image image)
 }
 
 int
-save_row (t_image image, t_dim row, t_patch_cell *raw, t_patch_cell background_val, unsigned skip) 
+save_row (t_image image, t_dim row, t_patch_cell *raw, t_patch_cell background_val, unsigned skip)
 {
   /* Save a raw row into compressed storage
      Rows must be saved in order from first to last.
@@ -160,7 +160,7 @@ compress_row (t_image image, t_patch_cell *row, t_dim row_num, t_patch_cell fore
 #endif /* PATCH_FOREGROUND_MODE */
   rb += skip;
 
-  do 
+  do
     {
 #ifdef PATCH_FOREGROUND_MODE
       // skip past any background cells
@@ -187,7 +187,7 @@ compress_row (t_image image, t_patch_cell *row, t_dim row_num, t_patch_cell fore
 	// a singleton loop is merged with another loop.
 
 	++ num_singletons;
-	
+
       run->row = row_num;
       run->col = col;
       col += run->length;
@@ -207,7 +207,7 @@ get_patch_from_rc (t_image image, t_dim row, t_dim col)
 {
   /*
     get the first run in the patch that includes the cell at row, col
-    Return NULL if the cell is not in a patch.  
+    Return NULL if the cell is not in a patch.
 
     If image->run_info.runs_are_sorted is TRUE, we can use a fast bisection algorithm:
 
@@ -264,9 +264,9 @@ get_patch_from_rc (t_image image, t_dim row, t_dim col)
     run_mid = run_lo;
   }
 
-  // both run_mid and run_lo now point to a run in the 
+  // both run_mid and run_lo now point to a run in the
   // patch containing the sample at (row, col)
-  
+
   // find the first run in this patch, namely the one
   // earliest in the run buffer
 
@@ -280,7 +280,7 @@ get_patch_from_rc (t_image image, t_dim row, t_dim col)
   return first_run;
 }
 
-t_dim_2 inline
+t_dim_2 INLINE_ATTR
 get_patch_id (t_cell_run *r, t_cell_run *runs)
 {
   /* return the true patch id of run r;
@@ -310,7 +310,7 @@ get_patch_id (t_cell_run *r, t_cell_run *runs)
   return rv;
 }
 
-void inline
+void INLINE_ATTR
 merge_patches (t_cell_run *r1, t_cell_run *r2, t_cell_run *runs)
 {
   /* Merge the two patches represented by runs r1 and r2, which
@@ -337,13 +337,13 @@ merge_patches (t_cell_run *r1, t_cell_run *r2, t_cell_run *runs)
     /* r1 and r2 represent different patches, so merge them by swapping next_run_offset pointers */
 
     /* if r1 is a singleton, reduce the count of these */
-    
-    if (r1->next_run_offset == 0 && r1->length == 1) 
+
+    if (r1->next_run_offset == 0 && r1->length == 1)
       -- num_singletons;
 
     /* if r2 is a singleton, reduce the count of these */
-    
-    if (r2->next_run_offset == 0 && r2->length == 1) 
+
+    if (r2->next_run_offset == 0 && r2->length == 1)
       -- num_singletons;
 
     tmp = r1 + r1->next_run_offset - r2;
@@ -352,8 +352,8 @@ merge_patches (t_cell_run *r1, t_cell_run *r2, t_cell_run *runs)
 
     /* change the larger patch_id to the smaller one; CAUTION: this must be done for the
        run which actually supplies the value of patch_id in get_patch_id, which is why
-       we do 
-       (runs + pidX)->patch_id = pidY  
+       we do
+       (runs + pidX)->patch_id = pidY
        rather than
        rX->patch_id = pidY
 
@@ -369,7 +369,7 @@ merge_patches (t_cell_run *r1, t_cell_run *r2, t_cell_run *runs)
        Then for any run r_pq in the merged patch pq,
        get_patch_id(r_pq) = min(id_p, id_q) which is the id of r_pq,
        and id_pq != id_P for any other patch P != pq
-         
+
        Hence the collection of patches after a patch merger still satisfies the inductive
        hypothesis.
     */
@@ -385,7 +385,7 @@ merge_patches (t_cell_run *r1, t_cell_run *r2, t_cell_run *runs)
     -- num_patches;
   }
 }
-          
+
 void
 patchify_image (t_image image, int use_diags, int vertical_wrap)
 {
@@ -396,8 +396,8 @@ patchify_image (t_image image, int use_diags, int vertical_wrap)
   t_cell_run *run_ptr_old, *run_ptr_new; /* current runs in the old and new rows */
   t_cell_run *runs = (t_cell_run *) image->runs.ptr;  /* pointer to run buffer */
   t_dim right_joint_type;
-  
-  if (!image->run_info.num_runs)		// in case no runs were found, there are no patches 
+
+  if (!image->run_info.num_runs)		// in case no runs were found, there are no patches
     return;
 
   /* set each run to point to itself, making a singleton run-loop, and assign it
@@ -408,14 +408,14 @@ patchify_image (t_image image, int use_diags, int vertical_wrap)
     run_ptr_new->patch_id = id;
   }
 
-  /* 
+  /*
      This loop merges run-loops in row i with run-loops in row i-1.
      We set up for an extra iteration, in case vertical wrapping is enabled.
 
   */
   for (i = 0, j = 1, run_ptr_old = run_ptr_new = ((t_cell_run *) image->runs.ptr) + 1; i < image->run_info.num_rows; ++i, ++j)
     {
-      /* 
+      /*
 	 set pointers to the first runs of rows i and j;
 	 if there are no runs in the required row, point to the
 	 first run with a larger row at least as large.
@@ -517,8 +517,8 @@ patchify_image (t_image image, int use_diags, int vertical_wrap)
     }	/* end of loop scanning through rows  */
 }
 
-void 
-link_patches(t_image image) 
+void
+link_patches(t_image image)
 {
   // set the next_patch_offset field of the first run in each patch to
   // "point" to the first run of the next patch.  This function is only
@@ -538,7 +538,7 @@ link_patches(t_image image)
     return;
 
   for(;;) {
-    /* if this is the first run in a patch (i.e. its true id is 
+    /* if this is the first run in a patch (i.e. its true id is
        larger than that of any patch seen so far)
        and drop_singletons is FALSE or it is not a singleton */
 
@@ -559,7 +559,7 @@ link_patches(t_image image)
   prev_run->next_patch_offset = 0;
 }
 
-  
+
 int
 patchify_buffer(t_patch_cell *buf, t_image image, unsigned skip)
 {
@@ -568,7 +568,7 @@ patchify_buffer(t_patch_cell *buf, t_image image, unsigned skip)
 
   // skip: a non-negative number of cells to skip at the start of each row.
 
-  // No dummy cell is required at the end of each row, but the storage allocated 
+  // No dummy cell is required at the end of each row, but the storage allocated
   // for buf must have one extra cell at the end of the whole storage.
 
   t_dim i;
@@ -581,7 +581,7 @@ patchify_buffer(t_patch_cell *buf, t_image image, unsigned skip)
   num_singletons 	= 0;
   num_cells 	        = 0;
   num_patch_runs 	= 0;
-  
+
   // store the classified image into compressed storage
   // one row at a time
 
@@ -594,7 +594,7 @@ patchify_buffer(t_patch_cell *buf, t_image image, unsigned skip)
     save_first = buf[image->run_info.num_cols];
     if (! save_row(image, i, buf, image->fgd, skip))
       return FALSE;
-    
+
     // restore the saved cell value
 
     buf[image->run_info.num_cols] = save_first;
@@ -629,7 +629,7 @@ patchify_buffer(t_patch_cell *buf, t_image image, unsigned skip)
   image->run_info.runs_are_sorted = TRUE;
   return TRUE;
 }
-  
+
 void
 shut_down_patchify(t_image image)
 {
@@ -640,13 +640,13 @@ shut_down_patchify(t_image image)
   }
 }
 
-void 
+void
 enumerate_patches(t_image image, patch_function f)
 {
   /* for each patch in the linked list of active patches, call f with a pointer
-     to the first run in that patch (the runs are in looped lists) 
+     to the first run in that patch (the runs are in looped lists)
 
-     f returns one of four values: 
+     f returns one of four values:
      KEEP - keep this patch active
      DROP - deactivate this patch
      QUIT_AND_KEEP - keep this patch active and quit the enumeration
@@ -662,7 +662,7 @@ enumerate_patches(t_image image, patch_function f)
   int offset;
   t_pf_rv rv;
 
-  if (!image->run_info.num_runs || !image->run_info.num_active_patches) 
+  if (!image->run_info.num_runs || !image->run_info.num_active_patches)
     return;
 
   prev_patch_first_run = &((t_cell_run *) image->runs.ptr)[0];
@@ -679,7 +679,7 @@ enumerate_patches(t_image image, patch_function f)
        will have a negative id); this is to simplify finding the patch
        containing a given cell in get_patch_from_rc() */
 
-    offset = run->next_patch_offset;  
+    offset = run->next_patch_offset;
 
     rv = (*f)(run);
     if (rv & RADR_PF_DROP) {
@@ -703,9 +703,9 @@ enumerate_patches(t_image image, patch_function f)
     run += offset;
   }
 }
-  
+
 t_cell_run *
-enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_selector) 
+enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_selector)
 {
   // enumerate all patches, whether active or inactive, and set their
   // active/inactive status according to the value returned by f.
@@ -721,7 +721,7 @@ enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_sel
   // and that's how we recognize it.
 
   // We call linked_patch_function on each patch, active or deactivated,
-  // passing the patch's first run as the first parameter, and the 
+  // passing the patch's first run as the first parameter, and the
   // first run of the preceding active patch as the second paramter.
 
   // Returns: pointer to the first run of the last active patch seen (which might
@@ -754,7 +754,7 @@ enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_sel
       ++*npat;
       if (!patch_selector || patch_selector[*npat - 1]) {
 	rv = (*f)(run);
-	// we need to relink/delink the patch and update counters if 
+	// we need to relink/delink the patch and update counters if
 	// f(...) wants its state changed
 	if (! (rv & RADR_PF_SAME)) {
 	  if (is_active && (rv & RADR_PF_DROP)) {
@@ -799,23 +799,23 @@ enumerate_all_patches(t_image image, patch_function f, int *npat, int *patch_sel
 	if (rv & RADR_PF_QUIT)
 	  break;
       }
-    }    
+    }
     ++run;
   }
   return prev_apatch;
 }
 
 
-t_pf_rv 
-pf_reactivate_all (t_cell_run *run) 
+t_pf_rv
+pf_reactivate_all (t_cell_run *run)
 {
   // make sure the patch pointed to by run is active.
 
   return KEEP;
 }
 
-void 
-reactivate_all_patches(t_image image) 
+void
+reactivate_all_patches(t_image image)
 {
   // given that some patches may have been deactivated,
   // reactivate them by reconstructing the entire
@@ -849,7 +849,7 @@ get_active_runbuf (SEXP patchessxp)
   // The algorithm works in two passes:
   //   1. calculate the new index of each run in an active patch, once runs in inactive
   //      patches have been removed
-  //   2. copy the runs from active patches to the new buffer, correcting the next_patch_offset 
+  //   2. copy the runs from active patches to the new buffer, correcting the next_patch_offset
   //      and next_run_offset using the array calculated in pass one.
 
   t_image image;
@@ -873,7 +873,7 @@ get_active_runbuf (SEXP patchessxp)
 
   // allocate return value
 
-  PROTECT(rv = allocVector(RAWSXP, sizeof(t_runbuf_info) + (image->run_info.num_active_runs + 2) * sizeof(t_cell_run))); 
+  PROTECT(rv = allocVector(RAWSXP, sizeof(t_runbuf_info) + (image->run_info.num_active_runs + 2) * sizeof(t_cell_run)));
 
   // allocate temporary buffer
 
@@ -881,7 +881,7 @@ get_active_runbuf (SEXP patchessxp)
 
   // copy the image structure fields
 
-  
+
 
   // Pass 1:   to calculate the new index for a run, we need to know how many previous runs are active
   //           We scan through all runs, keeping track of which patch IDs correspond to active patches.
@@ -905,7 +905,7 @@ get_active_runbuf (SEXP patchessxp)
       // The test p->patch_id > 0 is valid since this is the patch's first run.
       *ni = (p->patch_id > 0 && (p->next_run_offset != 0 || p->length > 1)) ? ++num_active_runs : -1;
     else if (new_index[id] > 0)
-      // the patch with this ID has been seen, and is active, 
+      // the patch with this ID has been seen, and is active,
       // so record the new index for this run
       *ni = ++num_active_runs;
   }
@@ -975,7 +975,7 @@ get_active_runbuf (SEXP patchessxp)
 
   q->row = image->run_info.num_rows;
 
-  // save required metadata 
+  // save required metadata
 
   * rbi = image->run_info;
   rbi->num_cells  = rbi->num_active_cells;
@@ -987,7 +987,7 @@ get_active_runbuf (SEXP patchessxp)
   Free(new_index);
 
   UNPROTECT(1);
-  
+
   return (rv);
 }
 
@@ -1008,14 +1008,14 @@ set_runbuf (SEXP patchessxp, SEXP runsxp)
   image = (t_image) EXTPTR_PTR(patchessxp);
   if (runsxp != R_NilValue) {
     rbi = (t_runbuf_info *) RAW(runsxp);
-    
+
     run = (t_cell_run *) (rbi + 1);
-    
+
     (*pensure_extmat) (&image->runs, rbi->num_runs + 2, 1);
     memcpy (image->runs.ptr, run, (rbi->num_runs + 2) * sizeof(t_cell_run));
-    
+
     // copy the metadata
-    
+
     image->run_info = * rbi;
   } else {
     // mark the image's run buffer as empty
@@ -1032,7 +1032,7 @@ get_indexes_from_runbuf (SEXP runsxp)
   // Get the integer vector of indexes of all slots in all
   // patches in the runbuf; the slots are sorted by samples within pulses
   // This vector is origin 1, so it can be used to index an extmat.
-  
+
   t_runbuf_info *rbi;
   t_cell_run *run, *runmax;
   SEXP rv;
@@ -1053,7 +1053,7 @@ get_indexes_from_runbuf (SEXP runsxp)
       // each subsequent index of a cell in this run is one larger than its predecessor
       *p = *(p-1) + 1;
   }
-  
+
   UNPROTECT(1);
   return(rv);
 }
@@ -1128,7 +1128,7 @@ assign_extmat_by_runbuf (SEXP matsxp, SEXP runsxp, SEXP valsxp)
   // runsxp: RAWSXP raw vector containing the results of a call to get_active_runbuf
   // valsxp: RAWSXP raw vector containing the raw data to be stored in the slots of the extmat
   //         determined by runsxp
-  // 
+  //
   // returns NULL
 
   t_extmat *mat;

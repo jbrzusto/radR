@@ -1,7 +1,7 @@
 /*  svn $Id: multiframecorr.c 594 2010-05-21 19:51:30Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
-    Copyright (C) 2006-2009 John Brzustowski        
+    Copyright (C) 2006-2009 John Brzustowski
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -118,7 +118,7 @@ create_mfc_instance (int k, double alpha, double eps, double max_dist, double ma
 
   return (p);
 }
-		     
+
 SEXP
 init (SEXP k, SEXP alpha, SEXP eps, SEXP max_dist, SEXP max_speed, SEXP min_gain, SEXP gain_pp, SEXP gain_tp, SEXP new_state) {
   // create an empty instance of the multi frame correspondence problem
@@ -165,7 +165,7 @@ set_max_dist (SEXP ep, SEXP max_dist) {
   // set the maximum range for an MFC problem; this is the largest
   // possible distance between two points.
   // ep: external pointer to an MFC problem, e.g. as returned by init
-  // max_dist: a REALSXP with the value of max_dist, 
+  // max_dist: a REALSXP with the value of max_dist,
   t_mfc_problem *p = (t_mfc_problem *) EXTPTR_PTR(ep);
   p->max_dist = REAL(AS_NUMERIC(max_dist))[0];
   return PASS_SEXP;
@@ -176,7 +176,7 @@ set_max_speed (SEXP ep, SEXP max_speed) {
   // set the maximum speed between points; gain between points whose
   // locations imply a larger speed is set to zero
   // ep: external pointer to an MFC problem, e.g. as returned by init
-  // max_speed: a REALSXP with the value of max_speed, 
+  // max_speed: a REALSXP with the value of max_speed,
   t_mfc_problem *p = (t_mfc_problem *) EXTPTR_PTR(ep);
   p->max_speed = REAL(AS_NUMERIC(max_speed))[0];
   return PASS_SEXP;
@@ -187,7 +187,7 @@ set_min_gain (SEXP ep, SEXP min_gain) {
   // set the minimum gain required for an edge between two blips
   // to be considered
   // ep: external pointer to an MFC problem, e.g. as returned by init
-  // min_gain: a REALSXP with the value of min_gain 
+  // min_gain: a REALSXP with the value of min_gain
   t_mfc_problem *p = (t_mfc_problem *) EXTPTR_PTR(ep);
   p->min_gain = REAL(AS_NUMERIC(min_gain))[0];
   return PASS_SEXP;
@@ -223,7 +223,7 @@ destroy (SEXP ep) {
   return PASS_SEXP;
 }
 
-t_mfc_state inline
+t_mfc_state INLINE_ATTR
 calc_state_internal (t_mfc_point *u, t_mfc_state *ostate, t_mfc_point *v) {
   // calculate the object state at v given that it used to be
   // at u with state ostate
@@ -247,35 +247,35 @@ calc_state_internal (t_mfc_point *u, t_mfc_state *ostate, t_mfc_point *v) {
   return rv;
 }
 
-double inline
+double INLINE_ATTR
 SUMSQ(double x, double y, double z) {
   return x*x+y*y+z*z;
 }
 
-double inline 
+double INLINE_ATTR
 MAG(double x, double y, double z) {
   return sqrt(x*x+y*y+z*z);
 }
 
-t_mfc_gain inline
+t_mfc_gain INLINE_ATTR
 GAIN_TO_INT(double x) {
   // convert floating point gain in [0, 1] to non-negative integer
   return (int) ((x * MAX_GAIN_INT + 0.5));
 }
 
-double inline
+double INLINE_ATTR
 INT_TO_GAIN(int x) {
   // recover floating point gain in [0, 1] from non-negative integer representation
   return x / (double) MAX_GAIN_INT;
 }
 
-t_mfc_gain inline
+t_mfc_gain INLINE_ATTR
 calc_nn_gain (t_mfc_problem *p, t_mfc_point *u, t_mfc_point *v, int cons_scan) {
   // calculate the gain between two points using the
   // nearest neighbour gain function
   // (i.e. Eqn. (2) of [1], weighted by alpha so it is effectively the first term
   // of Eqn. (4) of [1].)
-  // cons_scan is 1 if u and v are from consecutive scans, 0 otherwise.  
+  // cons_scan is 1 if u and v are from consecutive scans, 0 otherwise.
 
   // If the implied speed between two points is larger than p->max_speed, the gain
   // is set to zero, preventing matching.
@@ -314,7 +314,7 @@ calc_nn_gain (t_mfc_problem *p, t_mfc_point *u, t_mfc_point *v, int cons_scan) {
   return GAIN_TO_INT(rv);
 }
 
-t_mfc_gain inline
+t_mfc_gain INLINE_ATTR
 calc_gain (t_mfc_problem *p, t_mfc_state *state, t_mfc_point *u, t_mfc_point *v, int cons_scan) {
   /*
     calculate the gain in matching the object at u with the object at v, given
@@ -367,7 +367,7 @@ calc_gain (t_mfc_problem *p, t_mfc_state *state, t_mfc_point *u, t_mfc_point *v,
   w_z = u->z + dt * state->vz;
 
   // the predicted distance
-    
+
   dist_uw = dt * MAG(state->vx, state->vy, state->vz);
 
   // the distance between predicted and observed
@@ -383,15 +383,15 @@ calc_gain (t_mfc_problem *p, t_mfc_state *state, t_mfc_point *u, t_mfc_point *v,
 
   if (g1 < 0.0)
     g1 = 0.0;
-    
+
   // if both are non-zero, add the directional homogeneity gain component
 
-  if (dist_uv > 0 && dist_uw > 0) 
+  if (dist_uv > 0 && dist_uw > 0)
     g2 = 0.5 + ((w_x - u->x) * (v->x - u->x) + (w_y - u->y) * (v->y - u->y) + (w_z - u->z) * (v->z - u->z))
       / ( 2 * dist_uv * dist_uw);
   else
     g2 = 0.0;
-  
+
   rv = (1 - p->alpha) * g1 + p->alpha * g2 - (cons_scan ? 0.0 : p->eps);
 
   if (rv > 1.0) {
@@ -501,7 +501,7 @@ calc_gains (t_mfc_problem *p, SEXP env, int i1, int i2, int n, int *i2p, int *re
   return num_pos;
 }
 
-t_mfc_state 
+t_mfc_state
 calc_state (t_mfc_problem *p, t_mfc_point *u, t_mfc_state *ostate, t_mfc_point *v, SEXP env)
 {
   // calculate the new state of a point
@@ -550,7 +550,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   // update an instance of the multiframe correspondence problem with a new frame
   // of points; if TR is not NULL, then (possibly) call functions in the tracker
   // plugin to update its list of tracks.
-  // 
+  //
   // ep:         EXTPTR;  the external pointer SEXP to the problem instance
   // TR:         ENVSXP;  the tracker plugin object (a strictenv)
   // x, y, z, t: REALSXP; the x, y, z, and t coordinates of new points
@@ -572,9 +572,9 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   t_node_handle *rem_pred, *rem_succ; // predecessor and successor arrays for remnant DAG
   int preview = LOGICAL(AS_LOGICAL(IS_PREVIEW))[0]; // is this a preview scan
   SEXP sexp, sexp2, sexp3; // SEXPs for use as parameters to R functions
-  int i_s1; // index of first blip from previous scan; lets us tell whether a given blip is 
+  int i_s1; // index of first blip from previous scan; lets us tell whether a given blip is
             // in the scan immediately before the new scan
-  
+
   int num_pos; // number of positive-gain edges
 
   if (preview) {
@@ -599,19 +599,19 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // now use this copy in the rest of what follows
     p = p2;
   }
-  
+
   // if necessary, delete the first frame's worth of points
-  
+
   edges_dropped = 0;
-  
+
   // set internal copies of the R-level gain/state calculation functions
-  
+
   p->R_gain_pp = getAttrib(ep, MFC_GAIN_PP_ATTR);
   p->R_gain_tp = getAttrib(ep, MFC_GAIN_TP_ATTR);
   p->R_new_state = getAttrib(ep, MFC_NEW_STATE_ATTR);
-  
+
   if (p->nf == p->k) {
-    
+
     // If a point without a successor will be shifted out of the first frame,
     // end its track, if any.
 
@@ -631,7 +631,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // delete the first frame's points and associated data
 
     nkeep = p->np - MFC_N(p, 0); // number of points to keep (all but those in first frame)
-      
+
     memmove(p->x.ptr,     ((t_mfc_point *) p->x.ptr)     + MFC_N(p, 0), nkeep * sizeof (t_mfc_point));
     memmove(p->state.ptr, ((t_mfc_state *) p->state.ptr) + MFC_N(p, 0), nkeep * sizeof (t_mfc_state));
     memmove(p->succ.ptr,  ((int *)         p->succ.ptr)  + MFC_N(p, 0), nkeep * sizeof (int));
@@ -660,12 +660,12 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // adjust n, first to account for deletion of first frame
 
     memmove(p->n.ptr, ((int *) p->n.ptr) + 1, p->nf * sizeof(int));
-    for (i = 1; i < p->nf; ++i) 
+    for (i = 1; i < p->nf; ++i)
       MFC_FIRST(p, i) = MFC_FIRST(p, i-1) + MFC_N(p, i-1);
   }
-  
+
   // ensure storage for points and associated data
-  
+
   (*pensure_extmat)(&p->x,     p->np + np, sizeof(t_mfc_point) / sizeof(t_mfc_coord));
   (*pensure_extmat)(&p->state, p->np + np, sizeof(t_mfc_state) / sizeof(t_mfc_coord));
   (*pensure_extmat)(&p->succ,  p->np + np, 1);
@@ -698,7 +698,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 
   // we now have p->nf frames of points
 
-  // if this is the first frame, there's nothing 
+  // if this is the first frame, there's nothing
   // left to do
 
   if (p->nf == 1)
@@ -711,7 +711,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   m = (p->n_cover_edges - edges_dropped) + (p->np - np) * np;
   n = p->np;
 
-  if (m == 0 || np == 0) 
+  if (m == 0 || np == 0)
     // no new edges
     goto done;
 
@@ -736,11 +736,11 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // now add a new edge from this point to each new point
     for (j = 0, ii = MFC_FIRST(p, p->nf - 1); j < np; ++j, ++ii, ++k)
       k->nh =  ii;
-    
+
     // calculate the gains from this point to the new points
     num_pos += calc_gains(p, TR, i, MFC_FIRST(p, p->nf - 1), np, NULL, &((k-np)->wt), sizeof(*k), i >= i_s1);
     p->dag.nodes[i].deg += np;
-    
+
 #ifdef RADR_DEBUG
     {
       t_edge *kk = k - np;
@@ -755,19 +755,19 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 #ifdef RADR_DEBUG
   printf("Doing max_path_cover on DAG with %d nodes (%d new) and %d edges (%d have +ve gain).\n", p->dag.n, np, p->dag.m, num_pos);
 #endif
-  // save the current pred and succ relationship 
+  // save the current pred and succ relationship
   memmove(p->opred.ptr, p->pred.ptr, p->dag.n * sizeof(t_node_handle));
   memmove(p->osucc.ptr, p->succ.ptr, p->dag.n * sizeof(t_node_handle));
   do_max_path_cover (& p->dag, (t_node_handle *) p->pred.ptr, (t_node_handle *) p->succ.ptr, &p->n_cover_edges);
 #ifdef RADR_DEBUG
   printf("Done; found %d matches\n", p->n_cover_edges);
   printf("Done\n");
-  
+
   printf("Cover:\n");
   for (i = 0; i < p->dag.n; ++i) {
     ii = MFC_SUCC(p, i);
     if (ii != NO_NODE) {
-      printf("succ: %d,%d (%g,%g,%g,%g)->(%g,%g,%g,%g) = %d\n", MFC_IBLIP(p, i), MFC_IBLIP(p, ii), 
+      printf("succ: %d,%d (%g,%g,%g,%g)->(%g,%g,%g,%g) = %d\n", MFC_IBLIP(p, i), MFC_IBLIP(p, ii),
              MFC_X(p, i).x,  MFC_X(p, i).y,  MFC_X(p, i).z,  MFC_X(p, i).t,
              MFC_X(p, ii).x,  MFC_X(p, ii).y,  MFC_X(p, ii).z,  MFC_X(p, ii).t, p->dag.nodes[i].e[p->dag.nodes[i].mate].wt);
     }
@@ -775,10 +775,10 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 #endif
 
   // inform the tracker plugin of new point->track assignments
-    
+
   // There are four types of edges in the path cover:
   //
-  // 
+  //
   // extension edges: edges from a terminal node in the previous cover to a node in frame k
   //                  MFC_OSUCC(p, i) == NO_NODE && MFC_SUCC(p, i) != NO_NODE
   //
@@ -790,7 +790,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   // old edges:  all other edges
 
   // we process nodes from earliest to latest, calculating gains and states whenever a node has
-  // a new predecessor; note that we don't need to examine nodes in frame k since they have no out-edges 
+  // a new predecessor; note that we don't need to examine nodes in frame k since they have no out-edges
 
   for (f = 0, i = 0; f < p->nf - 1; ++f ) { /* f enumerates frames, i enumerates points */
     for (n = MFC_N(p, f); n > 0; --n, ++i) { /* n counts points in frame f */
@@ -799,7 +799,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	// ** POINT HAS A SUCCESSOR IN NEW COVER
 	if (MFC_OSUCC(p, i) == NO_NODE) {
 	  // ******* EXTENSION EDGE (no old successor)
-	  
+
 	  // start a new track, if necessary
 	  if (MFC_TRACK(p, i) == TRACK_NO_TRACK) {
 	    PROTECT(sexp = ScalarInteger(MFC_IBLIP(p, i)));
@@ -813,10 +813,10 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	  MFC_TRACK(p, ii) = MFC_TRACK(p, i);
 	  call_R_function ("add.blip.to.track", TR, sexp, sexp2, NULL);
 	  UNPROTECT(2);
-	  
+
 	} else if (MFC_OSUCC(p, i) != ii) {
 	  // ******* CORRECTION EDGE
-	  
+
 	  if (MFC_TRACK(p, i) != TRACK_NO_TRACK) {
 	    // current node is on a track:  truncate track starting at the old successor blip
 	    PROTECT(sexp = ScalarInteger(MFC_TRACK(p, i)));
@@ -835,7 +835,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	  MFC_TRACK(p, ii) = MFC_TRACK(p, i);
 	  call_R_function ("add.blip.to.track", TR, sexp, sexp2, NULL);
 	  UNPROTECT(2);
-	  
+
 	  // FALSE HYPOTHESIS REMOVAL:
 
 	  // Remove any edge in the old or new cover that depended on the
@@ -849,11 +849,11 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	  // trace along its path in the old cover, removing each edge from
 	  // the cover.  Also, if any of the nodes along the way has
 	  // itself been given a different successor in the new cover
-	  // (i.e. has been rejoined to a point in the latest frame), 
+	  // (i.e. has been rejoined to a point in the latest frame),
 	  // remove that new successor from the new cover.
 
 	  // remove its successor path from the new cover.  Also,
-	  // remove the successor path from the old cover.  
+	  // remove the successor path from the old cover.
 
 	  rii = MFC_OSUCC(p, i);
 	  while (rii != NO_NODE) {
@@ -872,7 +872,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	    MFC_TRACK(p, rii) = TRACK_NO_TRACK;
 	    // set this point as having invalid state (since it has no predecessor)
 	    MFC_INVALIDATE_STATE(p, rii);
-	
+
 	    // continue with the old-cover successor of rii
 	    rii = jj;
 	  }
@@ -880,19 +880,19 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	// CALCULATION OF STATE FOR NEW SUCCESSOR
 	// get the gain and state for this new edge, and add it to the
 	// tracker track object
-	
-	// To avoid recalculating gain, we find the index of this edge 
+
+	// To avoid recalculating gain, we find the index of this edge
 	// among those leaving point i; note that a point in frame f
 	// has edges to its successor in the old path cover, if any,
-	// and then edges to all points in the last frame 
-	
+	// and then edges to all points in the last frame
+
 	j = ii - MFC_FIRST(p, p->nf - 1) + (MFC_OSUCC(p, i) != NO_NODE);
 
 #ifdef RADR_DEBUG
 	if (ii != p->dag.nodes[i].e[j].nh)
 	  printf("****** Error: full dag: miscalculation of location of edge between nodes %d and %d\n", i, ii);
 #endif
-	MFC_GAIN(p, ii) = p->dag.nodes[i].e[j].wt;            
+	MFC_GAIN(p, ii) = p->dag.nodes[i].e[j].wt;
 	MFC_STATE(p, ii) = calc_state(p, &MFC_X(p, i), &MFC_STATE(p, i), &MFC_X(p, ii), TR);
 	PROTECT(sexp = ScalarInteger(MFC_TRACK(p, ii)));
 	PROTECT(sexp2 = ScalarReal(INT_TO_GAIN(MFC_GAIN(p, ii))));
@@ -902,7 +902,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	REAL(sexp3)[2] = MFC_STATE(p, ii).vz;
 	call_R_function ("add.track.info", TR, sexp, sexp2, sexp3, NULL);
 	UNPROTECT(3);
-      } else { 
+      } else {
 	// either no successor or successor has not changed
 #ifdef RADR_DEBUG
 	if (MFC_OSUCC(p, i) != NO_NODE && MFC_SUCC(p, i) == NO_NODE) {
@@ -913,7 +913,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     } /* for(i...) */
   } /* for (f...) */
 
-  if (p->nf < 3) 
+  if (p->nf < 3)
     goto done;
 
   // "Non-Recursive False Hypothesis Replacement":
@@ -926,7 +926,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
   // A point i is "remnant" if it is not in the maximum weight path cover and not on a track
   // and this is true iff p->pred[i] == p->succ[i] == NO_NODE && p->track[i] == TRACK_NO_TRACK
 
-  // We build the remnant DAG with three passes 
+  // We build the remnant DAG with three passes
   // 1: count remnant nodes and edges in each frame of the full dag
   // 2: gather indexes in the full DAG of points in the remnant dag
   // 3: calculate edge weights in the remnant dag
@@ -945,16 +945,16 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 	++ rem_n2;
     if (f == 0)
       continue; // first frame has been counted, loop again for the second
-    
+
     n = rem_n + rem_n2; // total number of remnant nodes in frames f-1 and f
     m = rem_n * rem_n2; // add count of all potential edges between remnant nodes in frames f-1 and f
-    
+
 #ifdef RADR_DEBUG
     printf("In frames %d and %d, found %d remnant nodes, %d remnant edges.\n", f, f+1, n, m);
 #endif
     if (m == 0)
       continue; // no potential edges between frames f-1 and f
-    
+
     // create the remnant DAG
     rem_dag = create_dag(n, m);
     rem_pred = Calloc(n, t_node_handle);
@@ -980,7 +980,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     ri = 0; // index into remnant nodes
     k = rem_dag.edges; // pointer to dag edges
     for (j = rem_n; j > 0; --j, ++ri) {
-      // add remnant node from this frame and 
+      // add remnant node from this frame and
       // node with possible successors
       rem_dag.nodes[ri].e = k;
       rem_dag.nodes[ri].deg = rem_n2;
@@ -999,7 +999,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     // calculate a maximum path cover for the remnant DAG:
 #ifdef RADR_DEBUG
     printf("Doing remnant max_path_cover for frames %d and %d\non DAG with %d nodes and %d edges.\n", f, f+1, rem_dag.n, rem_dag.m);
-#endif      
+#endif
     do_max_path_cover (&rem_dag, rem_pred, rem_succ, &n_rem_cover_edges);
 #ifdef RADR_DEBUG
     printf("Done; found %d matches\n", n_rem_cover_edges);
@@ -1010,10 +1010,10 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
 
       // add count of edges to cover
       p->n_cover_edges += n_rem_cover_edges;
-      
+
       // add new edges to the main DAG, and inform the tracker plugin of new
       // blip-to-track assignments
-      
+
       for (ri = 0; ri < rem_n; ++ri) {
 	if ((rii = rem_succ[ri]) != NO_NODE) {
 	  i = rem_which[ri];
@@ -1065,7 +1065,7 @@ update (SEXP ep, SEXP TR, SEXP X, SEXP Y, SEXP Z, SEXP T, SEXP IND, SEXP TIME_NO
     Free(p);
   }
   return PASS_SEXP;
-}    
+}
 
 SEXP
 end_all_tracks (SEXP ep, SEXP TR)
@@ -1073,7 +1073,7 @@ end_all_tracks (SEXP ep, SEXP TR)
   // end all tracks.  This just deletes all saved data
   // of points; if TR is not NULL, then (possibly) call functions in the tracker
   // plugin to update its list of tracks.
-  // 
+  //
   // ep:         EXTPTR;  the external pointer SEXP to the problem instance
   // TR:         ENVSXP;  the tracker plugin object (a strictenv)
 
@@ -1082,7 +1082,7 @@ end_all_tracks (SEXP ep, SEXP TR)
   if (ep == R_NilValue)
     return PASS_SEXP;
   p = (t_mfc_problem *) EXTPTR_PTR(ep);
-  if (!p) 
+  if (!p)
     return PASS_SEXP;
   if (p->first.ptr) {
     for (i = 0; i < p->nf; ++i) {
@@ -1096,13 +1096,13 @@ end_all_tracks (SEXP ep, SEXP TR)
 
 SEXP
 gain_from_track_to_point (SEXP ep, SEXP trackpoint, SEXP info, SEXP point, SEXP cons_scan) {
-  /* 
+  /*
      calculate the gain from trackpoint, with given state, to point.
      Differs from calc_gains in that neither the trackpoint nor the
      isolated point need be in the current MFC instance, and this function
      always uses the internal versions of gain functions, since it's assumed
      the caller knows how to call the user's R gain functions.
-     
+
      ep:      EXTPTR;  the external pointer SEXP to the problem instance
      tpoint:  real vector giving coordinates of point on track
      info:    real vector giving dynamic state of point on track
@@ -1121,7 +1121,7 @@ gain_from_track_to_point (SEXP ep, SEXP trackpoint, SEXP info, SEXP point, SEXP 
   if (ep == R_NilValue)
     return FAIL_SEXP;
   p = (t_mfc_problem *) EXTPTR_PTR(ep);
-  if (!p) 
+  if (!p)
     return FAIL_SEXP;
 
   cons = LOGICAL(cons_scan)[0];
@@ -1137,8 +1137,8 @@ gain_from_track_to_point (SEXP ep, SEXP trackpoint, SEXP info, SEXP point, SEXP 
   }
   return ScalarReal(INT_TO_GAIN(gain));
 }
-  
-  
+
+
 
 /*================================================================
 
@@ -1169,7 +1169,7 @@ void
 R_init_multiframecorr(DllInfo *info)
 {
   /* Register routines, allocate resources. */
-  
+
   R_registerRoutines(info, NULL, multiframecorr_call_methods, NULL, NULL);
   R_useDynamicSymbols(info, FALSE);
   pfree_extmat = (typeof(free_extmat)*) R_GetCCallable("extmat", "free_extmat");

@@ -49,7 +49,7 @@ typedef T_SCORE_TYPE         t_score;      // the type used to store z-score for
 typedef T_SCORE_INTERMEDIATE_TYPE  t_score_intermediate; // the intermediate type used to calculate the score
                                             // this must hold at least T_SCORE_FRACTIONAL_BITS more
                                             // bits than t_score does
-#define T_SCORE_TYPE_SIZE sizeof(T_SCORE_TYPE)                                
+#define T_SCORE_TYPE_SIZE sizeof(T_SCORE_TYPE)
 #define T_SCORE_INT_BIT_MASK ((1 << (8 * sizeof(t_score))) - 1)  // if a score is computed as wider integer type, this masks off the useful part
 #define T_SCORE_MAX  ((t_score_intermediate) ((((unsigned)1) << (8 * sizeof(t_score) - 1)) - 1))
 #define T_SCORE_MIN  (-T_SCORE_MAX - 1)
@@ -92,7 +92,7 @@ using the following constants.
 
 */
 
-/* 
+/*
    - a blip is a contiguous (in [pulse,echo] space) set of samples each of which is hot
    - the score of a sample is (x - ma(x)) / madev(x)
    - a sample becomes hot if its score exceeds hot_score
@@ -167,7 +167,7 @@ typedef struct {
 
 // a macro to call the R hooks associated with a particular hook number
 // This packages the hook number into an INTSXP, prepends it to the variable list
-// of parameters, and calls call_R_function with function name "rss.call.hooks" and 
+// of parameters, and calls call_R_function with function name "rss.call.hooks" and
 // R_GlobalEnv.  The net effect is an R call to rss.call.hooks(hook, ...)
 
 SEXP call_R_function(char *name, SEXP env, ...);
@@ -187,8 +187,10 @@ SEXP make_R_vector(int sxp_type, int n, ...);
 // avoid having to #ifdef debugging print statements
 #ifdef RADR_DEBUG
 #define dbgprintf(FMT, ...) printf(FMT, ## __VA_ARGS__)
+#define INLINE_ATTR
 #else
 #define dbgprintf(FMT, ...)
+#define INLINE_ATTR inline
 #endif
 
 
