@@ -232,9 +232,6 @@ globals = list (
     ## gets the data for the scan whose info was most recently retrieved
     ## get.scan.info does most of the work.
 
-    if (np == 0)
-      return (NULL)
-
     dim <- c(samples.per.pulse, num.pulses)
     dim(extmat) <- dim
     dim(RSS$class.mat) <- dim
@@ -304,5 +301,3 @@ have.more.data = FALSE
 
 ## sweep buffer
 dat = NULL
-
-np = 0
