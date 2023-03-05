@@ -241,7 +241,7 @@ globals = list (
   start.up.radarcam = function(port, restart=FALSE,...) {
     ## connect to radarcam named pipe
       if (is.null(rcpipe)) {
-          rcpipe <<- socketConnection("localhost", port=8123, server=TRUE, blocking=FALSE, timeout=-1, open="rb")
+          rcpipe <<- fifo(pipename, "rb", blocking=FALSE)
       }
     port$is.open <- TRUE
     have.more.data <<- TRUE
