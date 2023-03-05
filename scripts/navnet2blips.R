@@ -21,7 +21,7 @@
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/navnet2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] SECS SITE FOLDER
+##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/navnet2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] [--duration=SECS] SITE FOLDER
 ##
 ## where SECS indicates how many seconds of data to capture.  SECS=0 means continue indefinitely.
 ## SITE is a prefix for output filenames
@@ -61,8 +61,17 @@ do.csv = is.na(match("--no-blips", commandArgs()))
 do.bm  = is.na(match("--no-blipmovie", commandArgs()))
 do.tracks  = is.na(match("--no-tracks", commandArgs()))
 
-if (! do.csv && ! do.bm && ! do.tracks)
+if (! do.csv && ! do.bm && ! do.tracks) {
     stop("Error: you specified --no-blips AND --no-blipmovie AND --no-tracks, which means I have nothing to do!")
+}
+
+i = pmatch("--duration", commandArgs())
+if (! is.na(i)) {
+    duration = as.integer(substring(commandArgs()[i], 12))
+    cat(sprintf("\nProcessing for %d seconds\n", duration))
+} else {
+    duration = 0
+}
 
 ## extract the dirname from the command line and verify
 ## it's a directory
@@ -81,7 +90,6 @@ if (! file.info(folder)$isdir)
     stop("Error: file specified instead of directoy: ", folder)
 
 site = ARGV[n - 1]
-duration = ARGV[n-2]
 
 if(show.progress)
   cat(sprintf("\nProcessing live NavNet radar\n"))
