@@ -82,13 +82,20 @@ get.sweep <- function() {
     ## get a sweep from the named pipe where radarcam writes it
     save.error = options()$error
     options(error=NULL)
-    buf = raw()
-    while (length(buf) < 128) {
-        try({
-            rawbuf <- readBin(rcpipe, raw(), n=128 - length(buf))
-            buf <- c(buf, rawbuf)
-        }, silent=TRUE)
-        Sys.sleep(0.1)
+    ## wait for a valid header
+    while (TRUE) {
+        buf = raw()
+        ## wait for 128 bytes read
+        while (length(buf) < 128) {
+            try({
+                rawbuf <- readBin(rcpipe, raw(), n=128 - length(buf))
+                buf <- c(buf, rawbuf)
+            }, silent=TRUE)
+        }
+        ## sanity check:  first word should be 128 (header size), second should be inrad magic #
+        if (all(readBin(buf[0:3], integer(), size=4, n=2) == c(128, 0x07fe03fa))) {
+            break
+        }
     }
     pos = 1
     GI = function() {
