@@ -240,11 +240,16 @@ globals = list (
 
   start.up.radarcam = function(port, restart=FALSE,...) {
     ## connect to radarcam named pipe
-      if (is.null(rcpipe)) {
-          rcpipe <<- fifo(pipename, "rb", blocking=FALSE)
+      while (is.null(rcpipe)) {
+          if (file.exists(pipename)){
+              rcpipe <<- fifo(pipename, "rb", blocking=TRUE)
+          } else {
+              cat(sprintf("No fifo at %s - waiting for radarcam to start\n", pipename))
+              Sys.sleep(2)
+          }
       }
-    port$is.open <- TRUE
-    have.more.data <<- TRUE
+      port$is.open <- TRUE
+      have.more.data <<- TRUE
   },
 
   shut.down.radarcam = function(port, ...) {
