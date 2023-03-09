@@ -16,12 +16,12 @@
 ##
 ################################################################################
 ##
-## navnet2blips.R:  read from a live NavNet radar and create a blips.csv and/or a blipmovie and/or tracks files
+## radarcam2blips.R:  read radar data from a radarcam named pipe and create a blips.csv and/or a blipmovie and/or tracks files
 ##
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/navnet2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] [--duration=SECS] SITE FOLDER
+##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/radarcam2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] [--duration=SECS] SITE FOLDER
 ##
 ## where SECS indicates how many seconds of data to capture.  SECS=0 means continue indefinitely.
 ## SITE is a prefix for output filenames
