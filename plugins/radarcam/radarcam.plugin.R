@@ -91,6 +91,8 @@ get.sweep <- function() {
                 rawbuf <- readBin(rcpipe, raw(), n=128 - length(buf))
                 buf <- c(buf, rawbuf)
             }, silent=TRUE)
+            Sys.sleep(0.1)
+            rss.gui(UPDATE_GUI)
         }
         ## sanity check:  first word should be 128 (header size), second should be inrad magic #
         if (all(readBin(buf[0:3], integer(), size=4, n=2) == c(128, 0x07fe03fa))) {
@@ -152,10 +154,12 @@ get.sweep <- function() {
     intbuf = integer()
     while (n > 0) {
         try({
-            part = readBin(rcpipe, integer(), n, signed=FALSE, size=1)
+            part = readBin(rcpipe, integer(), min(n, 524288), signed=FALSE, size=1)
             intbuf = c(intbuf, part)
             n = n - length(part)
         }, silent=TRUE)
+        rss.gui(UPDATE_GUI)
+        Sys.sleep(0.0001)
     }
     dat <<- matrix(intbuf, samples.per.pulse, num.pulses)
     options(error=save.error)
@@ -243,7 +247,7 @@ globals = list (
     ## connect to radarcam named pipe
       while (is.null(rcpipe)) {
           if (file.exists(pipename)){
-              rcpipe <<- fifo(pipename, "rb", blocking=TRUE)
+              rcpipe <<- fifo(pipename, "rb", blocking=FALSE)
           } else {
               cat(sprintf("No fifo at %s - waiting for radarcam to start\n", pipename))
               Sys.sleep(2)
