@@ -1,5 +1,5 @@
 # datepick.tcl - a text subwidget for letting a user edit/pick one or more date/times
-#                It tags portions of a text widget to represent 
+#                It tags portions of a text widget to represent
 #                date/time components in a standard format, and binds
 #                keystrokes / mousewheel events to them.  At any time,
 #                the most recently validated date is available in the
@@ -66,15 +66,15 @@ namespace eval Datepick {
 
     ## tag prefix
     variable tag_prefix datepick_
-    
+
     proc change {name sign {x ""} {y ""}} {
-	# change the date/time up or down based 
+	# change the date/time up or down based
 	# on an event happening at text widget coordinates x,y
 	# (or at the insertion point, if x,y is empty)
 	# if sign is "+", increase; if sign is "-", decrease
 	# Maintains the current insert position.
 	# Returns 1 if a datepick item was changed, 0 otherwise
-	
+
 	set which [Datepick::which $name $x $y]
 	set var [lindex $which 0]
 	if {"$var" != ""} {
@@ -110,17 +110,17 @@ namespace eval Datepick {
 	} {
 	    set first [$name index insert]
 	}
-	$name insert $first [clock format [expr \$::$var] -format "$Datepick::tformat($hours)"]
+	$name insert $first [clock format [expr int(\$::$var)] -format "$Datepick::tformat($hours)"]
 	$name tag add $tname $first $first+$Datepick::tformat_w($hours)chars-1char
 	$name tag configure $tname -background $Datepick::bg(normal)
     }
 
     proc which {name {x ""} {y ""}} {
 
-	# return a list consisting of the the name of the variable and 
+	# return a list consisting of the the name of the variable and
 	# the tag corresponding
-	# to the datepick subwidget at text position @x,y in 
-	# text widget "name"; use the insertion point if 
+	# to the datepick subwidget at text position @x,y in
+	# text widget "name"; use the insertion point if
 	# x,y is empty
 
 	if {"$x" != ""} {
@@ -136,7 +136,7 @@ namespace eval Datepick {
 	    return [list "" ""]
 	}
     }
-    
+
     proc reparse_date {name} {
 	# reparse the date which the user may have edited
 	# name is the name of the text widget
@@ -166,7 +166,7 @@ namespace eval Datepick {
 	# the user may have edited a date; restore it to the
 	# one stored in the backing variable
 	# name is the name of the text widget
-	# it's assumed the insertion point is within the 
+	# it's assumed the insertion point is within the
 	# date to be reparsed
 	# return 1 if the datepick subwidget handled
 	# the keystroke, zero otherwise
@@ -205,8 +205,8 @@ namespace eval Datepick {
 	} else {
 	    eval "text $name -width $Datepick::tformat_w($hours) -height 1 -wrap none $textopts"
 	    set loc 1.0
-	} 
-	
+	}
+
 	trace add variable ::$var write "Datepick::setvar $name $var $hours"
 	if {"$callback" != ""} {
 	    trace add variable ::$var write "$callback"

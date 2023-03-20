@@ -51,7 +51,7 @@ TCL <- function(x) {
   ## quick escape if no dollar signs
   if (length(grep("$", x, fixed=TRUE)) == 0)
     return (as.character(.Tcl(x)))
-  
+
   wd <- strsplit(x, "([ \t])+|(?=\n)", perl=TRUE)[[1]]
   for (i in grep("^\\$", wd)) {
     wd[i] <- eval(parse(text=substring(wd[i], 2)), parent.frame())
@@ -109,7 +109,7 @@ gui.skip.event <- function(window, evt, n=1) {
     tcl("bind", window, evt, f)
   }
 }
-  
+
 gui.disable.event <- function(window, evt) {
   ## force tcl to disable handling the given event
   ## for the given window/tag
@@ -156,7 +156,7 @@ gui.new.tearoff <- function(...) {
     gui.centre.window(win)
   }
 }
-      
+
 gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gui.new.tearoff(...), env=.GlobalEnv) {
   ## create a menu from x according to the rules
   ## described in generic.plugin.R
@@ -190,7 +190,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
 
            "character" = {
              ## add a separator, label (i.e. inactive command), or cascade
-             ## to a named menu 
+             ## to a named menu
              if (identical(x[[i]], "---"))
                tcl(name, "add", "separator")
              else if (identical(substring(x[[i]], 1, 1), "."))
@@ -215,11 +215,11 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
 
            "list" = {
              switch(EXPR=x[[i]][[1]],
-                    
+
                     ##==============================================================================
                     ## list : choose.one - a group of radio buttons
                     ##==============================================================================
-                    
+
                     "choose.one" = {
                       ## add a group of radio buttons
                       y <- x[[i]][-1]
@@ -230,7 +230,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                       y$on.set <- NULL
                       y$set.or.get <- NULL
                       y$group <- NULL
-                      
+
                       ## create the getter/setter function
                       if (is.null(varname)) {
                         varname <- "value" %:% name %:% "." %:% num.vars
@@ -247,7 +247,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                                                  )
                       if (!is.null(set.or.get))
                         assign(set.or.get, getset, env)
-                      
+
                       ## create menu entries for each item
                       for (j in seq(along=y)) {
                         tcl(name, "add", "radiobutton", variable=varname, value = j,
@@ -326,7 +326,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                       tcl(name, "add", "cascade", menu = sub.name, label = names[[i]])
                       gui.menu.from.list(sub.name, x[[i]][-1], names[[i]])
                     },
-                    
+
                     ##==============================================================================
                     ## list : dyn.menu - a cascading submenu with content generated at post time
                     ##==============================================================================
@@ -348,7 +348,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                         tcl(sub.name, "post", tcl("winfo", "pointerx", "."), tcl("winfo", "pointery", "."))
                        }, list(f=x[[i]][[2]], n=names[[i]],sub.name=sub.name)))
                     },
-                    
+
                     ##==============================================================================
                     ## list : file - a file selection command
                     ##==============================================================================
@@ -383,7 +383,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                       ##          on.set = function(f) gui.print.cons("You chose " %:% paste(f, collapse=","))
                       ##          )
                       ##
- 
+
                       y <- x[[i]][-1]
                       f <- rss.make.closure(
                                             function() {
@@ -391,13 +391,13 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                                               ## the list : file menu entry
                                               gui.file.dialog(y$type, y$title, y$file.types, y$init.file, y$on.set)
                                             }, list(y=y))
-                      
-                      tcl(name, "add", "command", label=names[[i]], command=f)               
+
+                      tcl(name, "add", "command", label=names[[i]], command=f)
                     },
                     ##==============================================================================
                     ## list : do.one - a set of related commands
                     ##==============================================================================
-                    
+
                     "do.one" = {
                       ## add a group of command entries
                       ## which call the same function with a different
@@ -413,7 +413,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                       on.do <- y$on.do
                       y$on.do <- NULL
                       ## create menu entries for each item
-                      
+
                       if (is.null(names(y)) || all(nchar(names(y)) == 0)) {
                         labs <- y
                         vals <- seq(along=y)
@@ -436,7 +436,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                     ##==============================================================================
                     ## list : gauge - a numeric value that can be set
                     ##==============================================================================
-                    
+
                     "gauge" = {
                       ## add a gauge, which is a command entry that pops
                       ## up a toplevel window with a labelled gauge for
@@ -491,7 +491,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                     ##==============================================================================
                     ## list : string - a string value that can be set
                     ##==============================================================================
-                    
+
                     "string" = {
                       ## add a string entry box, which is added to the same toplevel window as
                       ## gauges are.  The entire contents of the entry box are treated as a single
@@ -549,7 +549,7 @@ gui.menu.from.list <- function(name, x, title="", tearoffcommand=function(...)gu
                     ##==============================================================================
                     ## list : datetime - a datetime selection widget
                     ##==============================================================================
-                    
+
                     "datetime" = {
                       ## add a datetime entry box, which is added to the same toplevel window as
                       ## gauges are.  The contents of the entry box are treated as a formatted date.
@@ -611,7 +611,7 @@ gui.popup.new.menu <- function(title, lst) {
   ## popup a menu as a dialogue box, returning
   ## the id of its toplevel window
   ## get a unique menu name
-  
+
   i <- 0
   repeat {
     mnu.name <- ".tmpmenu" %:% i
@@ -620,12 +620,12 @@ gui.popup.new.menu <- function(title, lst) {
     i <- i+1
   }
 
-  ## create the menu 
+  ## create the menu
   mnu <- gui.menu.from.list(mnu.name, lst, title)
 
   ## tear it off as a floating dialog
   tcl(mnu.name, "invoke", 0)
-  
+
   return(mnu.name)
 }
 
@@ -655,7 +655,7 @@ gui.error <- function(msg) {
   } else {
     tcl("tk_messageBox", default="ok", message=msg, title="radR error", type="ok")
   }
-}   
+}
 
 gui.show.busy <- function(busy = TRUE) {
   ## set the display cursor to indicate we are busy
@@ -722,7 +722,7 @@ gui.tx.xyz.to.plot <- function(xyz) {
   ## treated as an axial range, because the radar would do so.
   ## No attempt is made to determine whether a target at xyz
   ## would actually be visible in the radar.
-  
+
   theta <- atan2(xyz[,2], xyz[,1]) - GUI$north.angle * pi / 180
   planar.range <- sqrt(xyz[,1]^2 + xyz[,2]^2 + (xyz[,3] - rss.origin.elev())^2) / rss.rps() * gui.pps()
   return(cbind(GUI$plot.origin[1] + planar.range * cos(theta), GUI$plot.origin[2] - planar.range * sin(theta)))
@@ -739,7 +739,7 @@ gui.tx.xy.to.plot <- function(xy) {
   ##
   ## Note: xy is used to compute a planar range.  This is
   ## the same as axial range if RSS$antenna$angle == 0.
-  
+
   theta <- atan2(xy[,2], xy[,1]) - GUI$north.angle * pi / 180
   planar.range <- sqrt(xy[,1]^2 + xy[,2]^2) / GUI$mpp
   return(cbind(GUI$plot.origin[1] + planar.range * cos(theta), GUI$plot.origin[2] - planar.range * sin(theta)))
@@ -759,7 +759,7 @@ gui.tx.matrix.to.spatial <- function(coords) {
   phi <- rss.antenna.angle()
   return (cbind(r * cos(phi) * cos(th), r * cos(phi) * sin(th), r * sin(phi) + rss.origin.elev()))
 }
-  
+
 gui.pps <- function() {
   ## return the number of pixels per sample
   rss.planar.rps() / GUI$mpp
@@ -808,7 +808,7 @@ gui.update.plot.parms <- function() {
              "mpp" = gui.canvas.zoomed(GUI$mpp / np$mpp, GUI$plot.origin),
               "compass.radius" = gui.canvas.zoomed(np$compass.radius / GUI$compass.radius, GUI$plot.origin, "compass", NULL, NULL),
              NULL)
-    }      
+    }
     GUI[[parm]] <- np[[parm]]
   }
   GUI$new.parm.values <- list()
@@ -843,7 +843,7 @@ gui.plot.window.centre <- function() {
 }
 
 gui.create.menu.button <- function(name, values, full.values = values, heading=NULL, tearoff=FALSE, set.fun=NULL, selected=1, null.label="") {
-  
+
   ## create a TK menu button named "name" from the list of values, and an R closure named "name.value"
   ## which, when invoked, either returns or sets the index of the currently selected value.  The index is a
   ## number in the set seq(along=values).  If set.fun is specified, then it is called with the index of
@@ -857,7 +857,7 @@ gui.create.menu.button <- function(name, values, full.values = values, heading=N
   lab.name <- name %:% ".lab"
   menu.name <- name %:% ".menu"
   width <- if (length(values) > 0) max(nchar(values)) else 25
-    
+
   tcl("menubutton", name, textvariable=lab.name, indicatoron=1, menu=menu.name, relief="raised", bd=2, highlightthickness=2, anchor="c", direction="right", width=width)
   tcl("menu", menu.name, tearoff=as.integer(tearoff))
 
@@ -865,7 +865,7 @@ gui.create.menu.button <- function(name, values, full.values = values, heading=N
   ## we are customizing its behaviour
   .Tcl(paste("bindtags", name, "{", name, gui.tcl.parent(name), "all }"))
   tcl("bind", name, "<Button-1>", function(X, Y) tcl(menu.name, "post", X, Y))
-  
+
   if (length(values) == 0) {
     tclvalue(lab.name) <- null.label
     tcl(name, "configure", state="disabled")
@@ -882,12 +882,12 @@ gui.create.menu.button <- function(name, values, full.values = values, heading=N
     ## the command for each item will call the R closure named "name.value"
     ## once, with no args, to get the just-selected index, and once
     ## with that index
-    
+
     f <- rss.make.closure(function() do.call(var.name, list(do.call(var.name, list()))), list(var.name=var.name))
     for (i in seq(along=values))
       tcl(menu.name, "add", "radiobutton", label=full.values[i],
           variable=var.name, value=i, command=f)
-    
+
     assign(var.name,
            rss.make.closure(
                             function(i) {
@@ -922,7 +922,7 @@ gui.add.item.to.menu.button <- function(mb, short.label, long.label) {
 gui.change.item.in.menu.button <- function(mb, index, short.label, long.label) {
   ## change entry in menubutton mb given by index to have
   ## the given short and long labels
-  
+
   setter <- get(var.name <- mb %:% ".value", .GlobalEnv)
   menu <- mb %:% ".menu"
   environment(setter)$values[index] <- short.label
@@ -937,7 +937,7 @@ gui.create.checklist <- function(name, values, heading = NULL, tearoff = FALSE, 
   ## will return or set the logical value associated with
   ## a given index.  Each time an item is toggled, the function
   ## set.fun is called with its index and its new value (TRUE or FALSE)
-  
+
   var.name <- name %:% ".value"
   TCL("menu $name -tearoff $as.integer(tearoff)")
 
@@ -948,7 +948,7 @@ gui.create.checklist <- function(name, values, heading = NULL, tearoff = FALSE, 
     tcl(name, "entryconfigure", 0, state="disabled")
     tcl(name, "configure", disabledforeground="black")
   }
- 
+
   f <- function(i) {
     if (!is.null(set.fun))
       set.fun(i, tclvalue(var.name %:% i))
@@ -957,14 +957,14 @@ gui.create.checklist <- function(name, values, heading = NULL, tearoff = FALSE, 
   for (i in seq(along=values)) {
     ## For each item on the menu, we need a wrapped copy of f
     ## that is called with the index i.
-    
+
     g <- rss.make.closure(
                           function() f(i),
                           list(i=i)
                           )
     tcl(name, "add", "checkbutton", label=values[i],  variable=var.name%:%i, command = g)
   }
-  
+
   assign(var.name,
          function(i, set) {
            if (missing(set)) {
@@ -1025,7 +1025,7 @@ gui.create.gauge <- function(parent, label, range, increment, val, set.fun, shor
                         list(spname=spname, set.fun=set.fun, old.field.value=NULL))
   ## use the same environment for each of the other bound events
   env <- environment(f)
-  
+
   tcl(spname, "configure", command=f)
   tcl("bind", spname, "<KeyRelease-Return>", f)
   tcl("bind", spname, "<FocusOut>", f)
@@ -1051,7 +1051,7 @@ gui.create.gauge <- function(parent, label, range, increment, val, set.fun, shor
         if (! (K %in% gui.nochange.keysyms.Spinbox))
           tcl(spname, "configure", background = GUI$entry.field.changed.colour)
       })
-      
+
   TCL("pack $spname $lbname -side right")
   if (!is.null(setter.name) && !is.null(setter.env)) {
     assign(setter.name,
@@ -1073,7 +1073,7 @@ gui.create.gauge <- function(parent, label, range, increment, val, set.fun, shor
 
 gui.create.string <- function(parent, label, width, height, val, val.check, set.fun, short.name=gsub("[^a-zA-Z0-9_]", "_", label), setter.name=NULL, setter.env=.GlobalEnv) {
   ## create a string:  a labelled text entry box in a frame
-  ## 
+  ##
   ## parent is the tcl name of the parent window
   ## label is the text label which will be user-visible
   ## width is the number of characters to reserve for the box
@@ -1114,7 +1114,7 @@ gui.create.string <- function(parent, label, width, height, val, val.check, set.
                         list(txname=txname, set.fun=set.fun, old.field.value=NULL, val.check=val.check))
   ## use the same environment for each of the other bound events
   env <- environment(f)
-  
+
   tcl("bind", txname, "<KeyRelease-Return>", f)
   tcl("bind", txname, "<FocusOut>", f)
   tcl("bind", txname, "<FocusIn>",
@@ -1161,7 +1161,7 @@ gui.create.string <- function(parent, label, width, height, val, val.check, set.
 
 gui.create.datetime <- function(parent, label, val, val.check, set.fun, short.name=gsub("[^a-zA-Z0-9_]", "_", label), setter.name=NULL, setter.env=.GlobalEnv) {
   ## create a datetime chooser for allowing rapid entry of a date/time
-  ## 
+  ##
   ## parent is the tcl name of the parent window
   ## label is the text label which will be user-visible
   ## val is the initial value (a double timestamp)
@@ -1181,7 +1181,6 @@ gui.create.datetime <- function(parent, label, val, val.check, set.fun, short.na
   txname <- name %:% ".txt"
   lbname <- name %:% ".lab"
   varname <- "::" %:% gsub(".", "_", name, fixed=TRUE)
-  val <- round(val) ## FIXME: why does datepick.tcl not allow non-integer timestamps?  Seems to be a tcl issue...
   tcl("frame", name)
   tcl("label", lbname, text=label %:% ":")
   tcl("text", txname, height=1, width=24, wrap="char")
@@ -1192,7 +1191,7 @@ gui.create.datetime <- function(parent, label, val, val.check, set.fun, short.na
     ff <- ""
   tcl("Datepick::datepick", txname, varname, "12", "", ff)
   TCL("pack $txname $lbname -side right")
-    
+
   if (!is.null(setter.name) && !is.null(setter.env)) {
     assign(setter.name,
            rss.make.closure(
@@ -1243,8 +1242,8 @@ gui.menu.inds <- function(menu) {
   have.tearoff <- tclint(menu, "cget", "-tearoff")
   seq(from = have.tearoff, length = as.integer(len) + 1 - have.tearoff)
 }
-    
-  
+
+
 gui.index.of.submenu <- function(menu) {
   ## return the index of the menu in its parent
   ## returns NA if the menu is not present in its parent
@@ -1266,7 +1265,7 @@ gui.index.of.menu.label <- function(menu, label) {
   rss.try(rv <- tclint(menu, "index", label))
   return(rv)
 }
-  
+
 gui.drop.menu <- function(root, titles) {
   ## destroy the tcl cascading menu object named by titles
   ## and rooted at root
@@ -1305,7 +1304,7 @@ gui.add.menu <- function(root, titles) {
 
   for (t in titles) {
     if (nchar(t) > 0 && ! (t %in% names(GUI$menu.title.to.tcl.part))) {
-## Redundant, and incorrect, since [[]] on a list allows partial matching:      
+## Redundant, and incorrect, since [[]] on a list allows partial matching:
 ##      if (is.null(GUI$menu.title.to.tcl.part[[t]]))
         GUI$menu.title.to.tcl.part[[t]] <- 1 + length(GUI$menu.title.to.tcl.part)
     }
@@ -1360,7 +1359,7 @@ gui.popup.message <- function(title, msg, id="msgbox" %:% GUI$num.msgboxes, time
 gui.delete.message <- function(id) {
   try(tcl("destroy", "." %:% id), silent=TRUE)
 }
-  
+
 gui.popup.dialog <- function(title, msg, fun=NULL, entry=FALSE, buttons="Ok", default=1, drop.down=FALSE, default.entry="") {
   ## pop up a dialog with a list of buttons and possibly an entry field
   ## If drop.down is TRUE, then the items in buttons are placed in a drop box, and
@@ -1454,7 +1453,7 @@ gui.zoom.to.patch <- function(patch, blip=NULL, sarea=225) {
   ## as sectors of area (roughly) 'sarea' pixels.
   ## Specifying blip (using "blip=") rather than patch
   ## zooms to the given blip.
-  
+
   if (!is.null(blip)) {
     if (blip < 1 || blip > length(RSS$blips))
       return(NULL)
@@ -1484,13 +1483,13 @@ gui.show.graph <- function(graph.fun, position, size) {
   ## The caller can erase the graph by calling rss.gui(DELETE_GRAPH, id)
 
   id <- "graph" %:% (GUI$num.graphs <- 1 + GUI$num.graphs)
-  
+
   png(GUI$png.plot.filename, width=size[1], height=size[2], bg="transparent")
   ## set up sensible defaults for colors, which the caller can change
   ## from inside graph.fun
   col <- "white"
   par(fg=col, col.axis=col, col.lab=col, col.main=col, col.sub=col, mai=c(0.25,0.25,0.25,0.25), mar=c(2,2,1,1), oma=c(0,0,0,0))
-  
+
   graph.fun()
   dev.off()
 
@@ -1522,10 +1521,10 @@ gui.state.has.key <- function(s, k) {
   ## return TRUE if the mod key given by k is present in state s
   ## (s is an integer provided by the Tk event macro "%s")
   ## k is "Shift", "Alt", or "Control"
-  
+
   return(as.logical(intToBits(as.integer(s))[GUI$motion.state.key.bits[[k]]]))
 }
-  
+
 gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.to.plot = NULL, xyz.to.plot = NULL, matrix.to.spatial = NULL) {
   ## set the coordinate transforms; this might be called by the start.up and shut.down
   ## methods of a data source in order to implement a different coordinate system
@@ -1537,4 +1536,3 @@ gui.set.coord.tx <- function(plot.to.matrix = NULL, plot.to.spatial = NULL, xy.t
   GUI$tx.xyz.to.plot <- if (is.null(xyz.to.plot)) gui.tx.xyz.to.plot else xyz.to.plot
   GUI$tx.matrix.to.spatial <- if (is.null(matrix.to.spatial)) gui.tx.matrix.to.spatial else matrix.to.spatial
 }
-
