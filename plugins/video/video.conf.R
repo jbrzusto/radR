@@ -50,6 +50,12 @@ default.scale = 5
 
 default.rotation = 0
 
+## default extra ffmpeg options that appear before the "-i" (input) option
+default.ffmpeg.options.before.input = ""
+
+## default extra ffmpeg options that appear before the "pipe:1" (output) option
+default.ffmpeg.options.before.output = ""
+
 ## list of video extensions (and descriptions) that we're interested
 ## in and able to read (via ffmpeg). The first one listed will be the
 ## default choice in "open file" dialgoues, and the rest will be in

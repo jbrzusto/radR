@@ -16,7 +16,7 @@
 
 
 ##           VIDEO   PLUGIN
-##                                                         
+##
 ##  Read images from a video file.  Any input format supported by ffmpeg
 ##  is allowed.
 
@@ -28,39 +28,50 @@ about = function() {
 
 get.ports = function() {
 
-  rv <- list()
-  
-  make.port <- function(name, id, is.source, is.sink) {
-    structure(strictenv(
-                        name = name,
-                        id = id,
-                        is.source = is.source,
-                        is.sink = is.sink,
-                        is.live = FALSE,
-                        is.file = TRUE,
-                        is.seekable = TRUE,
-                        file.ext = video.extensions,
-                        can.specify.start.time = TRUE,
-                        config = list(filename = NULL, frame.rate=default.frame.rate, width=default.width, height=default.height,
-                          origin = default.origin, scale = default.scale, rotation = default.rotation),
-                        has.toc = TRUE,
-                        cur.run = 0,
-                        cur.scan = 0,
-                        prev.scan = -1,
-                        scan.data = NULL,                  # the data, pre-read by get.scan.info
-                        contents = empty.TOC,
-                        start.time = NULL,                 # the time of the first frame
-                        duration = 0L,                     # how long the video file lasts, in seconds
-                        si = NULL                          # scan info
-                        ),
-              class = c(MYCLASS, "strictenv"))
-  }
+    rv <- list()
 
-  rv <- list()
+    make.port <- function(name, id, is.source, is.sink) {
+        structure(strictenv(
+            name = name,
+            id = id,
+            is.source = is.source,
+            is.sink = is.sink,
+            is.live = FALSE,
+            is.file = TRUE,
+            is.seekable = TRUE,
+            file.ext = video.extensions,
+            can.specify.start.time = TRUE,
+            config = list(
+                filename = NULL,
+                frame.rate=default.frame.rate,
+                width=default.width,
+                height=default.height,
 
-  ##                    name    id  source  sink
-  rv[[1]] <- my.port <<- make.port("Reader", 1,  TRUE, FALSE)
-  rv
+                origin = default.origin,
+                scale = default.scale,
+                rotation = default.rotation,
+                ffmpeg.options.before.input = default.ffmpeg.options.before.input,
+                ffmpeg.options.before.output = default.ffmpeg.options.before.output
+            ),
+
+            has.toc = TRUE,
+            cur.run = 0,
+            cur.scan = 0,
+            prev.scan = -1,
+            scan.data = NULL,                  # the data, pre-read by get.scan.info
+            contents = empty.TOC,
+            start.time = NULL,                 # the time of the first frame
+            duration = 0L,                     # how long the video file lasts, in seconds
+            si = NULL                          # scan info
+        ),
+        class = c(MYCLASS, "strictenv"))
+    }
+
+    rv <- list()
+
+    ##                    name    id  source  sink
+    rv[[1]] <- my.port <<- make.port("Reader", 1,  TRUE, FALSE)
+    rv
 }
 
 load = function() {
@@ -71,120 +82,144 @@ unload = function(save.config) {
 }
 
 get.menus = function() {
-  list(
-       sources = list (
-         titles = "Video reader",
-         menu = list (
-           options = "no-tearoff",
-           "Choose a file..." = gui.create.port.file.selector(get.ports()[[1]])
-           )
-         ),
-       plugin = list (
-##         "Save geometry and frame rate parameters for this video in XXX.metadata.R..." = save.metafile,
-##         "Load geometry and frame rate parameters for this video from another video's metdata.R file..." = load.metafile,
-##         "---",
-         list ("datetime",
-               label = "date and time at start of first video frame",
-               value = as.numeric(default.start.time),
-               on.set = function(x) {
-                 t <- structure(x, class="POSIXct")
-                 default.start.time <<- t
-                 if (inherits(RSS$source, MYCLASS))
-                   RSS$source$start.time <- t
-               },
-               set.or.get = "gui.video.start.time"
-               ),
-         list ("gauge",
-               label = "desired frame rate, in frames per seconds" ,
-               range = c(0.001, 1000),
-               increment = 1,
-               value = default.frame.rate,
-               on.set = function(x) { default.frame.rate <<- x
-                                      if (inherits(RSS$source, MYCLASS))
-                                        config(RSS$source, frame.rate=x)
-                                    }
-               ),
-         list ("gauge",
-               label = "desired image width, in pixels",
-               range = c(100, 2000),
-               increment = 10,
-               value = default.width,
-               on.set = function(x) { default.width <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, width=x)
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "desired image height, in pixels",
-               range = c(100, 2000),
-               increment = 10,
-               value = default.height,
-               on.set = function(x) { default.height <<- x;
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, height=x)
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "image centre x coordinate offset, in image pixels",
-               range = c(-10000, 10000),
-               increment = 1,
-               value = default.origin[1],
-               on.set = function(x) { default.origin[1] <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, origin=default.origin)
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "image centre y coordinate offset, in image pixels",
-               range = c(-10000, 10000),
-               increment = 1,
-               value = default.origin[2],
-               on.set = function(x) { default.origin[2] <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, origin=default.origin) 
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "scale of image, in metres per pixel",
-               range = c(0, 10000),
-               increment = 0.1,
-               value = default.scale,
-               on.set = function(x) { default.scale <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, scale=default.scale)
-                                        update()
-                                      }
-                                    }
-               ),
-         list ("gauge",
-               label = "rotation of coordinates, in degrees clockwise",
-               range = c(-360, 360),
-               increment = 0.1,
-               value = default.rotation,
-               on.set = function(x) { default.rotation <<- x
-                                      if (inherits(RSS$source, MYCLASS)) {
-                                        config(RSS$source, rotation=default.rotation)
-                                        GUI$north.angle <- -default.rotation
-                                        update()
-                                      }
-                                    }
-               )
-         
-         
-         )
-       )
+    list(
+        sources = list (
+            titles = "Video reader",
+            menu = list (
+                options = "no-tearoff",
+                "Choose a file..." = gui.create.port.file.selector(get.ports()[[1]])
+            )
+        ),
+        plugin = list (
+            ##         "Save geometry and frame rate parameters for this video in XXX.metadata.R..." = save.metafile,
+            ##         "Load geometry and frame rate parameters for this video from another video's metdata.R file..." = load.metafile,
+            ##         "---",
+            list ("datetime",
+                  label = "date and time at start of first video frame",
+                  value = as.numeric(default.start.time),
+                  on.set = function(x) {
+                      t <- structure(x, class="POSIXct")
+                      default.start.time <<- t
+                      if (inherits(RSS$source, MYCLASS))
+                          RSS$source$start.time <- t
+                  },
+                  set.or.get = "gui.video.start.time"
+                  ),
+            list ("gauge",
+                  label = "desired frame rate, in frames per seconds" ,
+                  range = c(0.001, 1000),
+                  increment = 1,
+                  value = default.frame.rate,
+                  on.set = function(x) { default.frame.rate <<- x
+                      if (inherits(RSS$source, MYCLASS))
+                          config(RSS$source, frame.rate=x)
+                  }
+                  ),
+            list ("gauge",
+                  label = "desired image width, in pixels",
+                  range = c(100, 2000),
+                  increment = 10,
+                  value = default.width,
+                  on.set = function(x) { default.width <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, width=x)
+                          update()
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "desired image height, in pixels",
+                  range = c(100, 2000),
+                  increment = 10,
+                  value = default.height,
+                  on.set = function(x) { default.height <<- x;
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, height=x)
+                          update()
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "image centre x coordinate offset, in image pixels",
+                  range = c(-10000, 10000),
+                  increment = 1,
+                  value = default.origin[1],
+                  on.set = function(x) { default.origin[1] <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, origin=default.origin)
+                          update()
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "image centre y coordinate offset, in image pixels",
+                  range = c(-10000, 10000),
+                  increment = 1,
+                  value = default.origin[2],
+                  on.set = function(x) { default.origin[2] <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, origin=default.origin)
+                          update()
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "scale of image, in metres per pixel",
+                  range = c(0, 10000),
+                  increment = 0.1,
+                  value = default.scale,
+                  on.set = function(x) { default.scale <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, scale=default.scale)
+                          update()
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "rotation of coordinates, in degrees clockwise",
+                  range = c(-360, 360),
+                  increment = 0.1,
+                  value = default.rotation,
+                  on.set = function(x) { default.rotation <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, rotation=default.rotation)
+                          GUI$north.angle <- -default.rotation
+                          update()
+                      }
+                  }
+                  ),
+            list ("string",
+                  label = "extra ffmpeg options before '-i' (input) option",
+                  width = 40,
+                  height = 2,
+                  value = default.ffmpeg.options.before.input,
+                  val.check = function(x)TRUE,
+                  on.set = function(x) {
+                      default.ffmpeg.options.before.input <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, ffmpeg.options.before.input=x)
+                      }
+                  }
+                  ),
+            list ("string",
+                  label = "extra ffmpeg options before 'pipe:1' (output) option",
+                  width = 40,
+                  height = 2,
+                  value = default.ffmpeg.options.before.output,
+                  val.check = function(x)TRUE,
+                  on.set = function(x) {
+                      default.ffmpeg.options.before.output <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, ffmpeg.options.before.output=x)
+                      }
+                  }
+                  )
+            )
+    )
 }
 
 globals = list (
-  
+
   as.character.video = function(x, ...) {
     sprintf("radR interface port: %s: %s: %s",
             MYCLASS,
@@ -192,14 +227,14 @@ globals = list (
             if (is.null(x$config$filename)) "(no file)" else x$config$filename
             )
   },
-  
+
   print.video = function(x, ...) {
     ## print a description of this port
     cat (as.character(x) %:% "\n")
   },
 
   config.video = function(port, ...) {
-    
+
     opts <- list(...)
     if (length(opts) != 0) {
       for (opt in names(opts)) {
@@ -226,6 +261,12 @@ globals = list (
                rotation = {
                  port$config$rotation <- opts[[opt]]
                },
+               ffmpeg.options.before.input = {
+                   port$config$ffmpeg.options.before.input <- opts[[opt]]
+               },
+               ffmpeg.options.before.output = {
+                   port$config$ffmpeg.options.before.output <- opts[[opt]]
+               },
                {
                  rss.plugin.error("video: unknown configuration option for port: " %:% opt)
                  return(NULL)
@@ -235,11 +276,11 @@ globals = list (
     }
     return(port$config)
   },
-  
+
   get.contents.video = function(port, ...) {
     return(port$contents)
   },
-  
+
   end.of.data.video = function(port, ...) {
     ## return TRUE if there is no data left to be read
     ## on this port (e.g. if the end of a tape run has been hit)
@@ -255,12 +296,12 @@ globals = list (
     ## make sure the video pipe is open
     if (is.null(video.pipe))
       open.video.at.cur.scan(port)
-    
+
     ## to be safe, we verify that the next bit
     ## of the video pipe contains a proper header for a PGM file.
 
     hdr <- readLines(video.pipe, 3)
-    
+
     if (length(hdr) != 3 || hdr[1] != "P5" || hdr[3] != "255")
       return (NULL)
 
@@ -268,13 +309,13 @@ globals = list (
 
     port$scan.data <- readBin(video.pipe, "integer", size=1, signed=FALSE, n=prod(dims)) * 128L
     port$si <- list(pulses = dims[2],
-                    
+
                     samples.per.pulse = dims[1],
-                    
+
                     bits.per.sample = 15, ## even though the gray channel is only 8 bits, we shift up to improve stats
-                    
+
                     timestamp = port$start.time + (port$cur.scan - 1) / port$config$frame.rate,
-                    
+
                     duration = 1000 / port$config$frame.rate,
 
                     ## FIXME: the rest of this needs rethinking for video data
@@ -282,22 +323,22 @@ globals = list (
                     ## or some kind of projective version of that.
 
                     sample.dist = port$config$scale,
-                    
+
                     first.sample.dist = 0,
-                    
+
                     bearing = 0,
-                    
+
                     orientation = +1,
 
                     is.rectangular = TRUE,
 
                     origin = port$config$origin
-                    
+
                     )
 
     return(port$si)
   },
-    
+
   get.scan.data.video = function(port, extmat, ...) {
     ## copies the data for the current scan into the extmat
     ## the data have already been read by get.scan.info
@@ -305,10 +346,10 @@ globals = list (
     if (is.null(port$scan.data))
       return (NULL)
     dim <- c(port$si$samples.per.pulse, port$si$pulses)
-    
+
     if (is.null(dim))
       stop("calling get.scan.data when RSS$scan.info has NULL dimension info")
-    
+
     dim(extmat) <- dim
     dim(RSS$class.mat) <- dim
     dim(RSS$score.mat) <- dim
@@ -366,7 +407,7 @@ globals = list (
       gui.video.start.time(port$start.time)
     }
     ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
-    
+
     port$contents <- list (
                           num.scans = ns,
                           start.time = structure(as.numeric(port$start.time), class="POSIXct"),
@@ -402,7 +443,7 @@ globals = list (
     ## changing play state.
 
   }
-  
+
   )  ## end of globals
 
 hooks = list (
@@ -446,6 +487,7 @@ open.video.at.cur.scan = function(port) {
   cmd <- paste(ffmpeg.path,
                "-ss", round((port$cur.scan - 1) / port$config$frame.rate,2), ## seek to frame
                "-flags gray",
+               port$config$ffmpeg.options.before.input,
                "-i",
                paste("\"", port$config$filename, "\"", sep=""),
                "-r ", port$config$frame.rate,  ## output at desired frame rate
@@ -453,9 +495,10 @@ open.video.at.cur.scan = function(port) {
                "-vcodec pgm", ## output codec is portable gray map
                "-pix_fmt gray", ## output pixel format is grayscale (8-bit)
                "-s", paste(port$config$width, port$config$height, sep="x"), ## ask for size at current setting
+               port$config$ffmpeg.options.before.output,
                "pipe:1",      ## output to standard output
                paste("2>", RSS$null.device, sep=""))  ## hide ffmpeg splash & info
-  
+
   video.pipe <<- pipe(cmd, "rb")
 }
 
