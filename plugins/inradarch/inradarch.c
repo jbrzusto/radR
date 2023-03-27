@@ -16,7 +16,7 @@ Licence: GPL V2+
 typedef struct bscan_info_record_t
 {
 	uint32_t header_size;	      // bytes
-	uint32_t rev_number;
+        uint32_t rev_number;          // formatted as (MAJOR << 16) | (MINOR << 8) | (REVISION); e.g. 0x0001 00 01 = 1.0.1
 	uint32_t samples_per_line;
 	uint32_t num_output_lines;
 	uint32_t data_size;	      // bytes
@@ -43,7 +43,7 @@ typedef struct bscan_info_record_t
 	int32_t altitude;	      // mm from datum
 	uint32_t pl_mode;	      // pulse length table entry record number
 	uint8_t pl_name[16];	      // pulse length table entry name
-
+        uint32_t magic;               // inrad format magic number: 0x07fe03fa
 } bscan_info_record;
 
 typedef uint16_t sample_t;

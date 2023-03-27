@@ -55,7 +55,7 @@ getSweep = function(f, port) {
 
     sweepHeader              = list(
         header_size          = GI(),
-        rev_number           = GI(),
+        rev_number           = GI(), ## version as (MAJOR << 16) | (MINOR << 8) | (REVISION)
         samples_per_line     = GI(),
         num_output_lines     = GI(),
         data_size            = GI(), ## bytes
@@ -81,7 +81,8 @@ getSweep = function(f, port) {
         longitude            = GI(), ## +/- degrees.decimal * 1e7
         altitude             = GI(), ## mm from datum
         pl_mode              = GI(), ## pulse length table entry record number
-        pl_name              = GS(16)
+        pl_name              = GS(16),
+        magic                = GI(), ## inrad magic number: 0x07fe03fa
         )
 
     return(sweepHeader)
