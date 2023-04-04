@@ -19,86 +19,118 @@
 MYCLASS = "radarcam"
 
 about = function() {
-  return(paste(plugin.label,
-               "\nThis plugin acquires data from radarcam, a golang radar sweep broker.",
-               "\nRadarcam receives data from a Furuno NavNet radar"
-         ))
+    return(paste(plugin.label,
+                 "\nThis plugin acquires data from radarcam, a golang radar sweep broker.",
+                 "\nRadarcam receives data from a Furuno NavNet radar"
+                 ))
 }
 
 get.ports = function() {
-  list(structure(strictenv(
-                           name                   = "NavNet radar via radarcam",
-                           is.source              = TRUE,
-                           is.sink                = FALSE,
-                           is.live                = TRUE,
-                           is.file                = FALSE,
-                           is.seekable            = FALSE,
-                           is.open                = FALSE,
-                           can.specify.start.time = FALSE,
-                           config                 = list(),
-                           has.toc                = FALSE,
-                           si                     = NULL,
-                           cur.run                = 0,
-                           cur.scan               = 0,
-                           prev.scan              = -1
-                           ),
-                 class = c(MYCLASS, "strictenv")))
+    list(structure(strictenv(
+        name                   = "NavNet radar via radarcam",
+        is.source              = TRUE,
+        is.sink                = FALSE,
+        is.live                = TRUE,
+        is.file                = FALSE,
+        is.seekable            = FALSE,
+        is.open                = FALSE,
+        can.specify.start.time = FALSE,
+        config                 = list(
+            sweepURL = default.sweepURL,
+            timeout = default.timeout),
+        has.toc                = FALSE,
+        si                     = NULL,
+        cur.run                = 0,
+        cur.scan               = 0,
+        prev.scan              = -1
+    ),
+    class = c(MYCLASS, "strictenv")))
 }
 
 load = function() {
-  ## get the one and only port
-  port <<- get.ports()[[1]]
+    ## get the one and only port
+    port <<- get.ports()[[1]]
 }
 
 unload = function(save.config) {
-  ## cleanly close the connection to radarcam
-  try ({
-    shut.down(port)
-  }, silent=TRUE)
+    ## cleanly close the connection to radarcam
+    try ({
+        shut.down(port)
+    }, silent=TRUE)
 }
 
 get.menus = function() {
-  rv <- list(
-             sources = list (
-               titles = "Radarcam",
-               menu = list (
-                 options = "no-tearoff",
-                 list (
-                       "choose.one",
-                       on.set = function(i) {
-                         rss.set.port(port)
-                       },
-                       group = "group.play.source.menu"
-                       )
-                 )
-               ),
-             plugin = list(
-             ))
-  rv$sources$menu[[2]] <- c(rv$sources$menu[[2]], port$name)
-  return(rv)
+    rv <- list(
+        sources = list (
+            titles = "Radarcam",
+            menu = list (
+                options = "no-tearoff",
+                list (
+                    "choose.one",
+                    on.set = function(i) {
+                        rss.set.port(port)
+                    },
+                    group = "group.play.source.menu"
+                )
+            )
+        ),
+        plugin = list(
+            list ("string",
+                  label = "url from which to read sweeps",
+                  width = 40,
+                  height = 2,
+                  value = default.sweepURL,
+                  val.check = function(x)TRUE,
+                  on.set = function(x) {
+                      default.sweepURL <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, sweepURL=x)
+                      }
+                  }
+                  ),
+            list ("gauge",
+                  label = "timeout (seconds); if no sweep read within timeout, source is deemed finished",
+                  range = c(5, 300),
+                  increment = 5,
+                  value = default.timeout,
+                  on.set = function(x) { default.timeout <<- x
+                      if (inherits(RSS$source, MYCLASS)) {
+                          config(RSS$source, timeout=default.rotation)
+                      }
+                  }
+                  )
+            ))
+    rv$sources$menu[[2]] <- c(rv$sources$menu[[2]], port$name)
+    return(rv)
 }
 
 get.sweep <- function() {
-    ## get a sweep from the named pipe where radarcam writes it
-    save.error = options()$error
-    options(error=NULL)
-    ## wait for a valid header
-    while (TRUE) {
-        buf = raw()
-        ## wait for 128 bytes read
-        while (length(buf) < 128) {
-            try({
-                rawbuf <- readBin(rcpipe, raw(), n=128 - length(buf))
-                buf <- c(buf, rawbuf)
-            }, silent=TRUE)
-            Sys.sleep(0.1)
-            rss.gui(UPDATE_GUI)
+    ## get a sweep from the URL; we assume the encoded sweep as at most 10 000 000 bytes
+    options(warn=2)
+    on.exit(options(warn=0))
+    if (!tryCatch({
+        start = Sys.time()
+        while(as.numeric(Sys.time() - start) < port$config$timeout) {
+            con = url(port$config$sweepURL, "rb")
+            buf <<- readBin(con, raw(), 10000000)
+            close(con)
+            cat(sprintf("Read sweep: %d bytes\n", length(buf)))
+            if (length(buf) > 0) {
+                break
+            }
         }
-        ## sanity check:  first word should be 128 (header size), second should be inrad magic #
-        if (all(readBin(buf[0:3], integer(), size=4, n=2) == c(128, 0x07fe03fa))) {
-            break
+        if (length(buf) == 0) {
+            stop("timeout trying to read sweep from radarcam")
         }
+        TRUE
+    }, error = function(e) {
+        print(e)
+        end.of.data <<- TRUE
+        FALSE
+    })) {
+        return(NULL)
     }
+
     pos = 1
     GI = function() {
         val = readBin(buf[pos+0:3], integer(), size=4, n=1)
@@ -148,21 +180,7 @@ get.sweep <- function() {
     )
     samples.per.pulse <<- hdr$samples_per_line
     num.pulses <<- hdr$num_output_lines
-    ## accumulate the full data matrix, possibly reading multiple times from the fifo
-    i = 0
     n = samples.per.pulse * num.pulses
-    intbuf = integer()
-    while (n > 0) {
-        try({
-            part = readBin(rcpipe, integer(), min(n, 524288), signed=FALSE, size=1)
-            intbuf = c(intbuf, part)
-            n = n - length(part)
-        }, silent=TRUE)
-        rss.gui(UPDATE_GUI)
-        Sys.sleep(0.0001)
-    }
-    dat <<- matrix(intbuf, samples.per.pulse, num.pulses)
-    options(error=save.error)
     return(hdr)
 }
 
@@ -170,35 +188,54 @@ get.sweep <- function() {
 
 globals = list (
 
-  as.character.radarcam = function(x, ...) {
-    sprintf("radR interface port: %s: %s",
-            MYCLASS,
-            x$name
-            )
-  },
+    as.character.radarcam = function(x, ...) {
+        sprintf("radR interface port: %s: %s",
+                MYCLASS,
+                x$name
+                )
+    },
 
-  print.radarcam = function(x, ...) {
-    ## print a description of this port
-    cat (as.character(x) %:% "\n")
-  },
+    print.radarcam = function(x, ...) {
+        ## print a description of this port
+        cat (as.character(x) %:% "\n")
+    },
 
-  config.radarcam = function(port, ...) {
-    ## nothing to do yet
-    return(port$config)
-  },
+    config.radarcam = function(port, ...) {
+        opts <- list(...)
+        if (length(opts) != 0) {
+            for (opt in names(opts)) {
+                switch(opt,
+                       sweepURL = {
+                           port$config$sweepURL <- opts[[opt]]
+                       },
+                       timeout = {
+                           port$config$timeout <- opts[[opt]]
+                       },
+                       {
+                           rss.plugin.error("radarcam: unknown configuration option for port: " %:% opt)
+                           return(NULL)
+                       }
+                       )
+            }
+        }
+        return(port$config)
+    },
 
-  end.of.data.radarcam = function(port, ...) {
-    ## return TRUE if there is no data left to be read from the device
-    ## (e.g. if digitizing has stopped)
-    return(! file.exists(pipename))
-  },
+    end.of.data.radarcam = function(port, ...) {
+        ## return TRUE if the the last sweep was received more than timeout seconds ago
+        ## (e.g. if capture by radarcam has stopped)
+        return(end.of.data || (last.sweep.ts != 0 && as.numeric(Sys.time() - last.sweep.ts) >= port$config$timeout))
+    },
 
-  get.scan.info.radarcam = function(port, scan.mat, trv, trv.index, ...) {
-    ## gets the header information for the next scan
-    ## (and actually gets the next scan)
+    get.scan.info.radarcam = function(port, scan.mat, trv, trv.index, ...) {
+        ## gets the header information for the next scan
+        ## (and actually gets the next scan)
         port$cur.scan = port$cur.scan + 1
 
         SH = get.sweep()
+        if (is.null(SH)) {
+            return(NULL)
+        }
 
         port$si <- list(pulses = SH$num_output_lines,
 
@@ -227,61 +264,54 @@ globals = list (
                         )
 
         return(port$si)
-  },
+    },
 
-  get.scan.data.radarcam = function(port, extmat, ...) {
-    ## gets the data for the scan whose info was most recently retrieved
-    ## get.scan.info does most of the work.
+    get.scan.data.radarcam = function(port, extmat, ...) {
+        ## gets the data for the scan whose info was most recently retrieved
+        ## get.scan.info does most of the work.
 
-    dim <- c(samples.per.pulse, num.pulses)
-    dim(extmat) <- dim
-    dim(RSS$class.mat) <- dim
-    dim(RSS$score.mat) <- dim
+        dim <- c(samples.per.pulse, num.pulses)
+        dim(extmat) <- dim
+        dim(RSS$class.mat) <- dim
+        dim(RSS$score.mat) <- dim
 
-    extmat[] <- dat[]
+        ## copies the data for the current scan into the extmat
+        ## the data have already been read by get.scan.info
 
-    return (extmat)
-  },
+        if (is.null(buf))
+            return (NULL)
 
-  start.up.radarcam = function(port, restart=FALSE,...) {
-    ## connect to radarcam named pipe
-      while (is.null(rcpipe)) {
-          if (file.exists(pipename)){
-              rcpipe <<- fifo(pipename, "rb", blocking=FALSE)
-          } else {
-              cat(sprintf("No fifo at %s - waiting for radarcam to start\n", pipename))
-              Sys.sleep(2)
-          }
-      }
-      port$is.open <- TRUE
-      have.more.data <<- TRUE
-  },
+        if (!isTRUE(.Call("decompress_sweep", buf, pointer(extmat))))
+            stop("problem decompressing sweep")
 
-  shut.down.radarcam = function(port, ...) {
-    ## shut down this port's multicast listener
-    ## if it has one
+        return(extmat)
+    },
 
-    if (port$is.open) {
-      if (!is.null(rcpipe))
-        close(rcpipe)
+    start.up.radarcam = function(port, restart=FALSE,...) {
+        port$is.open <- TRUE
+        end.of.data <<- FALSE
+    },
 
-      rcpipe <<- NULL
-      have.more.data <<- FALSE
-      port$is.open <- FALSE
+    shut.down.radarcam = function(port, ...) {
+        ## shut down this port's multicast listener
+        ## if it has one
+
+        if (port$is.open) {
+            port$is.open <- FALSE
+        }
+        return(TRUE)
+    },
+
+    new.play.state.radarcam = function(port, new.state, old.state, ...) {
+        ## indicate to this port that radR is
+        ## changing play state.
+
     }
-    return(TRUE)
-  },
 
-  new.play.state.radarcam = function(port, new.state, old.state, ...) {
-    ## indicate to this port that radR is
-    ## changing play state.
-
-  }
-
-  )  ## end of globals
+)  ## end of globals
 
 hooks = list(
-  ) ## end of hooks
+) ## end of hooks
 
 ## additional plugin variables
 
@@ -289,8 +319,8 @@ hooks = list(
 
 port = NULL
 
-## the pipe connecting to radarcam
-rcpipe = NULL
+## timestamp for the last received sweep (if non-zero)
+last.sweep.ts = 0
 
 ## standard parameter values for radarcam
 
@@ -298,7 +328,8 @@ samples.per.pulse = 884
 num.pulses = 0
 bits.per.sample = 8
 
-have.more.data = FALSE
-
 ## sweep buffer
-dat = NULL
+buf = NULL
+
+## flag to mark timeout or error fetching data
+end.of.data = FALSE

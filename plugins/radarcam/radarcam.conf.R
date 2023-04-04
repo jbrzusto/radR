@@ -11,6 +11,8 @@ enabled = TRUE
 ## it is loaded.  TRUE here makes the "enabled" parameter redundant.
 always.enabled = TRUE
 
-## name of pipe from which sweeps are read
-## sweeps are in the same format as used by inradarch, except uncompressed
-pipename = "/tmp/radarcam"
+## url from which to read sweeps
+default.sweepURL = "http://localhost:8080"
+
+## timeout (in seconds) after which the source is deemed "finished"
+default.timeout = 20
