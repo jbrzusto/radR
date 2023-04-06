@@ -16,16 +16,18 @@
 ##
 ################################################################################
 ##
-## radarcam2blips.R:  read radar data from a radarcam named pipe and create a blips.csv and/or a blipmovie and/or tracks files
+## radarcam2blips.R:  read radar data from a radarcam server and create a blips.csv and/or a blipmovie and/or tracks files
 ##
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/radarcam2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] [--duration=SECS] SITE FOLDER
+##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/radarcam2blips.R [--url=URL] [--no-blips] [--no-blipmovie] [--no-tracks] [--duration=SECS] SITE FOLDER
 ##
 ## where SECS indicates how many seconds of data to capture.  SECS=0 means continue indefinitely.
 ## SITE is a prefix for output filenames
 ## FOLDER is where output files will be written
+## URL is the URL where sweeps are served; default is whatever has been saved in the plugin's configuration
+## The factory default is "http://localhost:8080/sweep"
 ##
 ## Blips output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_blips.csv
 ## Blipmovie filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS.bm[.i]
@@ -73,6 +75,14 @@ if (! is.na(i)) {
     duration = 0
 }
 
+i = pmatch("--url", commandArgs())
+if (! is.na(i)) {
+    url = substring(commandArgs()[i], 7)
+} else {
+    url = ""
+}
+cat(sprintf("\nReading sweeps from server at %s", url))
+
 ## extract the dirname from the command line and verify
 ## it's a directory
 
@@ -94,9 +104,12 @@ site = ARGV[n - 1]
 if(show.progress)
   cat(sprintf("\nProcessing live NavNet radar\n"))
 
-## open the inradarch
+## configure the radarcam plugin to read from the specified (or default) url
 
 p = RADARCAM$get.ports()[[1]]
+if (url != "") {
+    config(p, sweepURL=url)
+}
 
 start.up(p)
 

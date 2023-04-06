@@ -12,7 +12,7 @@ enabled = TRUE
 always.enabled = TRUE
 
 ## url from which to read sweeps
-default.sweepURL = "http://localhost:8080"
+default.sweepURL = "http://localhost:8080/sweep"
 
 ## timeout (in seconds) after which the source is deemed "finished"
 default.timeout = 20
