@@ -4,6 +4,8 @@
 *.dll
 *.exe
 *.so
+*.Rdata
+*.o
 CHANGELOG
 LATEST_VERSION_IS*
 plugins/usrp/usrp_radR_plugin.h
