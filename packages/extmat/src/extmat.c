@@ -88,6 +88,11 @@ extmat_create (SEXP name, SEXP type, SEXP size, SEXP dim, SEXP slop) {
 
   m = Calloc(1, t_extmat);
   nbytes = (INTEGER(dim)[0] * INTEGER(dim)[1] + INTEGER(slop)[0]) * INTEGER(size)[0];
+  // 2023-04-05 - perhaps due to a gcc bug, the following cruft added to avoid a SEGV
+  // in strlen
+  const char *xxx = CHAR(STRING_ELT(name, 0));
+  char aaa = xxx[0];
+  // /2023-04-05
   m->name = Calloc(1 + strlen(CHAR(STRING_ELT(name, 0))), char);
   strcpy(m->name, CHAR(STRING_ELT(name, 0)));
   m->R_owns_name = 1; // mark that R is responsible for freeing name storage
