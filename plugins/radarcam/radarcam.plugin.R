@@ -345,7 +345,9 @@ globals = list (
     new.play.state.radarcam = function(port, new.state, old.state, ...) {
         ## indicate to this port that radR is
         ## changing play state.
-
+        if (new.state == RSS$PS$PLAYING) {
+            end.of.data <<- FALSE
+        }
     }
 
 )  ## end of globals
