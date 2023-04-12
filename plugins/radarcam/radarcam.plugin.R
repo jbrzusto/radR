@@ -134,15 +134,14 @@ get.sweep <- function(port) {
     if (!tryCatch({
         start = Sys.time()
         while(as.numeric(Sys.time() - start) < port$config$timeout) {
-            req = sprintf("GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", port$urlpath, port$urlhost)
-            cat(req, file=port$urlcon)
-            rep = readLines(port$urlcon, n=5)
-            n = as.integer(substring(rep[2], 17))
-            buf <<- readBin(port$urlcon, raw(), n=n)
-# DEBUG:            cat(sprintf("Read sweep: %d bytes\n", length(buf)))
+            con = url(port$config$sweepURL, "rb")
+            buf <<- readBin(con, raw(), 10000000)
+            close(con)
             if (length(buf) > 0) {
+                cat(sprintf("Read sweep: %d bytes\n", length(buf)))
                 break
             }
+            Sys.sleep(0.1)
         }
         if (length(buf) == 0) {
             stop("timeout trying to read sweep from radarcam")
