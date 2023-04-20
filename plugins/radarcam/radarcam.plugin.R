@@ -42,7 +42,10 @@ get.ports = function() {
         si                     = NULL,
         cur.run                = 0,
         cur.scan               = 0,
-        prev.scan              = -1
+        prev.scan              = -1,
+        urlcon                 = NULL,
+        urlhost                = NULL,
+        urlpath                = NULL
     ),
     class = c(MYCLASS, "strictenv")))
 }
@@ -104,17 +107,42 @@ get.menus = function() {
     return(rv)
 }
 
-get.sweep <- function() {
-    ## get a sweep from the URL; we assume the encoded sweep as at most 10 000 000 bytes
-    options(warn=2)
-    on.exit(options(warn=0))
+parseURL <- function(url) {
+    re = '^(?:(?P<scheme>https?|ftp):/)?/?(?:(?P<username>.*?)(?::(?P<password>.*?)|)@)?(?P<hostname>[^:/\\s]+)(?::(?P<port>[^/]*))?(?P<path>(?:/\\w+)*/)(?P<filename>[-\\w.]+[^#?\\s]*)?(?P<query>\\?(?:[^#]*))?(?:(?:#(?P<fragment>.*)))?$'
+    cap = regexpr(re, url, perl=TRUE)
+    start = attr(cap, "capture.start")
+    len = attr(cap, "capture.length")
+    end = start + len - 1
+    parts = list()
+    for (x in seq(along=attr(cap, "capture.names"))) {
+        parts[[attr(cap, "capture.names")[x]]] = substring(url, start[x], end[x])
+    }
+    return(parts)
+}
+
+get.sweep <- function(port) {
+    ## get a sweep from the port
+    ## Do manual http fetching because I can't figure out how else to get
+    ## R to persist an http connection, which is needed to play nice with socat
+    ## and also works much more efficiently even with an ssh-tunnelled port.
+    ##
+    ## As of 2023-04-20, the HTTP response from the radarcam sweep server looks like this:
+    ##    HTTP/1.1 200 OK
+    ##    Content-Length: XXXXXX
+    ##    Content-Type: application/radarcam
+    ##    Date: Thu, 20 Apr 2023 12:35:28 GMT
+    ##    [blank line]
+    ##    [XXXXXX bytes of compressed binary radar sweep data]
+
     if (!tryCatch({
         start = Sys.time()
         while(as.numeric(Sys.time() - start) < port$config$timeout) {
-            con = url(port$config$sweepURL, "rb")
-            buf <<- readBin(con, raw(), 10000000)
-            close(con)
-            cat(sprintf("Read sweep: %d bytes\n", length(buf)))
+            req = sprintf("GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", port$urlpath, port$urlhost)
+            cat(req, file=port$urlcon)
+            rep = readLines(port$urlcon, n=5)
+            n = as.integer(substring(rep[2], 17))
+            buf <<- readBin(port$urlcon, raw(), n=n)
+# DEBUG:            cat(sprintf("Read sweep: %d bytes\n", length(buf)))
             if (length(buf) > 0) {
                 break
             }
@@ -232,7 +260,7 @@ globals = list (
         ## (and actually gets the next scan)
         port$cur.scan = port$cur.scan + 1
 
-        SH = get.sweep()
+        SH = get.sweep(port)
         if (is.null(SH)) {
             return(NULL)
         }
@@ -289,6 +317,20 @@ globals = list (
 
     start.up.radarcam = function(port, restart=FALSE,...) {
         port$is.open <- TRUE
+        if (!is.null(port$urlcon)) {
+            close(port$urlcon)
+            port$urlcon = NULL
+        }
+        parts = parseURL(port$config$sweepURL)
+        if (parts$scheme != "http") {
+            stop("can't use an https source for radarcam sweeps")
+        }
+        port$urlcon <- socketConnection(parts$hostname, parts$port, open="a+b", blocking=TRUE)
+        port$urlhost <- parts$hostname
+        if (parts$path == "/") {
+            parts$path = ""  ## otherwise, we get two "//"  at the start of a simple path like "/sweep"
+        }
+        port$urlpath <- file.path(parts$path, parts$filename)
         end.of.data <<- FALSE
     },
 
@@ -298,6 +340,8 @@ globals = list (
 
         if (port$is.open) {
             port$is.open <- FALSE
+            close(port$urlcon)
+            port$urlcon <- NULL
         }
         return(TRUE)
     },
