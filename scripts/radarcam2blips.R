@@ -238,6 +238,9 @@ if (read.parms) {
 
 rbatch.stime = NULL
 
+## output port; created once the first scan is read from input
+po = NULL
+
 ## test whether we are finished, and possibly print progress
 
 rss.add.hook("DONE_SCAN", "rbatch", function(...) {
@@ -272,7 +275,7 @@ rss.add.hook("SCAN_INFO", "rbatch", function(si, ...) {
         ftrk = sub("_blips", "_tracks", fob)
 
         if (do.bm) {
-            po = BLIPMOVIE$get.ports()[[2]]
+            po <<- BLIPMOVIE$get.ports()[[2]]
             ## set the port for output
             rss.set.port(po, filename=fobm)
 
