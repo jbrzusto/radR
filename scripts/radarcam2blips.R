@@ -296,7 +296,7 @@ rss.add.hook("SCAN_INFO", "rbatch", function(si, ...) {
             cat("Will create tracks file: ", ftrk, "\n")
         }
     }
-})
+}, read.only=FALSE)
 
 
 ## pretend we hit play
