@@ -82,7 +82,7 @@ getSweep = function(f, port) {
         altitude             = GI(), ## mm from datum
         pl_mode              = GI(), ## pulse length table entry record number
         pl_name              = GS(16),
-        magic                = GI(), ## inrad magic number: 0x07fe03fa
+        magic                = GI()  ## inrad magic number: 0x07fe03fa
         )
 
     return(sweepHeader)
