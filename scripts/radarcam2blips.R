@@ -278,7 +278,9 @@ rss.add.hook("SCAN_INFO", "rbatch", function(si, ...) {
             po <<- BLIPMOVIE$get.ports()[[2]]
             ## set the port for output
             rss.set.port(po, filename=fobm)
-
+            start.up(po)
+            start.run(po)
+            RSS$sink.run.started = TRUE
             RSS$recording = TRUE
             cat("Will create blipmovie: ", fobm, "\n")
         }
