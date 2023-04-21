@@ -86,9 +86,7 @@ get.menus = function() {
                   val.check = function(x)TRUE,
                   on.set = function(x) {
                       default.sweepURL <<- x
-                      if (inherits(RSS$source, MYCLASS)) {
-                          config(RSS$source, sweepURL=x)
-                      }
+                      config(port, sweepURL=x)
                   }
                   ),
             list ("gauge",
@@ -96,10 +94,9 @@ get.menus = function() {
                   range = c(5, 300),
                   increment = 5,
                   value = default.timeout,
-                  on.set = function(x) { default.timeout <<- x
-                      if (inherits(RSS$source, MYCLASS)) {
-                          config(RSS$source, timeout=default.rotation)
-                      }
+                  on.set = function(x) {
+                      default.timeout <<- x
+                      config(port, default.timeout=x)
                   }
                   )
             ))
