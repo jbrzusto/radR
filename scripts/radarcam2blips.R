@@ -297,6 +297,7 @@ rss.add.hook("SCAN_INFO", "rbatch", function(si, ...) {
             TRACKER$csv.filename <- ftrk
             cat("Will create tracks file: ", ftrk, "\n")
         }
+        rss.drop.hook("SCAN_INFO", "rbatch")
     }
 }, read.only=FALSE)
 
