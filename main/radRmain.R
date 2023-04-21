@@ -71,7 +71,7 @@ rss.process.scan <- function(filter.noise     = FALSE,
   }
 
   .Call("radR_filter_noise", RSS$scan.mat, RSS$noise.cutoff)
-  
+
   if (RSS$blip.finding) {
     ## try to find blips in this scan
 
@@ -174,7 +174,7 @@ rss.event.loop <- function(run.once = TRUE)
 {
   scan.index <- 0
   while(TRUE) {  ## loop forever, unless run.once is TRUE
-    
+
     ## if "playing", try to read a scan; this may spawn a getter
     ## thread which allows UI events to be processed in the main
     ## thread, but the getter thread will terminate before
@@ -197,7 +197,7 @@ rss.event.loop <- function(run.once = TRUE)
 
     if (RSS$play.state >= RSS$PS$PLAYING || scan.index != 0) {
       rss.call.hooks(RSS$PRE_GET_SCAN_HOOK)
-    
+
       if (isTRUE(end.of.data(RSS$source)) || ! isTRUE(rss.get.scan())) {
         rss.gui(PAUSE_PLAY, user.generated=FALSE)
         rss.do.pause()
@@ -299,7 +299,7 @@ rss.event.loop <- function(run.once = TRUE)
 ###.endif
 
     ## if we are to skip this scan, do so
-    
+
     if (RSS$skip$all.processing) {
       if (! previewing)
         RSS$skip$all.processing <- FALSE
@@ -616,17 +616,17 @@ rss.get.scan <- function()
       ## the methods to spawn threads, because some sources do not get
       ## full metadata until they have acquired a full scan of data.
       ## So each get.scan.info does one of the following:
-      
+
       ##  - sets trv[trv.index] to NA, indicating a threaded read, and
       ##    returns NA. In this case,we wait until trv[trv.index] is
       ##    no longer NA, at which point it is NULL for failure and
       ##    anything else for success
-      
+
       ##  - does not set trv[trv.index] to NA_INTEGER, in which
       ##    case, the return value itself indicates failure (with
       ##    NULL) or success (anything else).  It is unsafe to return
       ##    NA in this situation.
-      
+
       ## Note that this violates R's call-by-value semantics, as the
       ## thread will modify a variable (not a binding!) in the
       ## caller's environment.
@@ -641,12 +641,12 @@ rss.get.scan <- function()
       ## we use '[1] <- list(' in the following because get.scan.info
       ## might return NULL, and we want to put a NULL in the appropriate slot of rv,
       ## rather than remove that slot from rv.
-      
+
       rv[1] <- list(get.scan.info(RSS$source, RSS$new.scan.mat, trv=trv, trv.index=1L))
 
       ## how to call get.scan.info for another source
       ## trv[2] <- list(get.scan.info(RSS$other.source, RSS$other.scan.mat, rv=trv, rv.index=2L))
-      
+
       ## Wait until any spawned threads have completed, updating the gui as we go.
 
       if (any(is.na(rv))) {
@@ -661,9 +661,9 @@ rss.get.scan <- function()
     }
 
     ## For now, we are using only a single source, so use its scan info from here onwards
-    
+
     si <- trv[[1]]
-    
+
     if (is.null(si)) {
       ## get.scan.info failed, probably because there is no more data
       rv <- FALSE
@@ -693,7 +693,7 @@ rss.get.scan <- function()
       ## create the per-pulse metadata from scan info
 
       rss.build.pulse.table()
-      
+
       ## set validity flags; this must be done before get.scan.data() is called, since some
       ## sources (e.g. blipmovies) set one or more to TRUE
 
@@ -707,23 +707,23 @@ rss.get.scan <- function()
       ## its extmat argument, which it returns on success (it
       ## returns NULL on failure).  So each get.scan.data does one
       ## of the following:
-      
+
       ##  - sets trv[trv.index] to NA, indicating a threaded read;
       ##    in this case, the return value of get.scan.data is
       ##    ignored, and we wait until trv[trv.index] is no longer
       ##    NA, at which point it is NULL for failure and anything
       ##    else for success
-      
+
       ##  - does not set trv[trv.index] to NA_INTEGER, in which
       ##    case, the return value itself indicates failure (with
       ##    NULL) or success (anything else).
-      
+
       ## Note that this violates R's call-by-value semantics, as the thread will modify
       ## a variable in the caller's environment.
 
       ## Create a list with a NULL entry for each source
       trv <- vector("list", num.sources)
-      
+
       ## Get from the (for now) single source.
       ## we use '[1] <- list(' in the following because get.scan.data
       ## might return NULL, and we want to put a NULL in the appropriate slot of rv,
@@ -732,7 +732,7 @@ rss.get.scan <- function()
       trv[1] <- list(get.scan.data(RSS$source, RSS$new.scan.mat, trv, trv.index=1L))
 
       RSS$current.scan <- RSS$current.scan + 1
-      
+
       ## Wait until any spawned threads have completed, updating the gui as we go.
 
       while (any(is.na(trv))) {
@@ -742,7 +742,7 @@ rss.get.scan <- function()
       }
 
       ## for now, we're only using one source, so check its return value
-      
+
       if (!is.null(trv[[1]])) {
         ## swap the prev and current scan data (pointers)
         tmp <- RSS$scan.mat
@@ -853,7 +853,7 @@ rss.process.patches <- function()
   ## of those patches which are blips
 
   is.rect <- isTRUE(RSS$scan.info$is.rectangular)
-  
+
   RSS$blips <- .Call("radR_process_patches",
               RSS$blip.filtering,
               RSS$scan.mat,
@@ -877,7 +877,7 @@ rss.process.patches <- function()
               RSS$pulses,
               is.rect,
               PACKAGE="radR")
- 
+
   return(length(RSS$blips))
 }
 
@@ -938,7 +938,7 @@ rss.update.stats <- function()
   ## (Note that "left" represents the count before the most
   ## recent call to radR_update_stats, so left<=1 means we've
   ## finished learning.)
-  
+
   RSS$have.valid$stats <- left <= 1
 }
 
@@ -955,8 +955,10 @@ rss.set.port <- function(port, ...)
   }
   config(port, ...)
   ok <- FALSE
-  try( {
-    rss.restart.learning()
+    try( {
+    if (which == "source") {
+        rss.restart.learning()
+    }
     if (!is.null(start.up(port))) {
       RSS[[which]] <- port
       if (port$is.source) {
@@ -1235,7 +1237,7 @@ rss.intersect.ranges <- function(r1, r2) {
 
 rss.provide.scan.info <- function(si) {
   si$noise.cutoff <- RSS$noise.cutoff
-  
+
   ## provide scan info parameters dealing with blip processing
   if (RSS$blip.finding) {
     si[RSS$blip.finding.parms] <- RSS[RSS$blip.finding.parms]
@@ -1254,7 +1256,7 @@ rss.provide.scan.info <- function(si) {
     ## If we're filtering with an expression, record that expression.
     ## If the data already were filtered, then record the logical conjunction
     ## ("and") of the original filtering expression with the current one.
-    
+
     if (RSS$use.blip.filter.expr) {
       if (is.null(si$blip.filter.expr))
         si$blip.filter.expr <- RSS$blip.filter.expr
