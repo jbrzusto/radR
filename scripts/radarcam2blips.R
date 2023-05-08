@@ -79,7 +79,7 @@ i = pmatch("--url", commandArgs())
 if (! is.na(i)) {
     url = substring(commandArgs()[i], 7)
 } else {
-    url = ""
+    url = RADARCAM$default.sweepURL
 }
 cat(sprintf("\nReading sweeps from server at %s", url))
 
