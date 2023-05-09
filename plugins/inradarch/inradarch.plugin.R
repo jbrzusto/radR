@@ -28,6 +28,19 @@ about = function() {
     return(plugin.label)
 }
 
+## constants for correction of range_per_sample recorded by radarcam
+## from NavNet radars while there was a bug in radarcam's range calculation.
+## This period can be detected by these criteria:
+## - time_stamp_seconds > 2022-01-01
+## AND
+## - rev_number < 1.0.1
+## minimum time for range correction
+range.correct.ts = ymd_hms("2022-01-01T00:00:00")
+## max version for range correction
+range.correct.version = 0x010000
+## factor to correct range
+range.correct.factor = 884/496
+
 getSweep = function(f, port) {
     ##!@param f filename
     ##!@param port; port whose scan.data variable will store compressed data
@@ -85,6 +98,10 @@ getSweep = function(f, port) {
         magic                = GI()  ## inrad magic number: 0x07fe03fa
         )
 
+    ## correct range_per_sample; for a brief period, sweeps from
+    if (sweepHeader$rev_number < range.correct.version && sweepHeader$time_stamp_seconds > range.correct.ts) {
+        sweepHeader$range_per_sample = sweepHeader$range_per_sample * range.correct.factor
+    }
     return(sweepHeader)
 }
 
