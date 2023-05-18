@@ -2006,8 +2006,8 @@ rss.convert.scan <- function(reconv,
 
 rss.plugin.error <- function(msg) {
   ## a plugin has generated an error
-  RSS$R.level.error <- RSS$errors$PLUGIN_ERROR
-  RSS$R.level.error.msg <- msg
+  RSS%$!%R.level.error <- RSS$errors$PLUGIN_ERROR
+  RSS%$!%R.level.error.msg <- msg
 }
 
 rss.plot.data.source <- function() {
