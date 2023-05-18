@@ -283,8 +283,10 @@ calc_nn_gain (t_mfc_problem *p, t_mfc_point *u, t_mfc_point *v, int cons_scan) {
   double dist = MAG(u->x - v->x, u->y - v->y, u->z - v->z);
   double rv;
 
-  if (fabs(v->x) > 10000 || fabs(u->x) > 10000 || fabs(u->t) < 1e9 || fabs(v->t) < 1e9)
+#ifdef RADR_DEBUG
+  if (fabs(v->x) > 200000 || fabs(u->x) > 200000 || fabs(u->t) < 1e9 || fabs(v->t) < 1e9)
     printf("******* WARNING: likely wrong coordinate ordering in calc_nn_gain");
+#endif
 
   if (fabs(v->t - u->t) < 0.001) {
 #ifdef RADR_DEBUG
