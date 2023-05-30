@@ -19,7 +19,7 @@ date.guess.format = "%Y-%m-%d %H-%M-%OS"
 
 ## in order to recognize the presence of a date in the base filename,
 ## we use a regular expression compatible with date.guess.format
-date.guess.regexp = "((19)|20)[0-9][0-9]-[0-9]?[0-9]-[0-9]?[0-9] [0-9]?[0-9]-[0-9]?[0-9]-[0-9]?[0-9]"
+date.guess.regexp = "((19)|20)[0-9][0-9]-[0-9]?[0-9]-[0-9]?[0-9][ T][0-9]?[0-9]-[0-9]?[0-9]-[0-9]?[0-9](\\.[0-9]*)?"
 
 ## regardless of the video's frame rate, at what rate do we grab frames for processing in radR?
 ## this is in frames per second

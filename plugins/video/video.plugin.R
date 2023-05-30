@@ -396,13 +396,15 @@ globals = list (
     GUI$plot.title.date.format <- plot.title.date.format
     gui.set.coord.tx(plot.to.matrix = tx.plot.to.matrix, plot.to.spatial = tx.plot.to.spatial, matrix.to.spatial = tx.matrix.to.spatial)
     rss.enable.hook("PATCH_STATS", MYCLASS)
-    port$duration <- get.video.duration(port$config$filename)
+    fn = port$config$filename
+    port$duration <- get.video.duration(fn)
     if (is.null(port$start.time)) {
-      split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$config$filename, perl=TRUE)
+      split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), fn, perl=TRUE)
       if (split[1] != -1) {
-        port$start.time <- strptime(substring(port$config$filename, split), date.guess.format)
+        fn = sub("T", " ", fn)
+        port$start.time <- as.POSIXct(strptime(substring(fn, split), date.guess.format))
       } else {
-        port$start.time <- file.info(port$config$filename)$ctime
+        port$start.time <- file.info(fn)$ctime
       }
       gui.video.start.time(port$start.time)
     }
