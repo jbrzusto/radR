@@ -15,7 +15,7 @@ always.on = FALSE
 
 ## for guessing timestamps from the base filename, we use a strptime-compatible
 ## format string:
-date.guess.format = "%Y-%m-%d %H-%M-%S"
+date.guess.format = "%Y-%m-%d %H-%M-%OS"
 
 ## in order to recognize the presence of a date in the base filename,
 ## we use a regular expression compatible with date.guess.format
