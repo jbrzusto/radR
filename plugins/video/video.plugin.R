@@ -406,7 +406,8 @@ globals = list (
       } else {
         port$start.time <- file.info(fn)$ctime
       }
-      gui.video.start.time(port$start.time)
+      if (exists("gui.video.start.time"))
+          gui.video.start.time(port$start.time)
     }
     ns = as.integer(floor(as.numeric(port$duration) * port$config$frame.rate))
 
