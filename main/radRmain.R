@@ -170,8 +170,11 @@ rss.process.scan <- function(filter.noise     = FALSE,
 ###
 ################################################################################
 
+quit.event.loop <- FALSE
+
 rss.event.loop <- function(run.once = TRUE)
 {
+  quit.event.loop <<- FALSE
   scan.index <- 0
   while(TRUE) {  ## loop forever, unless run.once is TRUE
 
@@ -281,7 +284,7 @@ rss.event.loop <- function(run.once = TRUE)
     ## re-run the loop; or bail out
 
     if (!RSS$have.valid$scan.data || (RSS$play.state < RSS$PS$PLAYING && (RSS$have.previewed.scan || RSS$have.processed.scan))) {
-      if (run.once) {
+      if (run.once || quit.event.loop) {
         break
       } else {
         rss.sleep(RSS$event.loop.sleeptime)
@@ -323,8 +326,8 @@ rss.event.loop <- function(run.once = TRUE)
     if (RSS$play.state < RSS$PS$PLAYING)
       rss.sleep(RSS$event.loop.sleeptime)
 
-    if(run.once)
-      break
+    if(run.once || quit.event.loop)
+        break
   }
 }
 
