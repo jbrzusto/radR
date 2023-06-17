@@ -1,7 +1,7 @@
 ##  svn $Id: batchparm.R 682 2010-11-22 16:31:45Z john $
 ##
 ##  radR : an R-based platform for acquisition and analysis of radar data
-##  Copyright (C) 2006-2009 John Brzustowski        
+##  Copyright (C) 2006-2009 John Brzustowski
 ##
 ##  This program is free software; you can redistribute it and/or modify
 ##  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@
 
 ## There are six sections:  blip filtering, tracking generic, tracking model, antenna,
 ## declutter, zonefile.
-## Each section and each parameter is optional; those not specified here are 
+## Each section and each parameter is optional; those not specified here are
 ## taken from the corresponding .conf.R files in your radR folders.
 ## Exception: the zonefile just specifies the name of a file with zone information.
 
@@ -41,7 +41,7 @@ list (
 ################################################################################
 ###
 ### blip finding (from main/radR.conf.R)
-###      
+###
 ################################################################################
 
       find = list (
@@ -50,7 +50,7 @@ list (
         ## values less than this value to be zero).  No effect if noise.cutoff==0
 
         noise.cutoff = 0,
-        
+
         ## Are we finding blips?  Counter-intuitively, this should be TRUE for both
         ## blipmovies and raw archives.
 
@@ -63,7 +63,7 @@ list (
         ## What is the weight of past mean, deviation when updating with new estimates?
         ## 0 means use only the new estimate; 1 means ignore the new estimate and
         ## preserve the old estimate; intermediate values mean k * old estimate + (1-k) * new estimate
-        ## 
+        ##
 
         stats.k = 0.95,
 
@@ -83,28 +83,28 @@ list (
         ## than normal reflectivity is treated as "hot".  For grayscale video,
         ## we're interested in things either brighter or darker than the
         ## background, so we'd use something like -2.5 for the low threshold.
-        
+
         blip.score.threshold = c(2.5, -128),
 
         ## should blip samples be excluded from updating their stats cell?
         ## This should be TRUE to avoid biasing estimates of background
         ## echoes in the presence of slow-moving targets.
-        
+
         blip.exclude.blips.from.stats.update = TRUE
 
         ),
-        
-        
+
+
 ################################################################################
 ###
 ### blip filtering (from main/radR.conf.R)
-###      
+###
 ################################################################################
 
       blip = list (
-        
+
         ## Are we filtering blips in scans? (i.e. do the following minmax ranges apply?)
-        
+
         blip.filtering = FALSE,
 
         ## To be called a "blip", a contiguous patch of hot samples must
@@ -145,12 +145,12 @@ list (
 ### generic track building (from plugins/tracker/tracker.conf.R)
 ###
 ################################################################################
-      
+
       ## tracker = list (
       ##   ## are tracks written to the .CSV file?
 
       ##   save.to.csv = TRUE,
-        
+
       ##   ## the date/time format to use for the CSV track output
       ##   ## file.  This must include the date and time formats
       ##   ## separated by a comma, in order to be consistent
@@ -162,9 +162,9 @@ list (
       ##   ## Blips whose positions in time and space imply a speed
       ##   ## between them larger than this are not joined into
       ##   ## the same track.
-        
+
       ##   track.max.speed = 100,
-        
+
       ##   ## minimum number of blips in a track for it to be saved
 
       ##   track.min.blips = 4
@@ -174,7 +174,7 @@ list (
 ################################################################################
 ###
 ###  multiframe correspondence track-building model config
-###  (from plugins/tracker/multiframecorr.conf.R)      
+###  (from plugins/tracker/multiframecorr.conf.R)
 ###
 ################################################################################
 
@@ -196,7 +196,7 @@ list (
       ##   ## edge connecting blips in non-consecutive scans; this
       ##   ## is meant to prevent exclusion of blips from perfectly
       ##   ## straight-line tracks
-        
+
       ##   eps = 0.001,
 
       ##   ## the minimum gain (between 0 and 1) required for a blip
@@ -215,14 +215,14 @@ list (
 ################################################################################
 
       ## antenna = list (
-        
+
       ##   ## Antenna type.
       ##   ## This must be one of:
       ##   ##   "dish" - a parabolic dish
       ##   ##   "tbar" - an open-array T-bar antenna
 
       ##   antenna.type = "dish",
-        
+
       ##   ## Angle of the antenna axis above the horizontal, in degrees.
       ##   ## (should be 0 if type == "tbar")
 
@@ -237,7 +237,7 @@ list (
       ##   ## Vertical aperture of the antenna, in degrees.  This is the
       ##   ## angular height of the instantaneous region "seen" by the
       ##   ## antenna.  (should equal aperture.h if type == "dish")
-        
+
       ##   antenna.aperture.v = 3,
 
       ##   ## Geographic location of the radar.  This will be overridden by
@@ -247,11 +247,11 @@ list (
       ##   ## latitude, in degrees North (negative for South of the equator)
 
       ##   latitude = 43.5,
-        
+
       ##   ## longitude, in degrees West (negative for east of Greenwich)
 
       ##   longitude = -65.7,
-        
+
       ##   ## elevation, in metres above sea level
 
       ##   elevation = 50,
@@ -305,4 +305,25 @@ list (
 ################################################################################
 
       ## zonefile = "zones/default.zone.R"
+
+################################################################################
+###
+###  video config (from plugins/video/video.conf.R)
+###
+################################################################################
+
+      ## video = list (
+
+      ##  default.width = 320,            ## video is resampled to these dimensions and frame rate
+
+      ##  default.height = 200,
+
+      ##  default.frame.rate = 1,
+
+      ##  ## one way to obtain differences between consecutive frames
+      ##  default.ffmpeg.options.before.input = "-filter_complex 'format = gbrp, tblend=all_mode=difference'",
+
+      ##  ## a different way to obtain differences: frame - average of preceding and following frames
+      ##  ## you probably don't want to use both of these methods at the same time
+      ##  default.ffmpeg.optios.before.output = "-vf tmix=frames=3:weights=\"-1 2 -1\":scale=1",
       )
