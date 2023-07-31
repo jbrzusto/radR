@@ -87,6 +87,11 @@ site = ARGV[n - 1]
 if(show.progress)
     cat(sprintf("\nProcessing inradarch dir %-63s\n", folder))
 
+## early disable of tracker plugin to avoid creating empty files
+if (!do.tracks) {
+    rss.disable.plugin("tracker")
+}
+
 ## open the inradarch
 
 p = INRADARCH$get.ports()[[1]]
@@ -168,10 +173,7 @@ if (do.tracks) {
     TRACKER$track.filename <- sub(".csv", "", ftrk)
     TRACKER$csv.filename <- ftrk
     cat("Will create tracks file: ", ftrk, "\n")
-} else {
-    rss.disable.plugin("tracker")
 }
-
 
 ## Read parameters values from the file specified by
 ##
