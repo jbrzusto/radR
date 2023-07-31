@@ -136,7 +136,7 @@ fob = sprintf("%s_%s_to_%s_blips.csv",
 
 fobm = sub("_blips.csv$", ".bm", fob)
 ftrk = sub("_blips", "_tracks", fob)
-fsql = sub("_.csv$", ".sqlite", fob)
+fsql = sub(".csv$", ".sqlite", fob)
 
 if (do.bm) {
     po = BLIPMOVIE$get.ports()[[2]]
@@ -151,12 +151,16 @@ if (do.csv) {
     rss.enable.plugin("saveblips")
     SAVEBLIPS$blip.filename = fob
     cat("Will create blips file: ", fob, "\n")
+} else {
+    rss.disable.plugin("saveblips")
 }
 
 if (do.sqlite) {
     rss.enable.plugin("blipsql")
     BLIPSQL$blip.filename = fsql
     cat("Will create sqlite blip database: ", fsql, "\n")
+} else {
+    rss.disable.plugin("blipsql")
 }
 
 if (do.tracks) {
@@ -164,6 +168,8 @@ if (do.tracks) {
     TRACKER$track.filename <- sub(".csv", "", ftrk)
     TRACKER$csv.filename <- ftrk
     cat("Will create tracks file: ", ftrk, "\n")
+} else {
+    rss.disable.plugin("tracker")
 }
 
 
