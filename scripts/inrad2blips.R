@@ -21,7 +21,7 @@
 ## This is run from the main radR directory like so:
 ##
 ##   cd radR
-##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/inrad2blips.R [--no-blips] [--no-blipmovie] [--no-tracks] SITE DIR1 ... DIRN
+##   rbatch [--no-progress] [--parm PARMFILE] --script scripts/inrad2blips.R [--sqlite] [--no-blips] [--no-blipmovie] [--no-tracks] SITE DIR1 ... DIRN
 ##
 ## where SITE is a site code and DIR1 .. DIRN are folders of inradarch sweeps.  This
 ## script runs with a single DIRn parameter.
@@ -29,6 +29,7 @@
 ## Blips output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_blips.csv
 ## Blipmovie filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS.bm[.i]
 ## Track output filenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_tracks.csv
+## Blip sqlite outputfilenames will be SITE_YYYY-MM-DDTHH-MM-SS_to_YYYY-MM-DDTHH-MM_SS_blips.sqlite
 ##
 ## SITE can contain a path, e.g. /media/radar/output_data/CANV
 
@@ -59,11 +60,11 @@ do.overrides = function(what, where, over, then.do=function(...){}, valid=names(
 
 show.progress = !is.na(match("--show-progress", commandArgs()))
 do.csv = is.na(match("--no-blips", commandArgs()))
+do.sqlite = !is.na(match("--sqlite", commandArgs())
 do.bm  = is.na(match("--no-blipmovie", commandArgs()))
 do.tracks  = is.na(match("--no-tracks", commandArgs()))
-
-if (! do.csv && ! do.bm && ! do.tracks)
-    stop("Error: you specified --no-blips AND --no-blipmovie AND --no-tracks, which means I have nothing to do!")
+if (! do.csv && ! do.bm && ! do.tracks && !do.sqlite)
+    stop("Error: you specified --no-blips AND --no-blipmovie AND --no-tracks AND did not specify --sqlite, which means I have nothing to do!")
 
 ## extract the dirname from the command line and verify
 ## it's a directory
@@ -72,7 +73,7 @@ ARGV = commandArgs(trailingOnly = TRUE)
 n = length(ARGV)
 if (n < 2)
     stop("Error: you need to specify sitename and directory")
-    
+
 folder = ARGV[n]
 
 if (! file.exists(folder))
@@ -116,7 +117,7 @@ rss.set.port(p)
 ## seek to the start of the first scan in the first run
 seek.scan(p, 1, 1)
 
-for (plug in c(if (do.csv) "saveblips", if (do.bm) "blipmovie", if (do.tracks) "tracker")) {
+for (plug in c(if (do.csv) "saveblips", if (do.bm) "blipmovie", if (do.tracks) "tracker", if(do.sqlite) "blipsql")) {
     if (!exists(toupper(plug))) {
         rss.load.plugin(plug)
         warning("The ", plug, " plugin was not loaded by default, so I loaded it.")
@@ -135,6 +136,7 @@ fob = sprintf("%s_%s_to_%s_blips.csv",
 
 fobm = sub("_blips.csv$", ".bm", fob)
 ftrk = sub("_blips", "_tracks", fob)
+fsql = sub("_.csv$", ".sqlite", fob)
 
 if (do.bm) {
     po = BLIPMOVIE$get.ports()[[2]]
@@ -149,6 +151,12 @@ if (do.csv) {
     rss.enable.plugin("saveblips")
     SAVEBLIPS$blip.filename = fob
     cat("Will create blips file: ", fob, "\n")
+}
+
+if (do.sqlite) {
+    rss.enable.plugin("blipsql")
+    BLIPSQL$blip.filename = fsql
+    cat("Will create sqlite blip database: ", fsql, "\n")
 }
 
 if (do.tracks) {
@@ -229,7 +237,7 @@ if (read.parms) {
   }
 
   ## do any tracker overrides
-  
+
     if (length(x$tracker) > 0)
     do.overrides("tracker plugin",
                  TRACKER,
