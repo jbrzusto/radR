@@ -82,6 +82,8 @@ rss.process.scan <- function(filter.noise     = FALSE,
 
       if (calculate.scores && !RSS$skip$calculate.scores) {
         ## calculate the z-scores of all samples
+        dim(RSS$mean.mat) <- ceiling(dim(RSS$scan.mat) / RSS$cell.dims)
+        dim(RSS$dev.mat) <- ceiling(dim(RSS$scan.mat) / RSS$cell.dims)
         rss.calculate.scores()
       }
 
