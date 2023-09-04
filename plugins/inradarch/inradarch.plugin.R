@@ -41,7 +41,7 @@ range.correct.version = 0x010000
 ## factor to correct range
 range.correct.factor = 884/496
 
-getSweep = function(f, port) {
+getSweep = function(f, port, extmat) {
     ##!@param f filename
     ##!@param port; port whose scan.data variable will store compressed data
     ##
@@ -98,10 +98,16 @@ getSweep = function(f, port) {
         magic                = GI()  ## inrad magic number: 0x07fe03fa
         )
 
-    ## correct range_per_sample; for a brief period, sweeps from
+    ## correct range_per_sample; for a brief period, sweeps from system76s running radarcam had
+    ## the wrong range scaling.
     if (sweepHeader$rev_number < range.correct.version && sweepHeader$time_stamp_seconds > range.correct.ts) {
         sweepHeader$range_per_sample = sweepHeader$range_per_sample * range.correct.factor
     }
+    dim(extmat) <- c(sweepHeader$samples_per_line, sweepHeader$num_output_lines)
+    if (!isTRUE(.Call("decompress_sweep", port$scan.data, pointer(extmat))))
+        return(NULL)
+
+    ## check for partial sweep; if for some reason the
     return(sweepHeader)
 }
 
@@ -215,45 +221,40 @@ globals = list (
         port$cur.scan >= port$contents$num.scans[port$cur.run]
     },
 
-    get.scan.info.inradarch = function(port, ...) {
+    get.scan.info.inradarch = function(port, extmat, ...) {
         ## gets the header information for the next scan
-
-        port$cur.scan = port$cur.scan + 1
-
-        SH = getSweep(port$files[port$cur.scan], port)
-
-        port$si <- list(pulses = SH$num_output_lines,
-
+        ## we skip any corrupt scans
+        while (port$cur.scan < port$contents$num.scans[port$cur.run]) {
+            port$cur.scan = port$cur.scan + 1
+            SH = getSweep(port$files[port$cur.scan], port, extmat)
+            if (is.null(SH)) {
+                ## corrupt or missing scan
+                warning(sprintf("skipping partial or corrupt scan in %s", port$files[port$cur.scan]))
+                next
+            }
+            port$si <- list(pulses = SH$num_output_lines,
                         samples.per.pulse = SH$samples_per_line,
-
                         bits.per.sample = 8 * (SH$data_size / (SH$samples_per_line * SH$num_output_lines)),
-
                         timestamp = structure(SH$time_stamp_seconds + SH$time_stamp_useconds / 1e6, class=class(Sys.time())),
-
                         duration = SH$scan_duration / 1e6,
-
                         sample.dist = SH$range_per_sample / 1e3,
-
                         first.sample.dist = SH$start_range / 1e3,
-
                         bearing = SH$heading,
-
                         orientation = +1,
-
                         is.rectangular = FALSE,
-
                         adc.gain = SH$adc_gain,
-
                         adc.offset = SH$adc_offset
-
                         )
 
-        return(port$si)
+            return(port$si)
+        }
+        return(NULL)
     },
 
     get.scan.data.inradarch = function(port, extmat, ...) {
-        ## copies the data for the current scan into the extmat
-        ## the data have already been read by get.scan.info
+        ## returns the data for the current scan, which have already
+        ## been put into the extmat by get.scan.info
+        ## Just ensure the class and score mats have the correct size
 
         if (is.null(port$scan.data))
             return (NULL)
@@ -263,12 +264,8 @@ globals = list (
         if (is.null(dim))
             stop("calling get.scan.data when RSS$scan.info has NULL dimension info")
 
-        dim(extmat) <- dim
         dim(RSS$class.mat) <- dim
         dim(RSS$score.mat) <- dim
-
-        if (!isTRUE(.Call("decompress_sweep", port$scan.data, pointer(extmat))))
-            stop("problem decompressing sweep")
 
         return(extmat)
     },
