@@ -99,7 +99,6 @@ rss.process.scan <- function(filter.noise     = FALSE,
         ## look for patches of hot samples
 
         RSS$num.patches <- rss.find.patches()
-
       if (process.patches && !RSS$skip$process.patches)
         ## process the patches, including filtering them to get blips
         ## any calling per-blip hooks
@@ -677,7 +676,9 @@ rss.get.scan <- function()
 ###.if $DEBUG
       print("Got scan info " %:% si$timestamp)
 ###.endif
-
+      if (is.null(si$image.rotation)) {
+        si$image.rotation = 0
+      }
       ## allow any plugins to provide additional scan information
       ## (e.g. GPS, weather station, NMEA...), or overwrite existing
       ## items (e.g. blip.samples.minmax might be coming from the blipmovie,
@@ -877,10 +878,12 @@ rss.process.patches <- function()
                 RSS$scan.info$bearing + RSS$scan.info$bearing.offset,
                 RSS$scan.info$orientation,
                 RSS$scan.info$first.sample.dist / RSS$scan.info$sample.dist,
-                2^RSS$scan.info$bits.per.sample - 1
+                2^RSS$scan.info$bits.per.sample - 1,
+                RSS$scan.info$image.rotation
                 ),
               RSS$pulses,
               is.rect,
+              RSS$scan.info$origin,
               PACKAGE="radR")
 
   return(length(RSS$blips))

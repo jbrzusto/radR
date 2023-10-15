@@ -1,7 +1,7 @@
 /*  svn $Id: radR.c 803 2011-06-19 00:42:21Z john $
 
     radR : an R-based platform for acquisition and analysis of radar data
-    Copyright (C) 2006-2009 John Brzustowski        
+    Copyright (C) 2006-2009 John Brzustowski
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,12 +69,12 @@ int_wrapped_pointer_to_sexp(SEXP s) {
   // which is represented as an integer in s
 
   // DANGEROUS!! and only works on systems where sizeof(int) == sizeof(void *)
-  
+
   return (SEXP) INTEGER(AS_INTEGER(s))[0];
 }
 // #endif
 
-/* 
+/*
 
 An atomic (with respect to tcltk) operation for setting the value of
 a global variable and returning its previous value. This is to avoid the
@@ -133,15 +133,15 @@ extern __declspec(dllimport) void (* R_tcldo)();
 SEXP
 radR_critical_eval(SEXP expr, SEXP rho)
 {
-/* 
+/*
    radR_critical_eval: evaluate an R expression in an environment
    without interference from other "threads".
 
-   Win32:  just disable the callbacks to 
+   Win32:  just disable the callbacks to
    Tcl_ServiceAll() that occur at regular intervals in R's eval()
 
    unix:   just call eval as usual
-*/   
+*/
 
   SEXP rv;
 #ifdef WIN32
@@ -170,7 +170,7 @@ radR_critical_eval(SEXP expr, SEXP rho)
 #define MAX_R_FUNCTION_ARGS 32
 
 /*
-   call an R function passing it a sequence of up to 
+   call an R function passing it a sequence of up to
    MAX_R_FUNCTION_ARGS protected SEXPs (typically t_extmat wrapped as EXTPTR_SEXPs with class("extmat"))
 
    name - the name of the R function
@@ -260,7 +260,7 @@ make_R_vector(int sxp_type, int n, ... )
       break;
     }
   }
-    
+
   UNPROTECT(1);
   return(rv);
 }
@@ -270,12 +270,12 @@ make_R_vector(int sxp_type, int n, ... )
    determine whether there is at least one defined and enabled function
    for the given hook type.
 
-   hook - the integer corresponding to the hook type; must 
+   hook - the integer corresponding to the hook type; must
               be one of the RADR_HOOK... constants defined in radRshared.h
 */
 
 int
-is_R_hook_active(int hook) 
+is_R_hook_active(int hook)
 {
 
   SEXP rv;
@@ -331,7 +331,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
   //                          UPDATE = use decay constant to blend this scan's mean and SD with existing values
   // numlearningscanssxp: integer scalar: number of scans learned so far, not counting current call;
   //                          only used when mode is LAST_ACCUM
-  // this function ensures that mean and dev are large 
+  // this function ensures that mean and dev are large
   // enough to hold the data corresponding to cells of
   // size celldims and data in scan
 
@@ -348,7 +348,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
   int *cellsum; 		// sum of samples in cells of one row
   int *celldevsum;       	// sum of sample deviances in cells of one row
   int *cellcount = NULL;        // number of samples in each cell of one row (when excluding blip samples)
-  static int *cellmeancurr = NULL;      // mean of cell sums in cells of one row 
+  static int *cellmeancurr = NULL;      // mean of cell sums in cells of one row
   static int cellmeancurr_n = 0;        // size of cellmeancurr array
   int samples;                  // number of samples per cell
   unsigned k1, k2, kbits;
@@ -364,13 +364,13 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
   celldims = AS_INTEGER(celldims);
   cellw = INTEGER(celldims)[0];
   cellh = INTEGER(celldims)[1];
-  
+
   mode = INTEGER(AS_INTEGER(modesxp))[0];
 
   // add 1 to number of scans learned, because this call is included
   num_learning_scans = 1 + INTEGER(AS_INTEGER(numlearningscanssxp))[0];
 
-  // get the passed external matrices 
+  // get the passed external matrices
 
   scan = SEXP_TO_EXTMAT(scansxp);
   mean = SEXP_TO_EXTMAT(meansxp);
@@ -392,8 +392,8 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
   // cells in the bottom row might have a different height (fewer pulses)
   cellh_b = (scan->rows % cellh) ?: cellh;
 
-  rows = ROUND_UP_TO(scan->rows, cellh) / cellh; 
-  cols = ROUND_UP_TO(scan->cols, cellw) / cellw; 
+  rows = ROUND_UP_TO(scan->rows, cellh) / cellh;
+  cols = ROUND_UP_TO(scan->cols, cellw) / cellw;
 
   (*pensure_extmat)(mean, rows, cols);
   (*pensure_extmat)(dev, rows, cols);
@@ -443,7 +443,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
     memset(celldevsum, 0, sizeof(int) * cols);
 
     // process this row of cells
-        
+
     // calculate this scan's mean and dev in each cell, if possible
 
     if (mode != UPDATE || !class_buff) {
@@ -452,13 +452,13 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
 
       for (k = 0; k < cellh; ++k) {			/* each row of samples in this row of cells */
 	for (cellc = 0; cellc < cols_1; ++cellc)	/* each cell in this row */
-	  for (j = 0; j < cellw; ++j, ++i)		/* each sample in this row of this cell */    
+	  for (j = 0; j < cellw; ++j, ++i)		/* each sample in this row of this cell */
 	    cellsum[cellc] += scan_buff[i];
 	for (j = 0; j < cellw_r; ++j, ++i)		/* rightmost cell in this row */
 	  cellsum[cellc]   += scan_buff[i];
       }
       // compute the mean for each cell in this scan
-      // and use it to calculate the 
+      // and use it to calculate the
       // deviances for samples in this row of cells
 
       for (cellc = 0; cellc < cols_1; ++cellc)   /* each cell in this row */
@@ -471,8 +471,8 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
       // compute the absolute deviation of each sample from the mean
       // for its cell
       for (k = 0; k < cellh; ++k) {                              /* each row of samples in this row of cells */
-	for (cellc = 0; cellc < cols_1; ++cellc)	          /* each cell in this row */                   
-	  for (j = 0; j < cellw; ++j, ++i) {			  /* each sample in this row of this cell */    
+	for (cellc = 0; cellc < cols_1; ++cellc)	          /* each cell in this row */
+	  for (j = 0; j < cellw; ++j, ++i) {			  /* each sample in this row of this cell */
 	    celldevsum[cellc] += iabs(scan_buff[i] - cellmeancurr[cellc]);
 	  }
 	for (j = 0; j < cellw_r; ++j, ++i) {			  /* rightmost cell in this row */
@@ -485,7 +485,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
       memset(cellcount, 0, sizeof(int) * cols);
 
       for (k = 0; k < cellh; ++k) {                               /* each row of samples in this row of cells */
-	for (cellc = 0; cellc < cols_1; ++cellc)	          /* each cell in this row */                   
+	for (cellc = 0; cellc < cols_1; ++cellc)	          /* each cell in this row */
 	  for (j = 0; j < cellw; ++j, ++i) {			  /* each sample in this row of this cell */
 	    if (class_buff[i] != CLASS_BLIP) {
 	      cellsum[cellc] += scan_buff[i];
@@ -504,7 +504,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
       // We skip cells where there are no non-blip samples
 
       for (cellc = 0; cellc < cols_1; ++cellc)   /* each cell in this row */
-	if (cellcount[cellc]) 
+	if (cellcount[cellc])
 	  cellmeancurr[cellc] = RNDIV(cellsum[cellc], cellcount[cellc]);
       if (cellcount[cellc])
 	  cellmeancurr[cellc] = RNDIV(cellsum[cellc], cellw_r * cellh); /* last cell has different size */
@@ -513,11 +513,11 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
       // send i back to the first sample in this row of cells
       i -= cellh * scan->cols;
 
-      // Use the means for this scan to calculate the 
+      // Use the means for this scan to calculate the
       // deviances for samples in this row of cells
 
       for (k = 0; k < cellh; ++k) {           /* each row of samples in this row of cells */
-	for (cellc = 0; cellc < cols_1; ++cellc) {	  /* each cell in this row */                   
+	for (cellc = 0; cellc < cols_1; ++cellc) {	  /* each cell in this row */
 	  for (j = 0; j < cellw; ++j, ++i) {			  /* each sample in this row of this cell */
 	    if (class_buff[i] != CLASS_BLIP)
 	      celldevsum[cellc] += iabs(scan_buff[i] - cellmeancurr[cellc]);
@@ -597,7 +597,7 @@ radR_update_stats(SEXP scansxp, SEXP classsxp, SEXP celldims, SEXP meansxp, SEXP
   } /* next row of cells */
   free(cellsum);
   free(celldevsum);
-    
+
   call_R_hooks(RADR_HOOK_STATS, meansxp, devsxp, NULL);
   return PASS_SEXP;
 }
@@ -614,7 +614,7 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
   // classsxp - extmat with sample classifications (or NULL if not to be used)
   // prevclasssxp - extmat with sample classifications (or NULL if not to be used)
   // threshsxp - the hot and cold score thresholds
-  // 
+  //
   // returns a vector with these elements:
   // - number of cold samples
   // - number of samples deemed hot because their score exceeds hot_score
@@ -622,7 +622,7 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
 
   SEXP rv, counts;
   int i, n;			// buffer index
-  int hot_thresh, cold_thresh; 
+  int hot_thresh, cold_thresh;
 
   int num_hot_samples = 0;
   int num_blip_hot_samples = 0;
@@ -651,10 +651,10 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
     // If the previous classification's dimensions are different
     // than those of the current scan (as might happen if the scan dimensions change during
     // processing), then we don't want to use previous class information in classifying this
-    // scan. 
+    // scan.
     // In that case, we just make sure the prevclass matrix is sufficiently large, and reset
     // it entirely to CLASS_COLD.
-    
+
     (*pensure_extmat_with_slop)(prevclass, score->rows, score->cols, 1);
 
     // set the class to COLD by default
@@ -688,7 +688,7 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
 }
 
 SEXP
-radR_filter_noise (SEXP mat, SEXP cutoff) 
+radR_filter_noise (SEXP mat, SEXP cutoff)
 {
   // set to zero any samples below the noise cutoff in the extmat.
   t_extmat *mat_ = SEXP_TO_EXTMAT(mat);
@@ -700,7 +700,7 @@ radR_filter_noise (SEXP mat, SEXP cutoff)
     for (pend = pstart + mat_->rows * mat_->cols; pstart < pend; ++pstart) {
       if (*pstart < cutoff_)
 	*pstart = 0;
-      
+
     }
   }
   return PASS_SEXP;
@@ -719,7 +719,7 @@ radR_calculate_scores (SEXP scansxp, SEXP meansxp, SEXP devsxp, SEXP scoresxp) {
   // meansxp - extmat with cell means
   // devsxp - extmat with cell deviances
   // scoresxp - extmat to hold scores
-  // 
+  //
   // returns TRUE on success, NULL on failure (if unable to allocate enough
   // memory for the scores)
 
@@ -731,7 +731,7 @@ radR_calculate_scores (SEXP scansxp, SEXP meansxp, SEXP devsxp, SEXP scoresxp) {
   short cols;			// number of cell columns
   short rows;			// number of cell rows
   short cols_1;            	// cols and rows minus 1
-  short rows_1;             
+  short rows_1;
   short cellw;			// cell width
   short cellw_save;		// avoid recalculation
   short cellh;			// cell height
@@ -803,7 +803,7 @@ radR_calculate_scores (SEXP scansxp, SEXP meansxp, SEXP devsxp, SEXP scoresxp) {
 	      }
 	    }
 	    // celldev is zero or the division overflowed the available precision
-	    // so saturate by using the maximum or minimum 
+	    // so saturate by using the maximum or minimum
 	    // score, based on the sign of the deviation
 	    score_buff[i] = sample_dev > 0 ? T_SCORE_MAX : (sample_dev < 0 ? T_SCORE_MIN : 0);
 	  } while(FALSE);
@@ -857,10 +857,12 @@ static double scan_timestamp;
 static double scan_duration;
 static double scan_bearing;     /* bearing of first pulse in scan, in radians */
 static double scan_orientation;
+static double scan_rotation;
 static double scan_first_sample_offset;
 static int scan_max_sample_value;
 static double scan_range_per_sample;
 static double scan_antenna_elevation;
+static double *scan_origin;  /* origin offset of scan from image centre */
 
 // pointers to vectors of pulse metadata
 static double *pulse_ts;      // timestamp
@@ -885,7 +887,7 @@ t_sample *samples;
 static t_sample *scan_buff;
 static t_class *class_buff;
 static t_score *score_buff;
-     
+
 t_pf_rv
 pf_filter_by_stats(t_cell_run *r)
 {
@@ -899,7 +901,7 @@ pf_filter_by_stats(t_cell_run *r)
 
   // if do_filtering is TRUE, we filter patches based on whether their
   // stats fall within the ranges given in global variable blip_parms
-  // we save the stats for any non-filtered patch in an array, and 
+  // we save the stats for any non-filtered patch in an array, and
   // record in the vector patch_filter TRUE for patches to keep, and false
   // for those filtered.
 
@@ -933,7 +935,7 @@ pf_filter_by_stats(t_cell_run *r)
   t_sample *scan_ptr;
   t_cell_run *first_run = r;
   t_pf_rv rv = KEEP; // is this patch retained?
-  unsigned d_rperim; 
+  unsigned d_rperim;
   double planar_factor; // cosine of the elevation angle
   // col_row will hold 1 plus the scan row in which each column (i.e. range cell)
   // was last seen in this patch. -1 means not seen yet.
@@ -963,7 +965,7 @@ pf_filter_by_stats(t_cell_run *r)
     for (i = r->col, j = r->col + r->length; i < j; ++i) {
       if (col_row[i] == row)
 	d_rperim -= 2;  // subtract two previously-counted radial perimeter edges which
-                      // are actually interior 
+                      // are actually interior
       col_row[i] = row + 1;
 
       // in updating centroid sums, weight is column number for area
@@ -984,15 +986,15 @@ pf_filter_by_stats(t_cell_run *r)
     // even samples in column zero make a positive contribution to area
     area += r->length * (2 * (r->col + scan_first_sample_offset) + r->length) * SQUARE(planar_factor);
 
-    // because runs are non-adjacent within a pulse, each run makes two 
+    // because runs are non-adjacent within a pulse, each run makes two
     // contributions to angular perimeter, one at each end
     aperim += (2 * (r->col + scan_first_sample_offset) + r->length) * planar_factor;
-    
+
     rperim += d_rperim * planar_factor;
 
-    row_hi = max(row_hi, r->row);                 
+    row_hi = max(row_hi, r->row);
     row_lo = min(row_lo, r->row);
-    col_hi = max(col_hi, r->col + r->length - 1);    
+    col_hi = max(col_hi, r->col + r->length - 1);
     col_lo = min(col_lo, r->col);
     r += r->next_run_offset;
   } while (r != first_run);
@@ -1010,7 +1012,7 @@ pf_filter_by_stats(t_cell_run *r)
     // this is a patch having at least one run in both the top
     // and bottom rows.  Either it spans the full image, or it
     // wraps around the bottom/top boundary without doing so.
-    // The row span must be computed another way.  
+    // The row span must be computed another way.
     // We use an indicator vector to record presence/absence
     // of rows in the patch, and sum the presences.
 
@@ -1045,7 +1047,7 @@ pf_filter_by_stats(t_cell_run *r)
   ((double *) ps_y->ptr)     [num_patch_stats] =  y = ysum / weight_sum * scan_range_per_sample;
   ((double *) ps_z->ptr)     [num_patch_stats] = (z = zsum / weight_sum * scan_range_per_sample) + scan_antenna_elevation;
   ((double *) ps_range->ptr) [num_patch_stats] = sqrt(x*x + y*y + z*z);
-  // time is the time at the centroid 
+  // time is the time at the centroid
   ((double *) ps_t->ptr)     [num_patch_stats] = scan_timestamp + scan_duration * fmod(2 * M_PI + M_PI / 2 - atan2(y, x) - scan_bearing, 2 * M_PI) / (2 * M_PI);
   ((int *)    ps_ns->ptr)    [num_patch_stats] = ns;
   ((double *) ps_area->ptr)  [num_patch_stats] = (area *= area_conversion);
@@ -1056,7 +1058,7 @@ pf_filter_by_stats(t_cell_run *r)
   ((short *)  ps_rspan->ptr) [num_patch_stats] = col_span;
 
   if (do_filtering
-      && (ns < blip_parms.ns_lo 
+      && (ns < blip_parms.ns_lo
 	 || (blip_parms.ns_hi >= 0 && ns > blip_parms.ns_hi)
 	 || area < blip_parms.area_lo
 	 || (blip_parms.area_hi >= 0 && area > blip_parms.area_hi)
@@ -1075,7 +1077,7 @@ pf_filter_by_stats(t_cell_run *r)
       LOGICAL(patch_filter)[num_patch_stats] = 1;
       // record this as a blip
       INTEGER(blip_index)[num_blips++] = num_patch_stats + 1;
-    }    
+    }
   ++num_patch_stats;
   return rv;
 }
@@ -1117,7 +1119,7 @@ pf_filter_by_stats_rectangular(t_cell_run *r)
   long long weight_sum = 0;
   int intsum = 0;
   t_sample max_sample = 0;
-  double x, y;
+  double x, y, rng, theta;
   t_sample *scan_ptr;
   t_cell_run *first_run = r;
   t_pf_rv rv = KEEP; // is this patch retained?
@@ -1172,11 +1174,28 @@ pf_filter_by_stats_rectangular(t_cell_run *r)
   row_span = row_hi - row_lo + 1;
   col_span = col_hi - col_lo + 1;
 
+  // get matrix coordinates
+  x = xsum / weight_sum;
+  y = ysum / weight_sum;
+
+  // convert to spatial
+  // R:    x <- (coords[,1] - RSS$scan.info$samples.per.pulse / 2 + RSS$scan.info$origin[1]) * RSS$scan.info$sample.dist
+  x = (x - (double)scan_cols / 2.0 + scan_origin[0]) * scan_range_per_sample;
+  // R:   y <- (RSS$scan.info$pulses / 2 - coords[,2] + RSS$scan.info$origin[2]) * RSS$scan.info$sample.dist
+  y = ((double)scan_rows / 2.0 - y + scan_origin[1]) * scan_range_per_sample;
+  // apply rotation
+  // R: r <- sqrt(x^2+y^2)
+  rng = sqrt(x*x + y*y);
+  // R: th <- atan2(y, x) - RSS$source$config$rotation * pi/180
+  theta = atan2(y, x) - scan_rotation;
+  x = rng * cos(theta);
+  y = rng * sin(theta);
+
   // record this patch's stats:
-  ((double *) ps_x->ptr)     [num_patch_stats] =  x = xsum / weight_sum;  // Note: these are in matrix coords
-  ((double *) ps_y->ptr)     [num_patch_stats] =  y = ysum / weight_sum;
+  ((double *) ps_x->ptr)     [num_patch_stats] = x;
+  ((double *) ps_y->ptr)     [num_patch_stats] = y;
   ((double *) ps_z->ptr)     [num_patch_stats] = 0;
-  ((double *) ps_range->ptr) [num_patch_stats] = -1; // will be calculated at R level after x, y are corrected
+  ((double *) ps_range->ptr) [num_patch_stats] = rng;
   // time is the time at the centroid
   ((double *) ps_t->ptr)     [num_patch_stats] = scan_timestamp;
   ((int *)    ps_ns->ptr)    [num_patch_stats] = ns;
@@ -1259,7 +1278,7 @@ pf_patch_and_blip_hooks(t_cell_run *r)
       ((short *)patch_coords.row.ptr)[ns] = row + 1;
       ((short *)patch_coords.col.ptr)[ns] = col + 1 + i;
       ((t_sample *)patch_coords.val.ptr)[ns] = scan_buff[j];
-      if (score_buff) 
+      if (score_buff)
 	((double *) patch_coords.z.ptr)[ns] = score_buff[j] * T_SCORE_SCALE;
     }
     r += r->next_run_offset;
@@ -1272,30 +1291,30 @@ pf_patch_and_blip_hooks(t_cell_run *r)
   } else {
     patch_coords.z.rows = 0; patch_coords.z.cols = 0;
   }
-  
+
   if (patch_hook_active) {
-    patch_hook_rv = call_R_hooks(RADR_HOOK_PATCH, 
+    patch_hook_rv = call_R_hooks(RADR_HOOK_PATCH,
 				 PROTECT((*pextmat_to_sexp)(&patch_coords.row)),
 				 PROTECT((*pextmat_to_sexp)(&patch_coords.col)),
-				 PROTECT((*pextmat_to_sexp)(&patch_coords.val)), 
-				 PROTECT((*pextmat_to_sexp)(&patch_coords.z)), 
+				 PROTECT((*pextmat_to_sexp)(&patch_coords.val)),
+				 PROTECT((*pextmat_to_sexp)(&patch_coords.z)),
 				 NULL);
     UNPROTECT(4);
     if (IS_LOGICAL(patch_hook_rv) && !LOGICAL(patch_hook_rv)[0])
-      // FALSE: drop this patch 
+      // FALSE: drop this patch
       rv = DROP;
   }
 
   if ((rv == KEEP || rv == KEEP_AND_QUIT) && blip_hook_active) {
-    call_R_hooks(RADR_HOOK_BLIP, 
+    call_R_hooks(RADR_HOOK_BLIP,
 		 PROTECT((*pextmat_to_sexp)(&patch_coords.row)),
 		 PROTECT((*pextmat_to_sexp)(&patch_coords.col)),
-		 PROTECT((*pextmat_to_sexp)(&patch_coords.val)), 
-		 PROTECT((*pextmat_to_sexp)(&patch_coords.z)), 
+		 PROTECT((*pextmat_to_sexp)(&patch_coords.val)),
+		 PROTECT((*pextmat_to_sexp)(&patch_coords.z)),
 		 NULL);
     UNPROTECT(4);
   }
-  
+
   return rv;
 }
 
@@ -1305,7 +1324,7 @@ t_pf_rv
 pf_paint_blip (t_cell_run *r)
 {
   t_cell_run *first_run = r;
-  
+
   // paint the blip into the class buff
   // FIXME: for speed, we assume sizeof(t_class) = 1 and use memset
   do {
@@ -1314,10 +1333,10 @@ pf_paint_blip (t_cell_run *r)
   } while (r != first_run);
   return KEEP;
 }
-	
+
 
 SEXP
-radR_find_patches( SEXP classsxp, 
+radR_find_patches( SEXP classsxp,
 		   SEXP usediagsxp,
 		   SEXP patchessxp,
 		   SEXP skipsxp,
@@ -1334,7 +1353,7 @@ radR_find_patches( SEXP classsxp,
   //           adjacent, so that patches can straddle this cut.
 
   // returns the number of hot samples and the patches found
-  // 
+  //
   // side effect: the patches are represented in the image structure
   // passed in patchessxp
 
@@ -1367,22 +1386,23 @@ radR_find_patches( SEXP classsxp,
 
 SEXP
 radR_process_patches(SEXP filtersxp,
-		     SEXP scansxp, 
+		     SEXP scansxp,
 		     SEXP scoresxp,
-		     SEXP classsxp, 
+		     SEXP classsxp,
 		     SEXP patchbuff,
 		     SEXP statssxp,
-		     SEXP sampnumrange, 
-		     SEXP arearange, 
-		     SEXP angularrange, 
-		     SEXP radialrange, 
+		     SEXP sampnumrange,
+		     SEXP arearange,
+		     SEXP angularrange,
+		     SEXP radialrange,
 		     SEXP rps_elev,
 		     SEXP areaweighting,
 		     SEXP scaninfo,
 		     SEXP pulses,
-		     SEXP rectangular
+		     SEXP rectangular,
+		     SEXP origin
 		     ) {
-  
+
   // process patches from the image structure
   // passed in patchbuff
   //
@@ -1391,7 +1411,7 @@ radR_process_patches(SEXP filtersxp,
   //   - compute patch properties:
   //        centroid x, y, z, t
   //        number of samples, area, perimeter, angular and radial spans
-  //        
+  //
   //   - optional low-level filtering based on patch statistics;
   //
   //   - R-level PATCH_STATS_HOOK filtering, based on the stats matrices for all patches
@@ -1408,7 +1428,7 @@ radR_process_patches(SEXP filtersxp,
   //   - R-level RAW_BLIPS_HOOK calls, allowing plugins to do things with
   //     an external pointer to the cell_run structure for a patch
   //
-  //   - painting the blips into the class matrix 
+  //   - painting the blips into the class matrix
   //
   // Parameters:
   // filtersxp - logical: do we filter based on patch statistics
@@ -1431,15 +1451,17 @@ radR_process_patches(SEXP filtersxp,
   //                         [3] +/- 1: orientation of scan; clockwise = +1; counterclockwise = -1
   //                         [4] skipped samples before first; if min range > 0, this is the min range in multiples of range cell size
   //                         [5] maximum sample value
-  // pulses - R list whose first 5 elements are numeric vectors with length = number of pulses in the scan, 
+  //                         [6] image rotation angle in degrees (for rectangular data); 0 otherwise
+  // pulses - R list whose first 5 elements are numeric vectors with length = number of pulses in the scan,
   // with these interpretations:
-  //      [[1]] timestamp for each pulse                                               
-  //      [[2]] beam axis azimuth for each pulse (degrees CW from N)                   
-  //      [[3]] beam axis elevation for each pulse (degrees above horizontal)          
-  //      [[4]] azimuth of long waveguide axis for each pulse (degrees CW from N)      
+  //      [[1]] timestamp for each pulse
+  //      [[2]] beam axis azimuth for each pulse (degrees CW from N)
+  //      [[3]] beam axis elevation for each pulse (degrees above horizontal)
+  //      [[4]] azimuth of long waveguide axis for each pulse (degrees CW from N)
   //      [[5]] elevation of long waveguide axis for each pulse (degrees above horizontal)
   // rectangular - logical scalar: is the data matrix rectangular (e.g. for camera video)?
-  
+  // origin - double[2]: x and y offsets of "radar" centre from image centre
+
   // returns the integer index vector of blips among patches
   t_extmat *scan;
   t_image image;
@@ -1459,6 +1481,8 @@ radR_process_patches(SEXP filtersxp,
   scan_orientation 	   = REAL(scaninfo)[3];
   scan_first_sample_offset = REAL(scaninfo)[4];
   scan_max_sample_value    = (int )REAL(scaninfo)[5];
+  scan_rotation 	   = REAL(scaninfo)[6] * M_PI / 180;
+  scan_origin = REAL(origin);
 
   pulse_ts = REAL(VECTOR_ELT(pulses, 0));
   pulse_azi = REAL(VECTOR_ELT(pulses, 1));
@@ -1556,7 +1580,7 @@ radR_process_patches(SEXP filtersxp,
      This function also computes the maximum patch size (# of samples)
      which is needed in advance for the patch and blip hooks.
   */
-  
+
   (*pensure_extmat)(&em_row_present, 1, scan_rows);
   (*pensure_extmat)(&em_col_row, 1, scan_cols);
 
@@ -1577,7 +1601,7 @@ radR_process_patches(SEXP filtersxp,
 
   setAttrib(statssxp, R_RowNamesSymbol, row_names);
   UNPROTECT(1);
-  
+
   if (patch_stats_hook_active) {
     /* call the patch_stats hooks with the current status
        (active/inactive) vector; note that each hook function receives
@@ -1661,12 +1685,12 @@ radR_unfilter_patches (SEXP classsxp, SEXP patchbuff)
 
   return blip_index;
 }
-  
+
 SEXP
-radR_alloc_patch_image () 
+radR_alloc_patch_image ()
 {
   // return an EXTPTR SEXP pointing to a newly-allocated patch_image structure
-  
+
   t_image_struct *p = Calloc(1, t_image_struct);
   p->runs        = CREATE_USER_EXTMAT(sizeof(t_cell_run), "runs of hot cells");
   p->scratch_row = CREATE_USER_EXTMAT(sizeof(t_cell_run), "temporary runs of hot cells");
@@ -1675,7 +1699,7 @@ radR_alloc_patch_image ()
 }
 
 SEXP
-radR_free_patch_image (SEXP pi) 
+radR_free_patch_image (SEXP pi)
 {
   // it is up to the caller to make sure this function is not
   // called more than once for any given patch image
@@ -1694,7 +1718,7 @@ static int patch_id;
 static t_pf_rv
 pf_get_blip_index (t_cell_run *r)
 {
-  // increment the blip number until we've found the 
+  // increment the blip number until we've found the
   // patch with abs(id) == patch_id (absolute value
   // since it might be an inactive patch whose ID is negated)
   ++patch_number;
@@ -1711,14 +1735,14 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
   // cr[1], row cr[2]
   // Returns an integer matrix with two columns, and one row for
   // each sample in the patch.  The first column gives sample# (i.e. column value)
-  // and the second column gives pulse# (i.e. row value).  This 
+  // and the second column gives pulse# (i.e. row value).  This
   // choice is consistent with R's column-major indexing, so that, e.g.
   // the sample values for the patch with a sample in row 100, column 150, are given by:
   // RSS$sample.mat[.Call("radR_patch_at_rc", c(100, 150)]
   //
   // the return value has an integer vector attribute "index", with 2 elements:
   //
-  //  - index[1]: the 1-based index of this patch among all patches in this scan 
+  //  - index[1]: the 1-based index of this patch among all patches in this scan
   //
   //  - index[2]: the 1-based index of this blip among all blips in this scan,
   //              or 0 if this patch is not a blip
@@ -1744,7 +1768,7 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
   if (!r || (r->length == 1 && r->next_run_offset == 0))
     // no patch, or a singleton patch consisting of a single hot sample
     return (R_NilValue);
-    
+
   active = r->patch_id > 0;
   index = iabs(r->patch_id);
 
@@ -1755,7 +1779,7 @@ radR_patch_at_sp (SEXP sp, SEXP patchbuff) {
     ns += r->length;
     r += r->next_run_offset;
   } while (r != first_run);
-  
+
   rv = allocMatrix(INTSXP, ns, 2);
 
   cp = (int *) INTEGER(rv);
@@ -1872,7 +1896,7 @@ radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichs
   //      an n x 2 matrix with columns:
   //        1: patch number
   //        2: linear sample coordinate
-  // 
+  //
   //   linearsxp == FALSE, blipnumsxp == TRUE
   //      an n x 3 matrix with columns:
   //        1: patch number
@@ -1880,7 +1904,7 @@ radR_get_all_blips (SEXP patchbuff, SEXP blipnumsxp, SEXP linearsxp, SEXP whichs
   //        3: pulse number
   //
   // In both cases, if blipnumsxp == FALSE, the first column is omitted.
-  // 
+  //
   // Note that the returned patch numbers are in the range 1..num_selected_patches
   // where num_selected_patches is the number of blips, if whichsxp is R_NilValue,
   // otherwise, it is the number of TRUE values in whichsxp.  i.e. "selected"
@@ -2009,8 +2033,8 @@ SEXP radR_remove_handler(void)
 {
   if (!radR_installed)
     return FAIL_SEXP;  // fail silently
-  
-  
+
+
   if (R_PolledEvents != radRHandler) {
     return FAIL_SEXP; // fail silently: radR is not the last loaded handler
   }
@@ -2082,7 +2106,7 @@ radR_get_error() {
 
 SEXP
 radR_get_error_msg() {
-  /* return a string representing extra information on the current error, if any 
+  /* return a string representing extra information on the current error, if any
      resets the internal error text to empty. */
   SEXP s;
   PROTECT(s = allocVector(STRSXP, 1));
@@ -2092,7 +2116,7 @@ radR_get_error_msg() {
 }
 
 SEXP
-first_empty_slot (SEXP list) 
+first_empty_slot (SEXP list)
 {
   // return the index of the first available (ie. NULL) slot in
   // generic vector list; if none is found, return 1+LENGTH(list),
@@ -2114,7 +2138,7 @@ first_empty_slot (SEXP list)
 
 #define LIST_EXTENSION_INCREMENT 100 // amt by which to extend a list in into_first_empty_slot
 SEXP
-into_first_empty_slot (SEXP list, SEXP item) 
+into_first_empty_slot (SEXP list, SEXP item)
 {
   // install item in the first available (ie. NULL) slot in
   // generic vector list; if all slots are used, append item
@@ -2152,7 +2176,7 @@ into_first_empty_slot (SEXP list, SEXP item)
   UNPROTECT(1);
   return rv;
 }
-  
+
 SEXP
 num_full_slots (SEXP list)
 {
@@ -2166,7 +2190,7 @@ num_full_slots (SEXP list)
     if (VECTOR_ELT(list, i) != R_NilValue)
       ++n;
   return ScalarInteger(n);
-}  
+}
 
 SEXP
 which_slots_full (SEXP list)
@@ -2191,7 +2215,7 @@ which_slots_full (SEXP list)
 	INTEGER(rv)[n++] = i + 1;
   }
   return rv;
-}  
+}
 
 #ifdef Win32
 SEXP
@@ -2212,7 +2236,7 @@ start_process (SEXP path_and_dir)
   sa.nLength = sizeof(sa);
   sa.lpSecurityDescriptor = NULL;
   sa.bInheritHandle = TRUE;
-  
+
   // use default start info
 
   si.cb = sizeof(si);
@@ -2221,7 +2245,7 @@ start_process (SEXP path_and_dir)
   si.cbReserved2 = 0;
   si.lpDesktop = NULL;
   si.lpTitle = NULL;
-  
+
   if (!CreateProcess(0, CHAR(STRING_ELT(path_and_dir, 0)), &sa, &sa, FALSE,
 		      0, NULL, CHAR(STRING_ELT(path_and_dir, 1)), &si, &pi))
     return R_NilValue;
@@ -2242,7 +2266,7 @@ end_process (SEXP handle)
 unsigned int _saved_Rpc_timeouts[MAX_INTERFACES];
 
 SEXP
-zero_network_timeouts() 
+zero_network_timeouts()
 {
   int i, n;
 
@@ -2254,7 +2278,7 @@ zero_network_timeouts()
 }
 
 SEXP
-restore_network_timeouts() 
+restore_network_timeouts()
 {
   int i, n;
 
@@ -2265,7 +2289,7 @@ restore_network_timeouts()
   return ScalarLogical(1);
 }
 
-#endif 
+#endif
 
 #endif  /* Win32 */
 
@@ -2278,7 +2302,7 @@ get_addr (SEXP s) {
 SEXP
 radR_estimate_from_approx (SEXP approx, SEXP span, SEXP time_win) {
   // estimate "state" values across time_win from an approximator
-  // 
+  //
   // approx: double vector
   // span: integer scalar: number of components in a "state"
   // time_win: double 3-vector: c(start_time, time_step, num_steps)
@@ -2294,7 +2318,7 @@ radR_estimate_from_approx (SEXP approx, SEXP span, SEXP time_win) {
   unsigned size = LENGTH(approx);
 
   unsigned num_steps = REAL(time_win)[2];
-  
+
   unsigned span_ = (unsigned) INTEGER(AS_INTEGER(span))[0];
 
   SEXP rv = allocVector(REALSXP, span_ * num_steps);
@@ -2305,14 +2329,14 @@ radR_estimate_from_approx (SEXP approx, SEXP span, SEXP time_win) {
 }
 
 
-/** 
+/**
  * get metadata for a sequence of pulses
- * 
+ *
  * @param np number of pulses
  * @param ts timestamp of first pulse
  * @param dur duration of pulse sequence, in milliseconds
  * @param orient orientation of scan: +1 = clockwise, -1 = CCW
- * @param ang_offset angle of first pulse in degrees CW from North, if rotation axis were z and rotation from nominal North, if 
+ * @param ang_offset angle of first pulse in degrees CW from North, if rotation axis were z and rotation from nominal North, if
  * @param rot_ax REAL vector; approximator for rotation axis; either a pair (azimuth, elevation)
  * or a sequence of (azimuth, elevation, timestamp) values, which are used to interpolate the values of azimuth and elevation.
  * Note: azimuths are degrees CW from N; elevations are above horizontal.
@@ -2320,8 +2344,8 @@ radR_estimate_from_approx (SEXP approx, SEXP span, SEXP time_win) {
  * pairs, used for interpolation.
  * @param rv[inout] must be a list whose first 5 elements are REAL vectors of length np; e.g. this can be a dataframe
  * with np rows whose first 5 columns are numeric.  The first 5 elements of \v rv are modified in place.
- * 
- * @return 
+ *
+ * @return
  */
 
 SEXP
@@ -2349,7 +2373,7 @@ radR_get_pulse_metadata (SEXP np, SEXP ts, SEXP dur, SEXP orient, SEXP ang_offse
 
     PROTECT(rot_ax = allocVector(REALSXP, 2));
 
-    REAL(rot_ax)[0] =  0.0;  // default rotation axis azimuth 
+    REAL(rot_ax)[0] =  0.0;  // default rotation axis azimuth
     REAL(rot_ax)[1] = 90.0;  // default rotation axis elevation
     default_rot_ax = 1;      // flag a temporary SEXP was created
   }
@@ -2368,7 +2392,7 @@ radR_get_pulse_metadata (SEXP np, SEXP ts, SEXP dur, SEXP orient, SEXP ang_offse
   return ScalarLogical(1);
 }
 
-  
+
 /*================================================================
 
   radR.dll method registration, initialization, and destruction
@@ -2402,7 +2426,7 @@ R_CallMethodDef radR_call_methods[]  = {
   MKREF(radR_get_error_msg		, 0),
   MKREF(radR_get_pulse_metadata		, 9),
   MKREF(radR_patch_at_sp		, 2),
-  MKREF(radR_process_patches		, 15),
+  MKREF(radR_process_patches		, 16),
   MKREF(radR_process_UI_events		, 0),
   MKREF(radR_sleep			, 1),
   MKREF(radR_unfilter_patches		, 2),
@@ -2449,14 +2473,14 @@ R_init_radR(DllInfo *info)
   R_registerRoutines(info, NULL, radR_call_methods, NULL, NULL);
   R_useDynamicSymbols(info, FALSE);
   R_PreserveObject(INDEX_ATTRIBUTE_STRING = mkString("index"));
-  
+
   pensure_extmat = (typeof(ensure_extmat)*) R_GetCCallable("extmat", "ensure_extmat");
   pensure_extmat_with_slop = (typeof(ensure_extmat_with_slop)*) R_GetCCallable("extmat", "ensure_extmat_with_slop");
   pensure_extmat_with_slop_trigger = (typeof(ensure_extmat_with_slop_trigger)*) R_GetCCallable("extmat", "ensure_extmat_with_slop_trigger");
   pextmat_to_sexp = (typeof(extmat_to_sexp)*) R_GetCCallable("extmat", "extmat_to_sexp");
   pfree_extmat = (typeof(free_extmat)*) R_GetCCallable("extmat", "free_extmat");
-  /* un *nix, set timezone to GMT; in windows, we assume the TZ environment variable is effectively unset, so 
-     that tzset() will set time to GMT 
+  /* un *nix, set timezone to GMT; in windows, we assume the TZ environment variable is effectively unset, so
+     that tzset() will set time to GMT
      FIXME: verify/correct this assumption
   */
 #ifndef Win32

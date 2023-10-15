@@ -332,7 +332,8 @@ globals = list (
 
                     is.rectangular = TRUE,
 
-                    origin = port$config$origin
+                    origin = port$config$origin,
+                    image.rotation = port$config$rotation
 
                     )
 
@@ -448,26 +449,6 @@ globals = list (
   }
 
   )  ## end of globals
-
-hooks = list (
-  PATCH_STATS = list (enabled = FALSE, read.only = 2,
-    f = function(keep) {
-      ## adjust patch coordinates to take into account image rotation
-      ## and origin offset; the patch coordinates have been calculated
-      ## simply as matrix coordinates, so we convert them to spatial
-      ## This hook function must be called before any other hook function
-      ## that might use the x, y, and range patch properties, so we
-      ## kludge this with read.only=2 to force this hook first.
-      if (length(keep) > 0) {
-        new.coords <- tx.matrix.to.spatial(cbind(RSS$patches$x[], RSS$patches$y[]))
-        RSS$patches$x[]<- new.coords[,1]
-        RSS$patches$y[]<- new.coords[,2]
-        RSS$patches$range[] <- sqrt(RSS$patches$x[]^2 + RSS$patches$y[]^2)
-      }
-      return(keep)
-    }
-    )
-  )
 
 ## return a suitable metafile name for an archive specified by the name of a data file
 ## get.metafile.name = function(datafilename) {
