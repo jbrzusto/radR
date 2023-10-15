@@ -178,7 +178,7 @@ if (read.parms) {
 
   ## do any video overrides
   if (length(x$video) > 0)
-      if (! exists("VUDEI")) {
+      if (! exists("VIDEO")) {
           rss.load.plugin("video")
       }
       do.overrides("video plugin",
