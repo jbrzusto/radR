@@ -167,7 +167,7 @@ if (read.parms) {
                      })
 
     if (length(x$mfc) > 0)
-        if (exists("min.gain", x$mfc) && x$mfc$min.gain > 1) {
+        if (exists("min.gain", x$mfc)) {
             x$mfc$min.gain = TRACKER$log.units.to.gain(x$mfc$min.gain)
         }
         do.overrides("MFC tracker model",
