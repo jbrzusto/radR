@@ -326,4 +326,5 @@ list (
       ##  ## a different way to obtain differences: frame - average of preceding and following frames
       ##  ## you probably don't want to use both of these methods at the same time
       ##  default.ffmpeg.optios.before.output = "-vf tmix=frames=3:weights=\"-1 2 -1\":scale=1",
-      )
+      ## )
+)
