@@ -318,7 +318,9 @@ list (
 
       ##  default.height = 200,
 
-      ##  default.frame.rate = 1,
+      ##  default.frame.rate = 10,
+
+      ##  default.scale = 5,
 
       ##  ## one way to obtain differences between consecutive frames
       ##  default.ffmpeg.options.before.input = "-filter_complex 'format = gbrp, tblend=all_mode=difference'",
