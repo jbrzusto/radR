@@ -304,10 +304,10 @@ for (iv in seq(along=vids)) {
     }
 
     if (do.tracks) {
-        rss.enable.plugin("tracker")
         TRACKER$set.track.filename(sub(".csv", "", ftrk))
         TRACKER$csv.filename <- ftrk
         cat("Will create tracks file: ", ftrk, "\n")
+        rss.enable.plugin("tracker")
     }
 
     ## mark the start time
