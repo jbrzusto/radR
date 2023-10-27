@@ -321,7 +321,12 @@ for (iv in seq(along=vids)) {
     ## start the event loop
     go()
 
+    ## close the blipmovie sink, if present
+    if (! is.null(RSS$sink))) {
+        shut.down(RSS$sink)
+    }
     ## shut down the source; we'll be reconfiguring with a new file and restarting, above
     shut.down(p)
+
 }
 q()
