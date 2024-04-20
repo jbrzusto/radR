@@ -667,7 +667,7 @@ radR_classify_samples(SEXP scoresxp, SEXP classsxp, SEXP prevclasssxp, SEXP thre
   cold_thresh = (int) (REAL(threshsxp)[1] * (1 << T_SCORE_FRACTIONAL_BITS));
 
   for (i = 0; i < n; ++i ) {
-    if (score_buff[i] >= hot_thresh || score_buff[i] <= cold_thresh) {
+    if (score_buff[i] > hot_thresh || score_buff[i] < cold_thresh) {
       class_buff[i] = CLASS_HOT;
       ++ num_hot_samples;
     }
