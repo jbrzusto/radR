@@ -981,6 +981,9 @@ pf_filter_by_stats(t_cell_run *r)
       zsum += dz * wt_sampno; // in units of weighted scan_range_per_sample
       weight_sum += weight;
     }
+    if (weight_sum == 0.0) {
+      weight_sum = 1.0;
+    }
 
     // we implicitly convert column to origin=1 for this calculation, so that
     // even samples in column zero make a positive contribution to area
@@ -1160,6 +1163,9 @@ pf_filter_by_stats_rectangular(t_cell_run *r)
       xsum += i * weight;
       ysum += row * weight;
       weight_sum += weight;
+    }
+    if (weight_sum == 0.0) {
+      weight_sum = 1.0;
     }
 
     area += r->length;
