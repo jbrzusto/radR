@@ -17,6 +17,8 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
   //      the maximum range index for any pulse in the sweep
 
   unsigned char *ep = p + len;
+  int have_warned_pulse_count_mismatch = FALSE;
+  int have_warned_pulse_index_mismatch = FALSE;
 
   int i, j;
   int samp_rate = XIR3_DEFAULT_SAMPLE_RATE;
@@ -27,9 +29,9 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
   int np = XIR3_STANDARD_PULSES_PER_SWEEP;
   int spp = XIR3_NOMINAL_SAMPLES_PER_PULSE;
   int np_found = 0;
-  
+
   t_recording_type rec_type;
-  int shift; // how much do sums of data from the current pulse need to be right shifted 
+  int shift; // how much do sums of data from the current pulse need to be right shifted
 
   // macro to return p cats as a pointer to a particular type, and post-increment
   // p to advance it past the item of that type.
@@ -51,6 +53,14 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
       //      printf("Sweep time: 0x%x  0x%x\n", p4->sweep_time.dwLowDateTime, p4->sweep_time.dwHighDateTime);
       utc_sweeptime = FILETIME_TO_UTC(p4->sweep_time);
       first_pulse_ticks = p4->ticks;
+      int ant_block_size = *(uint32_t*) p;
+      if (ant_block_size == 0) {
+	ant_block_size = 640; // as calculated from structs in RecReader source code from RTI
+      }
+      //      printf("xir3000arch: skipping opaque antenna block, size: %d\n", ant_block_size);
+      p += ant_block_size; // skip ANTENNA block, which helpfully has its size as first uint32
+      //      printf("xir3000arch: skipping range scale info, size: %ld\n", 2 * sizeof(int32_t));
+      p += 2 * sizeof(int32_t); // skip range scale info, which we don't use
     } else {
       samp_rate = samp_rate * 100.0;  // weird - from data recorded by M. D'entremont, it appears
 				      // that a sampling rate of X Hz was recorded as (X/100) Hz in REC_TYPE_RLC_3
@@ -64,10 +74,12 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
       if (rec_type >= REC_TYPE_RLC_4) {
 	t_RLC_4_pulse_header *ph4 = GET_ITEM(t_RLC_4_pulse_header);
 	last_pulse_ticks = ph4->ticks;
-	if (np_found != ph4->index)
-	  printf("xir3000arch: pulse count mis-match: header says %d, count says %d\n", ph4->index, np_found);
+	if (np_found != ph4->index && !have_warned_pulse_index_mismatch) {
+	  printf("xir3000arch: pulse index mis-match: header says %d, count says %d\n", ph4->index, np_found);
+	  have_warned_pulse_index_mismatch = TRUE;
+	}
       }
-      
+
       if (segi->rangeind > max_rangeind)
 	max_rangeind = segi->rangeind;
       else if (segi->rangeind < min_rangeind)
@@ -97,10 +109,10 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
 	  // This pulse has a smaller range than the final data.
 	  // Luckily, the ranges are all related by factors of a power of 2,
 	  // so we can do quick arithmetic to coarsen the data
-	  
+
 	  // copy over data from either the raw file or the decompression buffer,
 	  // coarsening it by averaging across cells
-	  
+
 	  t_sample *tmp;         // temporary pointer to the current pulse's data
 	  unsigned int cellsum;  // sums of groups of consecutive data from the current pulse
 	  unsigned int spc;      // samples per cell
@@ -111,7 +123,7 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
 
 	  dat -= spp;
 	  tmp = dat;
-	  
+
 	  for (j = spp / spc; j > 0; --j) {
 	    cellsum = 0;
 	    for (i = 0; i < spc; ++i)
@@ -180,19 +192,32 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
 	COPY_IF_VALID(WindAngleRel);
 	COPY_IF_VALID(WindAngleTrueInDeg);
       }
+    } else if (segi->type == RS_BLANK_SECTOR) {
+      t_RLC_ext_scanline_hdr *esh = (t_RLC_ext_scanline_hdr*) p;
+      p += sizeof(t_RLC_ext_scanline_hdr);
+      np_found = esh->scan_line_no + 1;
+    } else if (segi->type == RS_VIRT_BLANK_SECTOR) {
+      t_RLC_ext_scanline_hdr *esh = (t_RLC_ext_scanline_hdr*) p;
+      p += sizeof(t_RLC_ext_scanline_hdr);
+      np_found = esh->scan_line_no + 1;
+    } else if (segi->type == RS_EXT_DATA) {
+      t_RLC_ext_data_hdr *edh = (t_RLC_ext_data_hdr*) p;
+      p += edh->num * edh->size;
     } else {
-      printf ("xir3000arch: unknown segment type %d at offset %d\n", segi->type, len - (ep - p));
+      printf ("xir3000arch: unknown segment type %d at offset %ld\n", segi->type, len - (ep - p));
     }
   }
   if (si) {
-    if (np_found != np)
+    if (np_found != np && !have_warned_pulse_count_mismatch) {
       printf("xir3000arch: pulse count mismatch: format says %d, file has %d\n", np, np_found);
-    
+      have_warned_pulse_count_mismatch = TRUE;
+    }
+
     si[NUM_SENSOR_DATA_ITEMS    ] = max_rangeind;
     si[NUM_SENSOR_DATA_ITEMS + 1] = np;
     si[NUM_SENSOR_DATA_ITEMS + 2] = spp;
     si[NUM_SENSOR_DATA_ITEMS + 3] = utc_sweeptime;
-    
+
     // for REC_TYPE_RLC_4 and above, we can get a precise duration by looking at ticks, which appear
     // to be from a 20 MHz clock; (in milliseconds)
     if (rec_type >= REC_TYPE_RLC_4)
@@ -200,15 +225,15 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
     si[NUM_SENSOR_DATA_ITEMS + 5] = VELOCITY_OF_LIGHT / (2.0 * samp_rate / (1 << max_rangeind));
   }
 }
-  
+
 SEXP
 get_scan_info (SEXP rawfiledat) {
   // return a real vector of scan info metadata
   // from a raw .REC file
 
   // scan the file for all SENSORDATA segments,
-  // and accumulate those items which are valid, 
-  // so that the last valid version of an item is the 
+  // and accumulate those items which are valid,
+  // so that the last valid version of an item is the
   // one returned.  NAs are returned in slots for which
   // no data were found.
 
@@ -224,21 +249,21 @@ get_scan_info (SEXP rawfiledat) {
   int i;
   SEXP rv;
   double *rvp;
-  
+
   // allocate return vector of doubles
- 
+
   rv = allocVector(REALSXP, NUM_SENSOR_DATA_ITEMS + NUM_EXTRA_DATA_ITEMS);
   rvp = REAL(rv);
 
   // mark info items as NA
 
-  for (i = 0; i < NUM_SENSOR_DATA_ITEMS + NUM_EXTRA_DATA_ITEMS; ++i) 
+  for (i = 0; i < NUM_SENSOR_DATA_ITEMS + NUM_EXTRA_DATA_ITEMS; ++i)
     rvp[i] = NA_REAL;
 
   process_REC_buffer ((unsigned char *) RAW(rawfiledat), LENGTH(rawfiledat), rvp, NULL, 0);
   return rv;
 }
-  
+
 SEXP
 get_scan_data (SEXP rawfiledat, SEXP maxrangeind, SEXP extmat) {
   // fill the extmat with raw scan data from a RAW vector file.
@@ -257,7 +282,7 @@ get_scan_data (SEXP rawfiledat, SEXP maxrangeind, SEXP extmat) {
 
   RETBOOL(TRUE);
 }
-    
+
 R_CallMethodDef xir3000arch_call_methods[] = {
   MKREF(get_scan_info, 1),
   MKREF(get_scan_data, 3),
@@ -268,7 +293,7 @@ void
 R_init_xir3000arch(DllInfo *info)
 {
   /* Register routines, allocate resources. */
-  
+
   R_registerRoutines(info, NULL, xir3000arch_call_methods, NULL, NULL);
   R_useDynamicSymbols(info, FALSE);
 }
@@ -278,4 +303,3 @@ R_unload_xir3000arch(DllInfo *info)
 {
   /* Release resources. */
 }
-

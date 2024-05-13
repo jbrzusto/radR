@@ -12,7 +12,8 @@ typedef enum {
   REC_TYPE_RLC_2 = 4,
   REC_TYPE_RLC_3 = 5,
   REC_TYPE_RLC_4 = 6,
-  
+  REC_TYPE_RLC_6 = 8,
+
 } t_recording_type;
 
 
@@ -23,7 +24,7 @@ typedef enum {
 #define XIR3_ACTUAL_SAMPLES_PER_PULSE       506
 #define XIR3_STANDARD_PULSES_PER_SWEEP     1024
 #define XIR3_DEFAULT_SAMPLE_RATE       54000000 // rate of the A/D clock
-#define XIR3_TICK_RATE                 20000000 // rate of the clock used to indicate pulse start times 
+#define XIR3_TICK_RATE                 20000000 // rate of the clock used to indicate pulse start times
 
 #ifdef Win32
 #define MS_STRUCT_PREFIX __attribute__((__packed__, __ms_struct__))
@@ -33,7 +34,7 @@ typedef enum {
 #define MS_STRUCT_POSTFIX
 #endif
 
-// flags for validity of data returned by sensors 
+// flags for validity of data returned by sensors
 
 //#pragma ms_struct on
 
@@ -91,9 +92,9 @@ typedef struct MS_STRUCT_PREFIX {
   double MagDeviation;
   double TrueTrackGround;
   double MagnTrackGround;
-  /* Removed to make structure have observed size (see below) 
+  /* Removed to make structure have observed size (see below)
   double Reserved01; // not in documentation, but in CANStar.h
-  */ 
+  */
   double SpeedWater;
   double SpeedGround;
   double DriftSpeed_Water;
@@ -117,8 +118,8 @@ typedef struct MS_STRUCT_PREFIX {
   // this is not documented; it brings the structure
   // up to the 240 byte length seen in actual files
 
-  int32_t UnusedPadding; 
-  
+  int32_t UnusedPadding;
+
   double AntennaMagnetronCurrent;
   double AntennaRMonitor;
   int32_t AntennaState;
@@ -137,7 +138,10 @@ typedef struct MS_STRUCT_PREFIX {
 
 typedef enum {
   RS_SCAN = 0,
-  RS_SENSOR = 1
+  RS_SENSOR = 1,
+  RS_BLANK_SECTOR = 2,
+  RS_VIRT_BLANK_SECTOR = 3,
+  RS_EXT_DATA = 4
 } t_seg_type;
 
 // the segment information descriptor
@@ -165,13 +169,13 @@ typedef struct MS_STRUCT_PREFIX {
   int32_t  __attribute__ ((packed)) ext_pulses; // number of pulses per sweep in extended mode
   FILETIME __attribute__ ((packed)) sweep_time; // time at start of sweep, in MS FILETIME format (see below)
   uint32_t ticks; // tick count at start of sweep
-  uint32_t unused; // padding?
+  uint32_t signalLevel;
 } MS_STRUCT_POSTFIX t_RLC_4_header;
 
 // the per-pulse header for segment types RLC_4 and above
 typedef struct MS_STRUCT_PREFIX {
   uint16_t index; // pulse number (from 0 to n-1)
-  uint16_t ticks_high; // FIXME: is this correct?  or is this just filler
+  uint16_t padding; // wasn't sure but now I am
   uint32_t ticks; // clock ticks since sweep start
 } MS_STRUCT_POSTFIX  t_RLC_4_pulse_header;
 
@@ -182,11 +186,27 @@ typedef struct MS_STRUCT_PREFIX {
   unsigned char val;     // the value repeated in the run
 } MS_STRUCT_POSTFIX t_RLC_encoded_run;
 
+// structure for extended scan-line support (REC_TYPE_RLC_6 and up)
+typedef struct MS_STRUCT_PREFIX {
+  uint16_t scan_line_no; // scan line number
+  uint32_t scan_line_time; // scan line time
+} MS_STRUCT_POSTFIX t_RLC_ext_scanline_hdr;
+
+#define MAX_EXTERN_DATA_ID_LENGTH 8
+#define MAX_EXTERN_DATA_TYPES 10
+
+typedef struct MS_STRUCT_PREFIX
+{
+  char id [MAX_EXTERN_DATA_ID_LENGTH];
+  int num;
+  int size;
+} MS_STRUCT_POSTFIX t_RLC_ext_data_hdr;
+
 //#pragma ms_struct off
 
 // MS FILETIMEs are 64 bit counts of 100 nanosecond intervals since Jan 1, 1601
 // How many such intervals separate the UTC time origin from the MS FILETIME origin?
-// according to R (version 2.10.1, *not* version 2.5.1): 
+// according to R (version 2.10.1, *not* version 2.5.1):
 //
 //  > -as.numeric(ISOdatetime(1601, 1, 1, 0, 0, 0, tz="UTC")) * 1e7
 //  [1] 1.16444736e+17

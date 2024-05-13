@@ -18,9 +18,9 @@
 
 
 ##           XIR3000ARCH   PLUGIN
-##                                                         
+##
 ##  Read files recorded by Russell Technologies Inc.'s
-##  radar digitizing software.       
+##  radar digitizing software.
 
 
 MYCLASS = "xir3000arch"
@@ -32,7 +32,7 @@ about = function() {
 get.ports = function() {
 
   rv <- list()
-  
+
   make.port <- function(name, id, is.source, is.sink) {
     structure(strictenv(
                         name = name,
@@ -141,7 +141,7 @@ globals = list (
             if (is.null(x$config$filename)) "(no file)" else x$config$filename
             )
   },
-  
+
   print.xir3000arch = function(x, ...) {
     ## print a description of this port
     cat (as.character(x) %:% "\n")
@@ -152,7 +152,7 @@ globals = list (
     ## Each radar scan is stored in a file in the same directory as
     ## "filename", but whose name ends in XXXXXXXX.rec,
     ## where XXXXXXXX is a maximal zero-padded digit sequence.
-    
+
     opts <- list(...)
     if (length(opts) != 0) {
       for (opt in names(opts)) {
@@ -194,7 +194,7 @@ globals = list (
     ## get the filename for the given port and scan number
     sprintf(paste("%s%0", port$seqno.digits, "d.rec", sep=""), port$file.basename, port$seqnos[scan])
   },
-    
+
   get.scan.info.xir3000arch = function(port, ...) {
     ## gets the header information for the next scan
     ## This can include NMEA data.
@@ -211,7 +211,7 @@ globals = list (
     ## already have the (appropriate) next scan.
 
     have.next = port$next.scan == port$cur.scan + 1 && ! is.null(port$next.file.data)
-    
+
     for (jj in 1:(1 + !have.next)) {
       port$next.scan = port$cur.scan + 1
       port$cur.scan = port$next.scan
@@ -239,15 +239,15 @@ globals = list (
 
         port$next.file.si = list (
           pulses = x[SIN$Pulses],  ## this should equal RTI.default$pulses, but we keep it flexible for now
-          
+
           samples.per.pulse = if (!is.na(x[SIN$SamplesPerPulse])) {
             x[SIN$SamplesPerPulse]
           } else {
             RTI.defaults$samples.per.pulse
           },
-          
+
           bits.per.sample = RTI.defaults$bits.per.sample,
-          
+
           timestamp = structure(
             if (is.timestamp.ok(x[SIN$TimeStamp])) {
               x[SIN$TimeStamp]
@@ -257,7 +257,7 @@ globals = list (
               port$start.time + (port$next.scan - 1) * port$default.duration / 1000
             },
             class="POSIXct"),
-          
+
           duration = 0, ## filled in below, after we have two consecutive scans
 
           sample.dist =
@@ -266,22 +266,22 @@ globals = list (
           } else {
             distget.sample.dist(port)
           },
-          
+
           first.sample.dist = 0,
-          
+
           bearing = if (!is.na(x[SIN$TrueHeading])) x[SIN$TrueHeading] else default.heading,
-          
+
           orientation = +1,
 
           antenna.lat = if (!is.na(x[SIN$Latitude])) x[SIN$Latitude] / 1e7,
-          
+
           antenna.long = if (!is.na(x[SIN$Longitude])) x[SIN$Longitude] / 1e7
-          
+
           )
       } else {
         ## there is no next scan, so set timestamp of (bogus) next scan so that
         ## current scan gets default duration
-        
+
         port$next.file.si$timestamp = port$si$timestamp + port$default.duration / 1000
       }
     }
@@ -298,7 +298,7 @@ globals = list (
 
     if (is.null(dim))
       stop("calling get.scan.data when RSS$scan.info has NULL dimension info")
-    
+
     dim(extmat) <- dim
     dim(RSS$class.mat) <- dim
     dim(RSS$score.mat) <- dim
@@ -343,7 +343,7 @@ globals = list (
     ##
     ## We open the first, second and last files in the run to extract their
     ## timestamps and compute total run time and scan duration.
-    ## If no timestamps are available, 
+    ## If no timestamps are available,
 
     ## workaround non-idempotent R version of file.basename, which first strips
     ## trailing path separators
@@ -354,7 +354,7 @@ globals = list (
       stem = basename(port$file.basename)
     }
     run.files <- dir(path=dirname(port$config$filename), pattern=stem %:% "[0-9]+\\.rec$")
-    
+
     ## get all the sequence numbers so we don't have to worry about missing ones later on
 
     split <- regexpr("(?i)(?=[0-9]+\\.rec)", run.files[1], perl=TRUE)
@@ -362,11 +362,11 @@ globals = list (
 
     ## if configured to, drop those before the first scan (i.e. before
     ## the file given by port$config$filename)
-    
+
     port$seqnos <- seqnos[seqnos >= port$seqnos | use.all.folder.files]
-  
+
     ns <- length(port$seqnos)
-    
+
     seek.scan(port, 1, 1)
     port$default.duration <- 60 / antenna.rpm * 1000
     si.first <- get.scan.info(port)
@@ -419,7 +419,7 @@ globals = list (
     }
     if (bad > 0)
       warning(sprintf("The last %d .REC files in this folder are invalid; I'm ignoring them\n", bad))
-    
+
     port$seqnos = port$seqnos[1:ns]
     ## workaround R bug: as.POSIXct leaves "POSIXt" as part of the class.
     port$contents <- list (
@@ -451,7 +451,7 @@ globals = list (
     ## changing play state.
 
   }
-  
+
   )  ## end of globals
 
 ## additional plugin variables
@@ -491,7 +491,7 @@ empty.TOC = list(
 ## DSP version the file was recorded with, which is apparently not saved
 ## in the file, and so must be selected by the user.
 ## The values are from the documentation of CSAPI_GetRange, and are converted
-## from nautical miles to metres by the factor of 1852.  
+## from nautical miles to metres by the factor of 1852.
 ## Because R arrays are indexed from 1, we must add 1 to the CSAPI range index
 ## to get the index into the appropriate vector here:
 ## e.g. with DSP9 and a CSAPI range index of 2, the true range is range.values$DSP9[3]
@@ -506,8 +506,10 @@ range.values = list (
 ##   REC_TYPE_RLC_2 = 4
 ##   REC_TYPE_RLC_3 = 5
 ##   REC_TYPE_RLC_4 = 6
+## NB: no support for REC_TYPE_RLC_5
+##   REC_TYPE_RLC_6 = 8
 
-supported.recording.types = 4:6
+supported.recording.types = c(4:6, 8)
 
 ## the indexes of items returned by the C function get_scan_info
 
