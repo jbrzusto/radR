@@ -424,8 +424,8 @@ globals = list (
     ## workaround R bug: as.POSIXct leaves "POSIXt" as part of the class.
     port$contents <- list (
                           num.scans = ns,
-                          start.time = structure(as.POSIXct(si.first$timestamp),class=c("POSIXct", "POSIXt")),
-                          end.time = structure(as.POSIXct(si.last$timestamp), class=c("POSIXct", "POSIXt"))
+                          start.time = structure(as.POSIXct(si.first$timestamp),class=c("POSIXct")),
+                          end.time = structure(as.POSIXct(si.last$timestamp), class=c("POSIXct"))
                            )
 
     port$start.time.midnight <- structure(as.POSIXct(trunc.POSIXt(si.first$timestamp, "days")), class=c("POSIXct", "POSIXt"))
