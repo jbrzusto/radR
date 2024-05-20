@@ -256,7 +256,7 @@ globals = list (
             } else {
               port$start.time + (port$next.scan - 1) * port$default.duration / 1000
             },
-            class="POSIXct"),
+            class=c("POSIXct", "POSIXt")),
 
           duration = 0, ## filled in below, after we have two consecutive scans
 
