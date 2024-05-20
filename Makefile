@@ -107,7 +107,7 @@ BITS_PER_SAMPLE := $(if $(BITS_PER_SAMPLE),$(BITS_PER_SAMPLE),12)
 
 RADR_TOPLEVEL_DIR := $(TOPLEVEL_PATH_PREFIX)$(shell pwd)
 RADR_PACKAGE_DIR := $(RADR_TOPLEVEL_DIR)/packages
-RADR_INSTALL_DIR := $(RADR_TOPLEVEL_DIR)/install
+RADR_INSTALL_DIR := $(shell mkdir -p $(RADR_TOPLEVEL_DIR)/install; echo $(RADR_TOPLEVEL_DIR)/install)
 
 ifeq ($(BUILD_PLATFORM),windows)
 CC_TO_USE=gcc
@@ -124,7 +124,7 @@ STRIP=/usr/bin/i586-mingw32msvc-strip
 endif
 endif
 
-RADR_PACKAGE_INSTALL_DIR := $(RADR_INSTALL_DIR)/packages
+RADR_PACKAGE_INSTALL_DIR := $(shell mkdir -p $(RADR_INSTALL_DIR)/packages; echo $(RADR_INSTALL_DIR)/packages)
 
 CC_DEBUG=$(CC_TO_USE)
 CC_PRODUCTION=$(CC_DEBUG)
