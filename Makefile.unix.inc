@@ -19,17 +19,23 @@ EXE_SUFFIX_unix =
 CP = $(shell which cp)
 HEAD = $(shell which head)
 ## version of R you are building against
+ifeq ($(TARGET_PLATFORM),windows)
+R_MAJOR_VERSION = 2
+R_MINOR_VERSION = 5
+R_MINOR_SUBVERSION = 1
+RINC =-I/usr/src/R-$(R_VERSION)/include -I/usr/src/R-$(R_VERSION)/src/include
+else
 R_MAJOR_VERSION = 4
 R_MINOR_VERSION = 1
 R_MINOR_SUBVERSION = 2
+RINC =-I/usr/share/R/include
+endif
 R_VERSION = $(R_MAJOR_VERSION).$(R_MINOR_VERSION).$(R_MINOR_SUBVERSION)
 
 R = /usr/bin/R
 RCMD = $(R) CMD
 BUILD_PLATFORM_LIBOPTS =
 LOCAL_INSTALL_DIR=~/Desktop/radR
-#RINC =-I/home/src/R-$(R_VERSION)/include -I/home/src/R-$(R_VERSION)/src/include
-RINC =-I/usr/share/R/include
 
 BUILD_PLATFORM_CCOPTS = -fPIC -pg
 BUILD_PLATFORM_DEP =
