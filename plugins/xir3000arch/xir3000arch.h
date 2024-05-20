@@ -187,10 +187,10 @@ typedef struct MS_STRUCT_PREFIX {
 } MS_STRUCT_POSTFIX t_RLC_encoded_run;
 
 // structure for extended scan-line support (REC_TYPE_RLC_6 and up)
-typedef struct MS_STRUCT_PREFIX {
+typedef struct {
   uint16_t scan_line_no; // scan line number
   uint32_t scan_line_time; // scan line time
-} MS_STRUCT_POSTFIX t_RLC_ext_scanline_hdr;
+} t_RLC_ext_scanline_hdr;
 
 #define MAX_EXTERN_DATA_ID_LENGTH 8
 #define MAX_EXTERN_DATA_TYPES 10
