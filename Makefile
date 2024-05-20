@@ -118,9 +118,9 @@ CC_TO_USE=gcc
 STRIP=/usr/bin/strip
 else
 ## target platform is windows, build platform is unix
-CC_TO_USE=i586-mingw32msvc-gcc -b i586-mingw32msvc
+CC_TO_USE=i686-w64-mingw32-gcc -static-libgcc
 RADR_INSTALL_DIR := $(RADR_TOPLEVEL_DIR)/install_windows
-STRIP=/usr/bin/i586-mingw32msvc-strip
+STRIP=/usr/bin/i686-w64-mingw32-strip
 endif
 endif
 
@@ -132,7 +132,7 @@ CC_BCHECK_DEBUG=/usr/src/gcc-3.4.4-bounds-checking/gcc/xgcc
 CC_BCHECK_PRODUCTION=$(CC_BCHECK_DEBUG)
 CC_PROFILE=$(CC_DEBUG)
 
-R_WINDOWS_HOME=/home/john/.wine/drive_c/Program\ Files/R/R-2.5.1
+R_WINDOWS_HOME=/home/john/proj/rti/R-2.5.1
 
 ## commands
 CP      = /bin/cp
