@@ -43,10 +43,10 @@ INSTALLED_R_CONF_FILES = $(patsubst %.conf.R, %.conf.update.R, $(filter %.conf.R
 ## This function will cause it to be treated as an .INTERMEDIATE file,
 ## to be renamed to the 1st arg.
 ##
-## To use this, do 
+## To use this, do
 ##
 ##    $(eval $(call DEF_INST_ALIAS,alias,existing_installed_file))
-## 
+##
 ## and include MAKE_ALIASES in the dependencies of all:
 ##
 ##    all: ... MAKE_ALIASES
@@ -101,6 +101,7 @@ $$(INSTALLED_TARGETS): $$(MY_INSTALL_DIR)/%: %
 
 $$(PLUGIN_LIB) : $$(PLUGIN_LIB_DEPS)
 	$$(PLUGIN_BUILD_LIB_CMD)
+	$$(PLUGIN_STRIP_LIB_CMD)
 
 $$(PLUGIN_EXTRA_DIRS) : $$(PLUGIN_LIB)
 	-for d in $$(PLUGIN_EXTRA_DIRS); do $$(INSTALL) -d $$$$d $$(MY_INSTALL_DIR)/$$$$d; $$(INSTALL) -D $$$$d/* $$(MY_INSTALL_DIR)/$$$$d; done
@@ -126,14 +127,15 @@ PLUGIN_LIB_DEPS = $(wildcard $(PLUGIN_NAME).c) $(wildcard $(PLUGIN_NAME).h) $(RA
 PLUGIN_LIB_SOURCE = $(wildcard $(PLUGIN_NAME).c) $(PLUGIN_LIB_EXTRA_SOURCE)
 PLUGIN_LIB_OPTIONS = -I ../.. $(PLUGIN_LIB_EXTRA_OPTIONS)
 PLUGIN_BUILD_LIB_CMD = $(CC) $(CCOPTS) $(RINC) -o $(PLUGIN_LIB) $(PLUGIN_LIB_SOURCE) $(PLUGIN_LIB_OPTIONS) -lm $(RLIB) $(LIBOPTS)
+PLUGIN_STRIP_LIB_CMD = $(STRIP) $(PLUGIN_LIB)
 endif
 
 TARGETS = $(filter-out %.R, $(PLUGIN_STANDARD_FILES) $(PLUGIN_EXTRA_TARGETS) $(EXTRA_TARGETS) $(EXTRA_PRECIOUS_TARGETS))
-R_FILES = $(filter %.R, $(PLUGIN_STANDARD_R_FILES) $(PLUGIN_EXTRA_R_FILES) $(EXTRA_TARGETS) $(EXTRA_PRECIOUS_TARGETS)) 
+R_FILES = $(filter %.R, $(PLUGIN_STANDARD_R_FILES) $(PLUGIN_EXTRA_R_FILES) $(EXTRA_TARGETS) $(EXTRA_PRECIOUS_TARGETS))
 
 ## a function to build additional plugin libs
 ## called as:
-## 
+##
 ## $(eval $(call LIB_NAME, LIB_DEPS, LIB_SOURCE, LIB_BUILD_OPTIONS))
 ##
 ## where
@@ -147,13 +149,13 @@ R_FILES = $(filter %.R, $(PLUGIN_STANDARD_R_FILES) $(PLUGIN_EXTRA_R_FILES) $(EXT
 define DEF_EXTRA_LIB
 $(1)$(SHLIB_SUFFIX) : $(2)
 	$(CC) $(CCOPTS) $(RINC) -o $(1)$(SHLIB_SUFFIX) $(3) $(4)  -lm $(RLIB) $(LIBOPTS)
+	$(STRIP) $(1)$(SHLIB_SUFFIX)
 PLUGIN_EXTRA_TARGETS += $(1)$(SHLIB_SUFFIX)
 PLUGIN_EXTRA_CLEANUPS += $(1)$(SHLIB_SUFFIX)
 endef
 
-plugin_clean: 
+plugin_clean:
 	rm -rf $(PLUGIN_LIB) $(PLUGIN_EXTRA_CLEANUPS)
 
 clean:
 	$(RM) -f $(filter-out $(EXTRA_PRECIOUS_TARGETS),$(TARGETS)) $(STRIPPED_R_FILES) $(LINEINFO_R_FILES) $(CHECKED_R_FILES) $(INSTALLED_TARGETS) $(INSTALLED_R_FILES) $(INSTALLED_ALIASES)
-
