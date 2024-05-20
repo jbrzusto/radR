@@ -98,7 +98,7 @@ get.menus = function() {
                label = "date and time at start of first sweep",
                value = as.numeric(default.start.time),
                on.set = function(x) {
-                 t <- structure(x, class=c("POSIXct", "POSIXt"))
+                 t <- structure(x, class="POSIXct")
                  default.start.time <<- t
                  if (inherits(RSS$source, MYCLASS))
                    RSS$source$start.time <- t
@@ -256,7 +256,7 @@ globals = list (
             } else {
               port$start.time + (port$next.scan - 1) * port$default.duration / 1000
             },
-            class=c("POSIXct", "POSIXt")),
+            class="POSIXct"),
 
           duration = 0, ## filled in below, after we have two consecutive scans
 
@@ -379,7 +379,7 @@ globals = list (
       metafile <- get.metafile.name(port$config$filename)
       if (file.exists(metafile)) {
         vars <- rss.source.as.list(metafile)
-        port$start.time <- structure(vars$start.time, class=c("POSIXct", "POSIXt"))
+        port$start.time <- structure(vars$start.time, class="POSIXct")
         port$default.duration <- vars$duration
       } else {
         split <- regexpr(paste("(?=", date.guess.regexp, ")", sep=""), port$file.basename, perl=TRUE)
@@ -428,7 +428,7 @@ globals = list (
                           end.time = structure(as.POSIXct(si.last$timestamp), class=c("POSIXct"))
                            )
 
-    port$start.time.midnight <- structure(as.POSIXct(trunc.POSIXt(si.first$timestamp, "days")), class=c("POSIXct", "POSIXt"))
+    port$start.time.midnight <- structure(as.POSIXct(trunc.POSIXt(si.first$timestamp, "days")), class="POSIXct")
     port$cur.run <- 1
     return (TRUE)
   },
@@ -482,8 +482,8 @@ save.metafile = function() {
 
 ## what a xir3000arch table of contents looks like, initially
 empty.TOC = list(
-  start.time = structure(double(0), class = c("POSIXct", "POSIXt")),
-  end.time = structure(double(0), class = c("POSIXct", "POSIXt")),
+  start.time = structure(double(0), class = "POSIXct"),
+  end.time = structure(double(0), class = "POSIXct"),
   num.scans = integer(0)
   )
 
