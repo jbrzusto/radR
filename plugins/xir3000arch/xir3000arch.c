@@ -17,8 +17,12 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
   //      the maximum range index for any pulse in the sweep
 
   unsigned char *ep = p + len;
+#ifdef RADR_DEBUG
   int have_warned_pulse_count_mismatch = FALSE;
   int have_warned_pulse_index_mismatch = FALSE;
+  int have_warned_blank_sector = 0;
+  int have_warned_virtual_blank_sector = 0;
+#endif
 
   int i, j;
   int samp_rate = XIR3_DEFAULT_SAMPLE_RATE;
@@ -74,10 +78,12 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
       if (rec_type >= REC_TYPE_RLC_4) {
 	t_RLC_4_pulse_header *ph4 = GET_ITEM(t_RLC_4_pulse_header);
 	last_pulse_ticks = ph4->ticks;
+#ifdef RADR_DEBUG
 	if (np_found != ph4->index && !have_warned_pulse_index_mismatch) {
 	  printf("xir3000arch: pulse index mis-match: header says %d, count says %d\n", ph4->index, np_found);
 	  have_warned_pulse_index_mismatch = TRUE;
 	}
+#endif
       }
 
       if (segi->rangeind > max_rangeind)
@@ -195,23 +201,47 @@ process_REC_buffer (unsigned char *p, unsigned int len, double *si, t_sample *da
     } else if (segi->type == RS_BLANK_SECTOR) {
       t_RLC_ext_scanline_hdr *esh = (t_RLC_ext_scanline_hdr*) p;
       p += sizeof(t_RLC_ext_scanline_hdr);
+      if (dat) {
+	int n = (esh->scan_line_no - np_found + 1) * spp;
+#ifdef RADR_DEBUG
+	if (! have_warned_blank_sector) {
+	  have_warned_blank_sector = TRUE;
+	  printf("zeroing %d samples for blank sector\n", n);
+	}
+#endif
+	memset(dat, 0, n);
+	dat += n;
+      }
       np_found = esh->scan_line_no + 1;
     } else if (segi->type == RS_VIRT_BLANK_SECTOR) {
       t_RLC_ext_scanline_hdr *esh = (t_RLC_ext_scanline_hdr*) p;
       p += sizeof(t_RLC_ext_scanline_hdr);
+      if (dat) {
+	int n = (esh->scan_line_no - np_found + 1) * spp;
+#ifdef RADR_DEBUG
+	if (! have_warned_virtual_blank_sector) {
+	  have_warned_virtual_blank_sector = TRUE;
+	  printf("zeroing %d samples for virtual blank sector\n", n);
+	}
+#endif
+	memset(dat, 0, n);
+	dat += n;
+      }
       np_found = esh->scan_line_no + 1;
     } else if (segi->type == RS_EXT_DATA) {
       t_RLC_ext_data_hdr *edh = (t_RLC_ext_data_hdr*) p;
       p += edh->num * edh->size;
     } else {
-      printf ("xir3000arch: unknown segment type %d at offset %ld\n", segi->type, len - (ep - p));
+      printf ("xir3000arch: unknown segment type %d at offset %u\n", segi->type, len - (ep - p));
     }
   }
   if (si) {
+#ifdef RADR_DEBUG
     if (np_found != np && !have_warned_pulse_count_mismatch) {
       printf("xir3000arch: pulse count mismatch: format says %d, file has %d\n", np, np_found);
       have_warned_pulse_count_mismatch = TRUE;
     }
+#endif
 
     si[NUM_SENSOR_DATA_ITEMS    ] = max_rangeind;
     si[NUM_SENSOR_DATA_ITEMS + 1] = np;
