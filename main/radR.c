@@ -1488,7 +1488,8 @@ radR_process_patches(SEXP filtersxp,
   scan_first_sample_offset = REAL(scaninfo)[4];
   scan_max_sample_value    = (int )REAL(scaninfo)[5];
   scan_rotation 	   = REAL(scaninfo)[6] * M_PI / 180;
-  scan_origin = REAL(origin);
+  if (! isNull(origin))
+    scan_origin = REAL(origin);
 
   pulse_ts = REAL(VECTOR_ELT(pulses, 0));
   pulse_azi = REAL(VECTOR_ELT(pulses, 1));
