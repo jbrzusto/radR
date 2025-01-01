@@ -243,7 +243,10 @@ globals = list (
                         orientation = +1,
                         is.rectangular = FALSE,
                         adc.gain = SH$adc_gain,
-                        adc.offset = SH$adc_offset
+                        adc.offset = SH$adc_offset,
+                        latitude = SH$latitude/1e7,
+                        longitude = SH$longitude/1e7,
+                        altitude = SH$altitude/1e3
                         )
 
             return(port$si)
