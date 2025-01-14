@@ -214,6 +214,9 @@ drop.scans = function (n) {
 }
 
 save.thumbnail = function() {
+    if (first.sweep.timestamp == 0) {
+        return()
+    }
     stored.classes[] <<- RSS$CLASS.VAL$other ## in case data dimensions have changed
     x = structure(as.integer(t(RSS$pix.mat[])), class=c("nativeRaster", "matrix", "array"), dim=dim(RSS$pix.mat))
     if (!file.exists(thumbnail.folder)) {
