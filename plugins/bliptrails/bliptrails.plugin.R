@@ -190,7 +190,7 @@ ensure.matrices = function() {
         dim(stored.classes)  <<- dim(RSS$class.mat)
         dim(stored.samples)  <<- dim(RSS$class.mat)
         dim(stored.scores)   <<- dim(RSS$class.mat)
-        zero.data()
+##        zero.data()
     }
 }
 
