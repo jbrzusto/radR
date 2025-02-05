@@ -218,6 +218,11 @@ save.thumbnail = function() {
         return()
     }
     stored.classes[] <<- RSS$CLASS.VAL$other ## in case data dimensions have changed
+    ## force a scan conversion
+    tmp = GUI$plot.enabled
+    GUI$plot.enabled = TRUE
+    rss.gui(UPDATE_PLOT_WINDOW, TRUE)
+    GUI$plot.enabled = tmp
     x = structure(as.integer(t(RSS$pix.mat[])), class=c("nativeRaster", "matrix", "array"), dim=dim(RSS$pix.mat))
     if (!file.exists(thumbnail.folder)) {
         dir.create(thumbnail.folder)
