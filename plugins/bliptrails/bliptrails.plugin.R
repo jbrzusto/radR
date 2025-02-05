@@ -352,7 +352,9 @@ hooks = list(
                                                    }
                                            },
                                            "storage tube" = {},
-                                           "raw tube" = {}
+                                           "raw tube" = {
+                                               GUI$mpp <<- min(100, max(.05, RSS$scan.info$sample.dist * RSS$scan.info$samples.per.pulse * 2 / max(GUI$plot.dim)))
+                                           }
                                            )
                                     ## scan-convert the stored trail data, but only rendering
                                     ## pixels of class "other" in order to preserve
