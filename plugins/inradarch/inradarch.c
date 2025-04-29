@@ -9,6 +9,7 @@ Licence: GPL V2+
 
 #include <lz4.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "radRmodule.h"
 
 // from inrad radR plugin
@@ -44,12 +45,29 @@ typedef struct bscan_info_record_t
 	uint32_t pl_mode;	      // pulse length table entry record number
 	uint8_t pl_name[16];	      // pulse length table entry name
         uint32_t magic;               // inrad format magic number: 0x07fe03fa
+        uint16_t azimuths[0];         // for version 1.1.0 and above, an azimuth for each output line (i.e. size is sizeof(uint16_t)*num_output_lines
 } bscan_info_record;
+
+#define MAX_RADARCAM_AZIMUTH 8192
 
 typedef uint16_t sample_t;
 
+char *decomp_buff = 0;
+int decomp_buff_samples = 0;
+
+uint16_t *azi_buff = 0;
+int azi_buff_samples = 0;
+
+// Is integer azimuth azi_src1 at least as good as azi_src2 (both are
+// in the range [0, max_azi_src])  "Better" means as an approximation to
+// azi_dst, which is in the range [0, max_azi_dst]
+int azi_better(int azi_src_1, int azi_src_2, int max_azi_src, int azi_dst, int max_azi_dst) {
+  // return abs(azi_src_1 / max_azi_src - azi_dst / max_azi_dst) <= abs(azi_src_2 / max_azi_src - azi_dst / max_azi_dst)
+  return abs(max_azi_dst * azi_src_1 - azi_dst * max_azi_src) <= abs(max_azi_dst * azi_src_2 - azi_dst * max_azi_src);
+}
+
 SEXP
-decompress_sweep (SEXP rawvec, SEXP extptr) {
+decompress_sweep (SEXP rawvec, SEXP extptr, SEXP npsxp) {
   // rawvec: raw vector with entire file contents
   // extptr: external pointer to extmat storage area, already
   // large enough for data in rawvec
@@ -61,6 +79,8 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   bscan_info_record *hdr;
   int numSamples;
   int numDecoded;
+  int np;
+  int aziSize = 0;
 
   if (TYPEOF(rawvec) != RAWSXP)
     return ScalarLogical(0);
@@ -68,25 +88,35 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
   if (LENGTH(rawvec) < 128)
     return ScalarLogical(0);
 
+  np = INTEGER(npsxp)[0];
   p = (char *) &RAW(rawvec)[0];
   hdr = (bscan_info_record*) p;
-
+  if(hdr->rev_number >= 0x00010100) {
+    aziSize = hdr->num_output_lines * sizeof(uint16_t);
+  }
   numSamples = hdr->samples_per_line * hdr->num_output_lines;
-  hdr->compressed_size = LENGTH(rawvec) - 128;
-  numDecoded = LZ4_decompress_safe(p + 128, (char *) EXTPTR_PTR(extptr), hdr->compressed_size, hdr->data_size);
-#ifdef RADR_DEBUG
-  printf("input: %p, output: %p, size:%d, decompsize: %lu, samples_per_line:%d, num_output_lines: %d, numDecoded: %d\n",
-         p+128,
-         (char *) EXTPTR_PTR(extptr),
+  if (numSamples > decomp_buff_samples) {
+    if (decomp_buff) {
+      Free(decomp_buff);
+    }
+    decomp_buff = Calloc(numSamples * sizeof(sample_t), char);
+    decomp_buff_samples = numSamples;
+  }
+  hdr->compressed_size = LENGTH(rawvec) - 128 - aziSize;
+  numDecoded = LZ4_decompress_safe(p + 128 + aziSize, decomp_buff, hdr->compressed_size, hdr->data_size);
+  #ifdef RADR_DEBUG
+  printf("input: %p, output: %p, size:%d, decompsize: %lu, samples_per_line:%d, num_output_lines: %d, numDecoded: %d sizeof(t_sample): %d\n",
+         p+128 + aziSize,
+         (char *) decomp_buff,
          hdr->compressed_size,
          hdr->data_size,
-         hdr->samples_per_line, hdr->num_output_lines, numDecoded);
-#endif
+         hdr->samples_per_line, hdr->num_output_lines, numDecoded, sizeof(t_sample));
+  #endif
   if (numDecoded != numSamples * sizeof(sample_t))  {
     if (numDecoded == numSamples) {
       // samples in source are 1-byte, so expand them in-place
-      uint8_t *src = ((uint8_t *) EXTPTR_PTR(extptr)) + numSamples - 1;
-      sample_t *dst = ((sample_t *) EXTPTR_PTR(extptr)) + numSamples - 1;
+      uint8_t *src = ((uint8_t *) decomp_buff) + numSamples - 1;
+      sample_t *dst = ((sample_t *) decomp_buff) + numSamples - 1;
       int i;
       for (i = 0; i < numSamples; ++i) {
         *dst-- = *src--;
@@ -95,12 +125,44 @@ decompress_sweep (SEXP rawvec, SEXP extptr) {
       return ScalarLogical(0);
     }
   }
-
+  // copy pulses from decompressed buff to extmat;
+  // if this is an older file version without an azimuth table,
+  // generate a bogus one with equally-spaced azimuths.
+  int max_azi;
+  if (hdr->rev_number < 0x00010100) {
+    max_azi = hdr->num_output_lines;
+    // no azimuth table
+    if (azi_buff_samples < hdr->num_output_lines) {
+      if (azi_buff) {
+	Free(azi_buff);
+      }
+      azi_buff = Calloc(hdr->num_output_lines, uint16_t);
+      azi_buff_samples = hdr->num_output_lines;
+    }
+    for (int i = 0; i < hdr->num_output_lines; i++) {
+      azi_buff[i] = i;
+    }
+  } else {
+    max_azi = MAX_RADARCAM_AZIMUTH;
+  }
+  sample_t *src = ((sample_t *) decomp_buff);
+  sample_t *dst = (sample_t *)EXTPTR_PTR(extptr);
+  int span = hdr->samples_per_line;
+  for (int i=0, j=0; i < np; i++) {
+    // advance to best source pulse for this target azimuth
+    while (j < hdr->num_output_lines - 1 &&
+	   azi_better(hdr->azimuths[j+1], hdr->azimuths[j], max_azi, i, np)) {
+      j++;
+      src += span;
+    }
+    memcpy(dst, src, span);
+    dst += span;
+  }
   return ScalarLogical(1);
 }
 
 R_CallMethodDef inradarch_call_methods[]  = {
-  MKREF(decompress_sweep, 2),
+  MKREF(decompress_sweep, 3),
   {NULL, NULL, 0}
 };
 

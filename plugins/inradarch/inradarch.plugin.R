@@ -28,6 +28,11 @@ about = function() {
     return(plugin.label)
 }
 
+get.menus = function() {
+    return(list(
+    ))
+}
+
 ## constants for correction of range_per_sample recorded by radarcam
 ## from NavNet radars while there was a bug in radarcam's range calculation.
 ## This period can be detected by these criteria:
@@ -58,7 +63,7 @@ getSweep = function(f, port, extmat) {
 
     GS = function(n) {
         val = readBin(buf[pos+(0:(n-1))], character())
-        pos <<- 4 + n;
+        pos <<- n + pos;
         return (val)
     }
 
@@ -96,18 +101,21 @@ getSweep = function(f, port, extmat) {
         pl_mode              = GI(), ## pulse length table entry record number
         pl_name              = GS(16),
         magic                = GI()  ## inrad magic number: 0x07fe03fa
-        )
+    )
 
     ## correct range_per_sample; for a brief period, sweeps from system76s running radarcam had
     ## the wrong range scaling.
     if (sweepHeader$rev_number < range.correct.version && sweepHeader$time_stamp_seconds > range.correct.ts) {
         sweepHeader$range_per_sample = sweepHeader$range_per_sample * range.correct.factor
     }
-    dim(extmat) <- c(sweepHeader$samples_per_line, sweepHeader$num_output_lines)
-    if (!isTRUE(.Call("decompress_sweep", port$scan.data, pointer(extmat))))
+    dim(extmat) <- c(sweepHeader$samples_per_line, target.num.pulses)
+    if (!isTRUE(.Call("decompress_sweep", port$scan.data, pointer(extmat), as.integer(target.num.pulses))))
         return(NULL)
 
-    ## check for partial sweep; if for some reason the
+    if (sweepHeader$magic != 0x07fe03fa) {
+        warning(sprintf("invalid magic number for inradarch file: %x", sweepHeader$magic))
+        return(NULL)
+    }
     return(sweepHeader)
 }
 
@@ -171,8 +179,19 @@ get.menus = function() {
                 "Choose a folder..." = gui.create.port.folder.selector(get.ports()[[1]])
                 )
             ),
-        plugin = list (
-            )
+        plugin = list(
+            c(list (tnp="gauge",
+                  label = "fixed pulses per sweep",
+                  range = c(256, 8192),
+                  increment = 256,
+                  value = target.num.pulses,
+                  on.set = function(x) {
+                      rss.defer.assign(target.num.pulses, x, INRADARCH)
+                      update()
+                  }
+                  )
+              )
+        )
         )
 }
 
@@ -232,7 +251,7 @@ globals = list (
                 warning(sprintf("skipping partial or corrupt scan in %s", port$files[port$cur.scan]))
                 next
             }
-            port$si <- list(pulses = SH$num_output_lines,
+            port$si <- list(pulses = target.num.pulses,
                         samples.per.pulse = SH$samples_per_line,
                         bits.per.sample = 8 * (SH$data_size / (SH$samples_per_line * SH$num_output_lines)),
                         timestamp = structure(SH$time_stamp_seconds + SH$time_stamp_useconds / 1e6, class=class(Sys.time())),
