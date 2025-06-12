@@ -104,14 +104,15 @@ decompress_sweep (SEXP rawvec, SEXP extptr, SEXP npsxp) {
   }
   hdr->compressed_size = LENGTH(rawvec) - 128 - aziSize;
   numDecoded = LZ4_decompress_safe(p + 128 + aziSize, decomp_buff, hdr->compressed_size, hdr->data_size);
-  #ifdef RADR_DEBUG
-  printf("input: %p, output: %p, size:%d, decompsize: %lu, samples_per_line:%d, num_output_lines: %d, numDecoded: %d sizeof(t_sample): %d\n",
+#ifdef RADR_DEBUG
+  printf("input: %p, output: %p, size:%d, decompsize: %lu, azisize: %d, samples_per_line:%d, num_output_lines: %d, numDecoded: %d sizeof(t_sample): %d\n",
          p+128 + aziSize,
          (char *) decomp_buff,
          hdr->compressed_size,
          hdr->data_size,
+	 aziSize,
          hdr->samples_per_line, hdr->num_output_lines, numDecoded, sizeof(t_sample));
-  #endif
+#endif
   if (numDecoded != numSamples * sizeof(sample_t))  {
     if (numDecoded == numSamples) {
       // samples in source are 1-byte, so expand them in-place
@@ -129,8 +130,12 @@ decompress_sweep (SEXP rawvec, SEXP extptr, SEXP npsxp) {
   // if this is an older file version without an azimuth table,
   // generate a bogus one with equally-spaced azimuths.
   int max_azi;
+  uint16_t *azis;
   if (hdr->rev_number < 0x00010100) {
     max_azi = hdr->num_output_lines;
+#ifdef RADR_DEBUG
+    printf("creating azimuth table with max_azi=%d\n", max_azi);
+#endif
     // no azimuth table
     if (azi_buff_samples < hdr->num_output_lines) {
       if (azi_buff) {
@@ -142,8 +147,10 @@ decompress_sweep (SEXP rawvec, SEXP extptr, SEXP npsxp) {
     for (int i = 0; i < hdr->num_output_lines; i++) {
       azi_buff[i] = i;
     }
+    azis = azi_buff;
   } else {
     max_azi = MAX_RADARCAM_AZIMUTH;
+    azis = &hdr->azimuths[0];
   }
   sample_t *src = ((sample_t *) decomp_buff);
   sample_t *dst = (sample_t *)EXTPTR_PTR(extptr);
@@ -151,7 +158,7 @@ decompress_sweep (SEXP rawvec, SEXP extptr, SEXP npsxp) {
   for (int i=0, j=0; i < np; i++) {
     // advance to best source pulse for this target azimuth
     while (j < hdr->num_output_lines - 1 &&
-	   azi_better(hdr->azimuths[j+1], hdr->azimuths[j], max_azi, i, np)) {
+	   azi_better(azis[j+1], azis[j], max_azi, i, np)) {
       j++;
       src += span;
     }
